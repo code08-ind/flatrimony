@@ -1,0 +1,30 @@
+{
+  "name": "@flatrimony/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Flatrimony admin and moderation app (Next.js, behind Cloudflare Access)",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@flatrimony/design-tokens": "workspace:*",
+    "@flatrimony/shared": "workspace:*",
+    "next": "^16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@flatrimony/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

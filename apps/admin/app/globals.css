@@ -1,0 +1,61 @@
+/* Uses only design-token CSS variables (packages/design-tokens). Serious screen: no lime, no glass. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-latin), var(--font-family-latin);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.shell {
+  max-width: var(--layout-web-content-max);
+  margin: 0 auto;
+  padding: var(--space-10) var(--layout-web-side-padding);
+}
+
+.wordmark {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 var(--space-6);
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 32px;
+  margin: 0 0 var(--space-2);
+}
+
+h2 {
+  font-size: 17px;
+  line-height: 24px;
+  margin: 0 0 var(--space-2);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.queues {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-8) 0 0;
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.card {
+  background: var(--color-bg-surface);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--layout-card-padding);
+  box-shadow: var(--elevation-1);
+}
