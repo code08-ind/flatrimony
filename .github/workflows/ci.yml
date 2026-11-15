@@ -70,6 +70,9 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Findings still fail the job and show in the job summary; skipping the
+          # SARIF artifact keeps the scan independent of Actions storage quota.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
       - name: SAST
         run: pipx run semgrep scan --config p/default --error --metrics off
       - uses: pnpm/action-setup@v4
