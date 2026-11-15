@@ -1,0 +1,15 @@
+name: Idea
+description: Feedback or a feature idea (docs/03 §6 step 1 — not started until promoted to an FR in the PRD)
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: User feedback, support, analytics, moderation trend, founder
