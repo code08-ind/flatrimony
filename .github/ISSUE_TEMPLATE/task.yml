@@ -1,0 +1,61 @@
+name: Task
+description: A buildable ticket that meets the Definition of Ready (docs/03 §6 step 4)
+labels: [task]
+body:
+  - type: input
+    id: fr
+    attributes:
+      label: Requirement IDs
+      description: FR-/NFR- IDs from docs/02-prd.md and the task ID from docs/07 (e.g. T2.4)
+      placeholder: FR-AUTH-01 · T2.4
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Given / When / Then
+    validations:
+      required: true
+  - type: textarea
+    id: ui
+    attributes:
+      label: UI states
+      description: Loading, empty, error, success — or "no UI". Link the screen in docs/designs (M01–M38, W01–W10).
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: API contract
+      description: Endpoints and Zod schemas in packages/shared — or "no API change"
+    validations:
+      required: true
+  - type: textarea
+    id: db
+    attributes:
+      label: DB changes
+      description: Tables, indexes, RLS — or "none"
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      description: Unit / integration / e2e cases
+    validations:
+      required: true
+  - type: input
+    id: analytics
+    attributes:
+      label: Analytics events
+      description: From docs/02 §11 (no personal data) — or "none"
+    validations:
+      required: true
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimate (story points)
+      options: ['1', '2', '3', '5', '8']
+    validations:
+      required: true

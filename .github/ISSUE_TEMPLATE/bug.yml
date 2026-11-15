@@ -1,0 +1,40 @@
+name: Bug
+description: Something is broken (severity per docs/07 §9)
+labels: [bug]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Sev-1 — safety, security or data exposure; app unusable
+        - Sev-2 — core journey broken for some users
+        - Sev-3 — non-core feature broken, workaround exists
+        - Sev-4 — cosmetic
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options: [Android, Web, Admin, API]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Environment, version, request ID
+      description: Never paste phone numbers, OTPs, tokens, addresses or DigiLocker data.
