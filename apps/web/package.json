@@ -17,8 +17,8 @@
     "@flatrimony/i18n": "workspace:*",
     "@flatrimony/shared": "workspace:*",
     "next": "^16.4.5",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@flatrimony/config": "workspace:*",

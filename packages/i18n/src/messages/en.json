@@ -34,10 +34,18 @@
   "state": {
     "loading": "Loading…",
     "retry": "Try again",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "comingSoon": "This screen is being built. It follows the approved design."
   },
   "money": {
     "perMonthShort": "{amount}/mo",
     "perMonth": "{amount} per month"
+  },
+  "tabs": {
+    "discover": "Discover",
+    "rishtas": "Rishtas",
+    "myFlat": "My Flat",
+    "saved": "Saved",
+    "profile": "Profile"
   }
 }
