@@ -1,0 +1,13 @@
+# Semgrep scans tracked source. Replacing the default ignore list, so repeat it here.
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.expo/
+.turbo/
+*.min.js
+pnpm-lock.yaml
+
+# Exported Google Stitch design references (static HTML that loads CDN scripts); never shipped or served.
+docs/designs/

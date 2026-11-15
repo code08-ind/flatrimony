@@ -20,3 +20,10 @@ supportedArchitectures:
 # Large native binaries (Next SWC, Supabase CLI) need more than the default 60 s on slow links.
 fetchTimeout: 600000
 networkConcurrency: 6
+
+# Supply-chain hardening (docs/03 §14): wait 7 days before installing newly published
+# versions, refuse versions that drop provenance/trust signals, and block git/tarball
+# sub-dependencies.
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+blockExoticSubdeps: true
