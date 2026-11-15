@@ -4,10 +4,18 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { HEADERS } from '@flatrimony/shared';
+import { HEADERS, IDEMPOTENCY_TTL_MS } from '@flatrimony/shared';
 import type { Env } from './env.js';
 import { authPlugin, createJwtVerifier, type JwtVerifier } from './plugins/auth.js';
 import { errorsPlugin } from './plugins/errors.js';
+import { idempotencyPlugin } from './plugins/idempotency.js';
+import { rateLimitPlugin } from './plugins/rate-limit.js';
+import {
+  memoryIdempotencyStore,
+  memoryRateLimitStore,
+  type IdempotencyStore,
+  type RateLimitStore,
+} from './lib/stores.js';
 import { genReqId } from './plugins/request-id.js';
 import { healthRoutes, v1SystemRoutes } from './modules/system/routes.js';
 import { inMemorySystemRepository, type SystemRepository } from './modules/system/repository.js';
@@ -17,6 +25,9 @@ export interface BuildOptions {
   systemRepo?: SystemRepository;
   /** Overrides the verifier built from env (tests). */
   jwtVerifier?: JwtVerifier;
+  rateLimitStore?: RateLimitStore;
+  idempotencyStore?: IdempotencyStore;
+  now?: () => number;
 }
 
 /** Builds the JWT verifier from env; undefined when auth is not configured (local only). */
@@ -44,6 +55,9 @@ export async function buildApp({
   env,
   systemRepo,
   jwtVerifier,
+  rateLimitStore,
+  idempotencyStore,
+  now,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { level: env.NODE_ENV === 'test' ? 'silent' : env.LOG_LEVEL, redact: REDACT },
@@ -64,6 +78,14 @@ export async function buildApp({
   await app.register(errorsPlugin);
   const verifier = jwtVerifier ?? verifierFromEnv(env);
   await app.register(authPlugin, verifier ? { verifier } : {});
+  await app.register(rateLimitPlugin, {
+    store: rateLimitStore ?? memoryRateLimitStore(),
+    ...(now ? { now } : {}),
+  });
+  await app.register(idempotencyPlugin, {
+    store: idempotencyStore ?? memoryIdempotencyStore(IDEMPOTENCY_TTL_MS),
+    ...(now ? { now } : {}),
+  });
 
   const repo = systemRepo ?? inMemorySystemRepository();
   await app.register(healthRoutes, { repo });
