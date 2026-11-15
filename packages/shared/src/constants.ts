@@ -53,3 +53,19 @@ export const HEADERS = {
   idempotencyKey: 'idempotency-key',
   idempotentReplayed: 'idempotent-replayed',
 } as const;
+
+/**
+ * Initial rate limits (docs/05 §6.3). They become remote-configurable later (FR-ADM-07).
+ * `windowMs` is a fixed window.
+ */
+export const RATE_LIMITS = {
+  globalPerIp: { limit: 300, windowMs: 60_000 },
+  perUser: { limit: 120, windowMs: 60_000 },
+  swipes: { limit: 60, windowMs: 60_000 },
+  messages: { limit: 30, windowMs: 60_000 },
+  reports: { limit: 10, windowMs: 24 * 60 * 60_000 },
+  uploadUrls: { limit: 30, windowMs: 60 * 60_000 },
+} as const;
+
+/** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */
+export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60_000;

@@ -8,13 +8,20 @@ export interface SystemRoutesOptions {
 }
 
 export const healthRoutes: FastifyPluginAsyncZod<SystemRoutesOptions> = async (app, { repo }) => {
-  app.get('/healthz', { schema: { response: { 200: HealthResponse } } }, async () => ({
-    status: 'ok' as const,
-  }));
+  app.get(
+    '/healthz',
+    { config: { rateLimit: false }, schema: { response: { 200: HealthResponse } } },
+    async () => ({
+      status: 'ok' as const,
+    }),
+  );
 
   app.get(
     '/readyz',
-    { schema: { response: { 200: ReadyResponse, 503: ReadyResponse } } },
+    {
+      config: { rateLimit: false },
+      schema: { response: { 200: ReadyResponse, 503: ReadyResponse } },
+    },
     async (_req, reply) => {
       const db = await repo.ping();
       const body = {
