@@ -22,6 +22,9 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_JWT_ISSUER: z.string().url().optional(),
+  SUPABASE_JWKS_URL: z.string().url().optional(),
+  SUPABASE_JWT_SECRET: z.string().min(32).optional(),
   CORS_ALLOWED_ORIGINS: csv,
   APP_VERSION: z.string().default('0.0.0'),
 });
@@ -35,8 +38,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment configuration: ${fields}`);
   }
   const env = parsed.data;
-  if (env.APP_ENV !== 'local' && !env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required outside local development');
+  if (env.APP_ENV !== 'local') {
+    if (!env.DATABASE_URL) throw new Error('DATABASE_URL is required outside local development');
+    if (!env.SUPABASE_JWT_ISSUER || !(env.SUPABASE_JWKS_URL || env.SUPABASE_JWT_SECRET)) {
+      throw new Error(
+        'SUPABASE_JWT_ISSUER and SUPABASE_JWKS_URL (or SUPABASE_JWT_SECRET) are required outside local development',
+      );
+    }
   }
   return env;
 }
