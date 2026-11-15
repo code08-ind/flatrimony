@@ -27,9 +27,9 @@
     "eslint": "^9.39.5",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "prettier": "^3.10.1",
-    "supabase": "^3.1.0",
-    "turbo": "^2.11.11",
+    "prettier": "^3.9.10",
+    "supabase": "^3.0.0",
+    "turbo": "^2.11.10",
     "typescript": "~6.0.3"
   },
   "lint-staged": {

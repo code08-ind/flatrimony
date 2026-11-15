@@ -26,4 +26,8 @@ networkConcurrency: 6
 # sub-dependencies.
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+# Reviewed exceptions: long-established releases published without provenance after
+# earlier versions had it. Add only after checking the version's age and maintainers.
+trustPolicyExclude:
+  - undici-types@6.21.0
 blockExoticSubdeps: true
