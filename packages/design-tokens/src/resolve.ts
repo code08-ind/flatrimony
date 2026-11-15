@@ -67,16 +67,26 @@ export function flattenTokens(tree: Node): FlatToken[] {
   return raw.map((t) => resolve(t, [t.path]));
 }
 
-/** Builds a nested object of resolved values from flat tokens. */
+const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+/**
+ * Builds a nested object of resolved values from flat tokens. Objects are created without a
+ * prototype and prototype-related path segments are rejected, so a token path can never
+ * pollute Object.prototype.
+ */
 export function toNested(flat: FlatToken[]): Record<string, unknown> {
-  const root: Record<string, unknown> = {};
+  const root: Record<string, unknown> = Object.create(null);
   for (const token of flat) {
     const parts = token.path.split('.');
+    const bad = parts.find((p) => FORBIDDEN_KEYS.has(p));
+    if (bad) throw new Error(`Token path ${token.path} uses forbidden segment "${bad}"`);
     let cursor = root;
-    parts.slice(0, -1).forEach((part) => {
-      cursor[part] ??= {};
+    for (const part of parts.slice(0, -1)) {
+      if (!Object.hasOwn(cursor, part)) cursor[part] = Object.create(null);
+      // Safe: prototype segments are rejected above and every level is Object.create(null).
+      // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop
       cursor = cursor[part] as Record<string, unknown>;
-    });
+    }
     cursor[parts[parts.length - 1]!] = token.value;
   }
   return root;

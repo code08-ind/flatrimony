@@ -92,7 +92,7 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 | T1.8 | Expo app skeleton with Expo Router, tabs, theme, i18n, Sentry, PostHog | Tech §2 | Not started |
 | T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | In progress — web app with `[locale]` routing and tokens done; admin app and Sentry remaining |
 | T1.10 | Terraform: GCP staging (WIF, Artifact Registry, Cloud Run services, Secret Manager, Scheduler, budgets) | Tech §4, §10 | Not started |
-| T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | Not started |
+| T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | In progress — `ci.yml` added with `setup-and-static`, `db` (pgTAP), `security` (gitleaks, Semgrep, audit) and `build-images` (API); first GitHub run pending. API integration tests, OpenAPI diff, web E2E smoke and web image join as their tasks land; required checks set with branch protection (T1.1) |
 | T1.12 | Staging CD (`deploy-staging.yml`) + smoke tests + EAS staging channel | Tech §10.2 | Not started |
 | T1.13 | Write ADRs 0001–0012 | Tech §18 | Not started |
 | T1.14 | Worker skeleton (job claim loop, tick, daily) + Cloud Run Job + Scheduler | DB §11 | Not started |
@@ -292,16 +292,16 @@ Copy this block into section 8 each week (newest first).
 - T1.6 Supabase — local + migrations 0001–0003 done; staging project pending
 - T1.7 API skeleton — routes, errors, request-id done; auth, rate limit, idempotency pending
 - T1.9 Web skeleton — web done; admin + Sentry pending
+- T1.11 CI workflow — `ci.yml` written; first run on GitHub pending
 
 **Next week**
-- T1.11 CI workflow
 - T1.13 ADRs 0001–0012
 - T1.8 Expo app skeleton
 - T1.14 Worker skeleton
 
 **Metrics**
 - Tests: 115 passing (shared 21, design-tokens 39, i18n 38, api 15, web 2); `pnpm test`, `typecheck`, `lint` and `format:check` green from the root (26 files reformatted with Prettier on 15 Nov)
-- CI health: no CI yet
+- CI health: `ci.yml` added; no runs yet
 
 **Risks / decisions needed**
 - Founder tasks T0.12–T0.15 blocked on reviewer, licences, helpline decision and legal review.

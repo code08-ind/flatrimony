@@ -16,7 +16,7 @@ import {
   toCss,
   typography,
 } from './index.js';
-import { flattenTokens } from './resolve.js';
+import { flattenTokens, toNested } from './resolve.js';
 import { parseHex } from './contrast.js';
 import { cssValue } from './outputs.js';
 
@@ -214,6 +214,16 @@ describe('resolver', () => {
       value: '#000000',
       aliasOf: 'c.b',
     });
+  });
+
+  it('refuses prototype-polluting token paths', () => {
+    expect(() =>
+      toNested([{ path: '__proto__.polluted', type: 'color', value: '#000000' }]),
+    ).toThrow(/forbidden/);
+    expect(() =>
+      toNested([{ path: 'a.constructor.prototype', type: 'color', value: '#000000' }]),
+    ).toThrow(/forbidden/);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 
   it('rejects missing and circular references', () => {

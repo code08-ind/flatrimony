@@ -1,0 +1,93 @@
+# CI for every pull request and push to main (docs/03 §9).
+# Adapted from the illustrative pipeline: steps whose scripts do not exist yet
+# (API integration tests, OpenAPI diff, web E2E smoke, web image) are added with
+# the tasks that create them.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  setup-and-static:
+    name: setup-and-static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Format
+        run: pnpm format:check
+      - name: Typecheck, lint, unit tests
+        run: pnpm turbo run typecheck lint test
+
+  db:
+    name: db
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: setup-and-static
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start Postgres (applies migrations + seed)
+        run: pnpm exec supabase db start
+      - name: pgTAP tests
+        run: pnpm exec supabase test db
+      - name: Stop Postgres
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks-action lists the PR's commits to scan
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Findings still fail the job and show in the job summary; skipping the
+          # SARIF artifact keeps the scan independent of Actions storage quota.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+      - name: SAST
+        run: pipx run semgrep scan --config p/default --error --metrics off
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Dependency audit
+        run: pnpm audit --audit-level high
+
+  build-images:
+    name: build-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: setup-and-static
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t api:ci .
