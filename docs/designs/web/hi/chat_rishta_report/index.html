@@ -1,0 +1,519 @@
+<!DOCTYPE html><html lang="hi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Flatrimony — Chat &amp; Rishta Report</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+Devanagari:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4A2FBD',
+            secondary: '#D7F26B',
+            tertiary: '#C2185B',
+            bgwarm: '#F5F2EA',
+            ink: '#17141F',
+          },
+          fontFamily: {
+            sans: ['"Noto Sans Devanagari"', '"Plus Jakarta Sans"', 'sans-serif'],
+            latin: ['"Plus Jakarta Sans"', 'sans-serif'],
+            hindi: ['"Noto Sans Devanagari"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif;
+      background-color: #F5F2EA;
+      color: #17141F;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #DCDAD2;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-[#F5F2EA] min-h-screen text-[#17141F] flex flex-col antialiased selection:bg-[#D7F26B] selection:text-[#17141F]">
+<!-- Top Header Navigation (Exactly 1 Logo Lockup at Top Left) -->
+<header class="h-[72px] bg-white border-b border-[#E8E4DA] px-6 flex items-center justify-between sticky top-0 z-30 shrink-0">
+<div class="flex items-center gap-6">
+<!-- Verbatim Flatrimony Brand Lockup (Shown ONCE) -->
+<a class="flex items-center gap-2.5 transition-transform hover:scale-105" href="#"><svg aria-label="Flatrimony" height="40" role="img" viewBox="0 0 96 96" width="40" xmlns="http://www.w3.org/2000/svg"><rect fill="#4A2FBD" height="96" rx="28" width="96"></rect><path d="M48 17.5c1.2 0 2.3.4 3.2 1.2l26.3 22.4c2.1 1.8.8 5.2-1.9 5.2H74v25.2c0 3.9-3.1 7-7 7H29c-3.9 0-7-3.1-7-7V46.3h-1.6c-2.7 0-4-3.4-1.9-5.2l26.3-22.4c.9-.8 2-1.2 3.2-1.2z" fill="#D7F26B"></path><circle cx="41" cy="57" fill="none" r="9.5" stroke="#4A2FBD" stroke-width="5"></circle><circle cx="55" cy="57" fill="none" r="9.5" stroke="#D7F26B" stroke-width="9"></circle><circle cx="55" cy="57" fill="none" r="9.5" stroke="#4A2FBD" stroke-width="5"></circle><path d="M44.86 48.32A9.5 9.5 0 0 1 50.04 54.06" fill="none" stroke="#D7F26B" stroke-width="9"></path><path d="M43.30 47.78A9.5 9.5 0 0 1 50.45 56.01" fill="none" stroke="#4A2FBD" stroke-width="5"></path><path d="M77 13l1.6 4.4L83 19l-4.4 1.6L77 25l-1.6-4.4L71 19l4.4-1.6z" fill="#FFFFFF"></path></svg><span class="font-extrabold text-[#17141F] tracking-[-0.03em] leading-none font-['Plus_Jakarta_Sans']" style="font-size: 24px;">Flatrimony</span></a>
+<!-- NCR Location Context -->
+<div class="hidden md:flex items-center gap-2 pl-4 border-l border-[#E8E4DA] text-xs font-semibold text-[#666158]">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span>गुरुग्राम और दिल्ली NCR हब्स</span>
+</div>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-3">
+<!-- Language Pill (Hindi Selected) -->
+<div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F2EA] border border-[#E8E4DA] text-xs font-semibold text-[#17141F]">
+<span class="text-[#666158] hover:text-[#17141F] cursor-pointer font-['Plus_Jakarta_Sans']">EN</span>
+<span class="text-[#A5A096]">|</span>
+<span class="font-bold text-[#4A2FBD]">हिंदी</span>
+</div>
+<!-- Emergency Helpline 112 Badge -->
+<div class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-xs font-bold text-red-700">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+<span>आपातकालीन 112</span>
+</div>
+<!-- Notification Bell -->
+<button aria-label="सूचनाएं" class="w-10 h-10 rounded-full flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors relative">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span class="absolute top-2 right-2 w-2 h-2 bg-[#C2185B] rounded-full"></span>
+</button>
+<!-- User Avatar / Profile -->
+<div class="flex items-center gap-2 pl-2">
+<div class="w-10 h-10 rounded-full bg-[#4A2FBD] text-white font-bold flex items-center justify-center ring-2 ring-[#D7F26B] shadow-sm text-sm font-['Plus_Jakarta_Sans']">
+          AD
+        </div>
+</div>
+</div>
+</header>
+<!-- Main Body Shell: Left Icon Nav Rail + 3-Pane Chat Layout -->
+<div class="flex-1 flex overflow-hidden max-w-[1440px] w-full mx-auto" style="height: calc(100vh - 72px);">
+<!-- Left Icon Nav Rail -->
+<aside class="w-[72px] bg-white border-r border-[#E8E4DA] flex flex-col items-center py-5 shrink-0 z-20 justify-between">
+<nav class="flex flex-col items-center gap-4 w-full">
+<!-- Explore -->
+<a class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group relative" href="#" title="खोजें">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<rect height="7" rx="1.5" width="7" x="3" y="3"></rect>
+<rect height="7" rx="1.5" width="7" x="14" y="3"></rect>
+<rect height="7" rx="1.5" width="7" x="14" y="14"></rect>
+<rect height="7" rx="1.5" width="7" x="3" y="14"></rect>
+</svg>
+<span class="text-[10px] font-semibold mt-1">खोजें</span>
+</a>
+<!-- Rishtas (ACTIVE STATE) -->
+<a class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center bg-[#4A2FBD] text-white shadow-md relative group transition-transform" href="#" title="रिश्ते">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-bold mt-1 text-[#D7F26B]">रिश्ते</span>
+<!-- Unread pill badge -->
+<span class="absolute -top-1 -right-1 px-1.5 py-0.5 bg-[#C2185B] text-white font-extrabold text-[10px] rounded-full border-2 border-white leading-none shadow-sm font-['Plus_Jakarta_Sans']">3</span>
+</a>
+<!-- My Flat -->
+<a class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group" href="#" title="मेरा फ़्लैट">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-semibold mt-1">फ़्लैट</span>
+</a>
+<!-- Profile -->
+<a class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group" href="#" title="प्रोफ़ाइल">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-semibold mt-1">प्रोफ़ाइल</span>
+</a>
+</nav>
+<!-- Bottom Help & Guidelines -->
+<div class="flex flex-col items-center gap-3 w-full">
+<a class="w-10 h-10 rounded-xl flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors" href="#" title="सुरक्षा नियम">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+</a>
+</div>
+</aside>
+<!-- 3-Pane App Content Canvas -->
+<main class="flex-1 flex overflow-hidden bg-[#F5F2EA]">
+<!-- ========================================== -->
+<!-- PANE 1: LEFT PANE (320px) — "रिश्ते" List -->
+<!-- ========================================== -->
+<section class="w-[320px] bg-white border-r border-[#E8E4DA] flex flex-col shrink-0 h-full">
+<!-- Rishtas Header & Search -->
+<div class="p-4 border-b border-[#E8E4DA] bg-white shrink-0">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<h1 class="text-xl font-extrabold text-[#17141F] tracking-tight">रिश्ते</h1>
+<span class="px-2 py-0.5 rounded-full bg-[#F5F2EA] text-[#4A2FBD] font-bold text-xs whitespace-nowrap">4 सक्रिय</span>
+</div>
+<!-- Filter Action -->
+<button class="p-1.5 text-[#666158] hover:text-[#17141F] rounded-lg hover:bg-[#F5F2EA]" title="फ़िल्टर करें">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<!-- Pill Search Input -->
+<div class="relative">
+<svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A5A096]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+<input class="w-full pl-9 pr-4 py-2 bg-[#F5F2EA] rounded-full border border-transparent focus:border-[#4A2FBD] focus:bg-white text-xs font-medium text-[#17141F] placeholder-[#8F8A7E] outline-none transition-all" placeholder="फ़्लैटमेट्स या इलाके खोजें..." type="text">
+</div>
+</div>
+<!-- Scrollable Rishtas Rows -->
+<div class="flex-1 overflow-y-auto custom-scroll divide-y divide-[#F0ECE1]">
+<!-- Row 1: Meera (Active Selected Row) -->
+<div class="h-[76px] px-3.5 py-3 bg-[#F0ECFC] border-l-4 border-[#4A2FBD] flex items-center gap-3 cursor-pointer transition-colors relative">
+<div class="relative w-12 h-12 shrink-0">
+<img alt="Meera" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500 shadow-sm" src="../../../assets/img/d1574887bdec.jpg">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+<svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-bold text-sm text-[#17141F] break-words font-['Plus_Jakarta_Sans']">Meera</span>
+<span class="text-[11px] font-semibold text-[#4A2FBD] whitespace-nowrap font-['Plus_Jakarta_Sans']">10:42 AM</span>
+</div>
+<div class="flex items-center justify-between gap-1">
+<p class="text-xs text-[#17141F] font-semibold break-words leading-tight">बढ़िया, शाम 5 बजे गैलेरिया? हम गैलेरिया मार्केट के पास एक कैफ़े में मिल सकते हैं।</p>
+<span class="w-2 h-2 rounded-full bg-[#4A2FBD] shrink-0"></span>
+</div>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-[10px] font-bold whitespace-nowrap">बातचीत जारी</span>
+<span class="text-[10px] text-[#666158] break-words">DLF Phase 2</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Kabir (Met) -->
+<div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+<div class="relative w-12 h-12 shrink-0">
+<img alt="Kabir" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500" src="../../../assets/img/c8b194dc2f8f.jpg">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+<svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-bold text-sm text-[#17141F] break-words font-['Plus_Jakarta_Sans']">Kabir</span>
+<span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">कल</span>
+</div>
+<p class="text-xs text-[#666158] break-words leading-tight">कैफ़े में मिलकर अच्छा लगा!</p>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold whitespace-nowrap">मुलाक़ात हुई</span>
+<span class="text-[10px] text-[#666158] break-words">Hauz Khas</span>
+</div>
+</div>
+</div>
+<!-- Row 3: Aanya (Rishta Pakka) -->
+<div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+<div class="relative w-12 h-12 shrink-0">
+<img alt="Aanya" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500" src="../../../assets/img/395c7c65f668.jpg">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+<svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-bold text-sm text-[#17141F] break-words font-['Plus_Jakarta_Sans']">Aanya</span>
+<span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">2 दिन पहले</span>
+</div>
+<p class="text-xs text-[#666158] break-words leading-tight">मकान मालिक को अग्रीमेंट कॉपी भेज दी!</p>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#D7F26B] text-[#17141F] text-[10px] font-extrabold whitespace-nowrap">रिश्ता पक्का ✓</span>
+<span class="text-[10px] text-[#666158] break-words">Sector 54</span>
+</div>
+</div>
+</div>
+<!-- Row 4: Rohan (Chatting) -->
+<div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+<div class="relative w-12 h-12 shrink-0">
+<img alt="Rohan" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500" src="../../../assets/img/aca198a3be19.jpg">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+<svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-bold text-sm text-[#17141F] break-words font-['Plus_Jakarta_Sans']">Rohan</span>
+<span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">3 दिन पहले</span>
+</div>
+<p class="text-xs text-[#666158] break-words leading-tight">हाँ, मास्टर बेडरूम में बालकनी है।</p>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-[10px] font-bold whitespace-nowrap">बातचीत जारी</span>
+<span class="text-[10px] text-[#666158] break-words">Sector 56</span>
+</div>
+</div>
+</div>
+</div>
+<!-- safety session Trust Note in Left Pane Footer -->
+<div class="p-3 bg-[#FAF8F2] border-t border-[#E8E4DA] text-[11px] text-[#666158] flex items-center gap-2">
+<svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+<span class="leading-tight">सभी प्रोफ़ाइल सरकारी DigiLocker से वेरिफ़ाइड। ब्रोकर-मुक्त ज़ोन।</span>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- PANE 2: CENTRE PANE — Chat with Meera      -->
+<!-- ========================================== -->
+<section class="flex-1 flex flex-col h-full bg-[#F5F2EA] min-w-0 overflow-hidden border-r border-[#E8E4DA]">
+<!-- Chat Header -->
+<div class="h-[76px] bg-white border-b border-[#E8E4DA] px-6 flex items-center justify-between shrink-0 z-10">
+<div class="flex items-center gap-3.5">
+<div class="relative w-11 h-11 shrink-0">
+<img alt="Meera" class="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500" src="../../../assets/img/d1574887bdec.jpg">
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="text-base font-extrabold text-[#17141F]"><span class="font-['Plus_Jakarta_Sans']">Meera</span>, 28</h2>
+<!-- Lime "94% मैच" Pill -->
+<span class="px-2.5 py-0.5 rounded-full bg-[#D7F26B] text-[#17141F] text-xs font-extrabold whitespace-nowrap shadow-xs">
+                  94% मैच
+                </span>
+<!-- "बातचीत जारी" Pill -->
+<span class="px-2.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-xs font-bold whitespace-nowrap">
+                  बातचीत जारी
+                </span>
+</div>
+<p class="text-xs text-[#666158] font-medium mt-0.5">Sr. UX Designer @ DLF CyberCity · Looking in DLF Phase 2</p>
+</div>
+</div>
+<!-- Header Actions (safety session button + Overflow Menu) -->
+<div class="flex items-center gap-2">
+<button class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F2EA] hover:bg-[#EAE5D8] border border-[#E8E4DA] text-xs font-bold text-[#17141F] transition-colors" title="सुरक्षा विवरण">
+<svg class="w-3.5 h-3.5 text-[#4A2FBD]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+<span>सुरक्षा टूल्स</span>
+</button>
+<button class="w-9 h-9 rounded-full flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors" title="अन्य विकल्प">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
+</button>
+</div>
+</div>
+<!-- Step Timeline: "1 चैट ✓ → 2 वेरिफ़ाई ✓ → 3 पहली मुलाक़ात (Pehli Mulaqat)" -->
+<div class="bg-white border-b border-[#E8E4DA] px-6 py-2.5 flex items-center justify-center shrink-0">
+<div class="flex items-center gap-2 text-xs font-semibold">
+<!-- Step 1 -->
+<div class="flex items-center gap-1 text-[#4A2FBD]">
+<span class="w-5 h-5 rounded-full bg-[#4A2FBD] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+<span class="font-bold">चैट</span>
+</div>
+<span class="text-[#A5A096]">→</span>
+<!-- Step 2 -->
+<div class="flex items-center gap-1 text-[#4A2FBD]">
+<span class="w-5 h-5 rounded-full bg-[#4A2FBD] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+<span class="font-bold">वेरिफ़ाई</span>
+</div>
+<span class="text-[#A5A096]">→</span>
+<!-- Step 3 (Current Goal) -->
+<div class="flex items-center gap-1 text-[#17141F]">
+<span class="w-5 h-5 rounded-full bg-[#D7F26B] text-[#17141F] flex items-center justify-center text-[10px] font-extrabold ring-2 ring-[#4A2FBD]">3</span>
+<span class="font-extrabold text-[#17141F]">पहली मुलाक़ात</span>
+<span class="text-[10px] font-medium text-[#666158] hidden md:inline font-['Plus_Jakarta_Sans']">(Pehli Mulaqat)</span>
+</div>
+</div>
+</div>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-4">
+<!-- Time Separator -->
+<div class="flex items-center justify-center my-1">
+<span class="px-3 py-1 rounded-full bg-[#EAE5D8] text-[11px] font-semibold text-[#666158]">आज · 24 अक्टूबर</span>
+</div>
+<!-- Received Message Group (Meera) -->
+<div class="flex flex-col items-start gap-2 max-w-[70%]">
+<div class="flex items-end gap-2">
+<img alt="Meera" class="w-7 h-7 rounded-full object-cover shrink-0 mb-1" src="../../../assets/img/d1574887bdec.jpg">
+<div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-bl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                नमस्ते! आपकी प्रोफ़ाइल देखी — हमारा ऑफ़िस कम्यूट बहुत अच्छा मैच करता है (मैं भी DLF CyberCity में हूँ)। क्या आप अगले महीने की 1 तारीख तक शिफ़्ट होने की सोच रहे हैं?
+              </div>
+</div>
+<div class="pl-9">
+<div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-tl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                साथ ही, मेरी मौजूदा 3BHK फ़्लैटमेट बैंगलोर ट्रांसफ़र हो रही है, इसलिए उसका अटैच्ड बाथ और बालकनी वाला प्राइवेट कमरा ख़ाली होगा।
+              </div>
+<span class="text-[10px] font-semibold text-[#8F8A7E] ml-2 mt-1 block font-['Plus_Jakarta_Sans']">10:28 AM</span>
+</div>
+</div>
+<!-- Sent Message Group (User) -->
+<div class="flex flex-col items-end gap-2 max-w-[70%] ml-auto">
+<div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-br-sm shadow-sm text-sm leading-relaxed">
+              अरे Meera! बिल्कुल — अगले महीने की 1 तारीख मेरे लिए एकदम सही रहेगी। DLF Phase 2 के लिए आपने जो बिना एडिट किया हुआ वीडियो वॉकथ्रू डाला था, वह मुझे बहुत पसंद आया।
+            </div>
+<div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-tr-sm shadow-sm text-sm leading-relaxed">
+              मैं आमतौर पर हफ़्ते के दिनों में रात 11:30 बजे तक सो जाता हूँ और हाइब्रिड काम करता हूँ (हफ़्ते में 2 दिन WFH)। क्या ज़ूम कॉल्स के लिए वाई-फ़ाई स्थिर रहता है?
+            </div>
+<span class="text-[10px] font-semibold text-[#8F8A7E] mr-2 block">10:34 AM · भेजा गया</span>
+</div>
+<!-- Yellow System Warning Card -->
+<div class="my-4 p-4 rounded-2xl bg-[#FEF9E7] border border-[#F5E296] text-[#7A5800] text-xs flex items-center gap-3.5 shadow-xs">
+<div class="w-9 h-9 rounded-xl bg-[#F7DC6F] flex items-center justify-center shrink-0 text-[#7A5800]">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</div>
+<div class="flex-1">
+<span class="font-bold block text-sm text-[#5B4200] mb-0.5"><span class="font-['Plus_Jakarta_Sans']">Flatrimony</span> ज़ीरो-टोकन नियम</span>
+<p class="leading-relaxed">फ़्लैट देखने जाने से पहले कभी भी टोकन या डिपॉज़िट न दें। यदि कोई मांगे तो तुरंत रिपोर्ट करें।</p>
+</div>
+</div>
+<!-- Received Message Group (Meera) -->
+<div class="flex flex-col items-start gap-2 max-w-[70%]">
+<div class="flex items-end gap-2">
+<img alt="Meera" class="w-7 h-7 rounded-full object-cover shrink-0 mb-1" src="../../../assets/img/d1574887bdec.jpg">
+<div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-bl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                हाँ! हमारे पास स्टेबल हाई-स्पीड वाई-फ़ाई और पावर बैकअप है, इसलिए मीटिंग्स के दौरान कभी कोई रुकावट नहीं आती।
+              </div>
+</div>
+<div class="pl-9">
+<div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-tl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                क्या आप गैलेरिया मार्केट के पास एक कैफ़े में कॉफ़ी पर पहली मुलाक़ात के लिए मिलना चाहेंगे ताकि समझ आ सके कि हमारी वाइब्स मैच होती हैं या नहीं?
+              </div>
+<span class="text-[10px] font-semibold text-[#8F8A7E] ml-2 mt-1 block font-['Plus_Jakarta_Sans']">10:39 AM</span>
+</div>
+</div>
+<!-- Sent Message (User) -->
+<div class="flex flex-col items-end gap-2 max-w-[70%] ml-auto">
+<div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-br-sm shadow-sm text-sm leading-relaxed">
+              बढ़िया, शाम 5 बजे गैलेरिया मार्केट के पास एक कैफ़े में मिलना मेरे लिए बिल्कुल सही है!
+            </div>
+<span class="text-[10px] font-semibold text-[#8F8A7E] mr-2 block">10:42 AM · डिलीवर हुआ</span>
+</div>
+<!-- System Pill -->
+<div class="flex justify-center my-3">
+<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#EAE5D8] border border-[#DDD7C9] text-xs font-semibold text-[#544F46] shadow-2xs">
+<svg class="w-4 h-4 text-[#4A2FBD]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>आपने अपना नंबर शेयर किया · Meera के जवाब का इंतज़ार है</span>
+</div>
+</div>
+</div>
+<!-- Chat Composer Area -->
+<div class="p-4 bg-white border-t border-[#E8E4DA] shrink-0">
+<div class="flex items-center justify-between mb-3">
+<button class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D7F26B] hover:bg-[#C9E758] text-[#17141F] text-xs font-extrabold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>पहली मुलाक़ात प्लान करें</span>
+</button>
+<span class="text-[11px] font-medium text-[#666158]">सुरक्षा टूल्स लोकेशन ब्रॉडकास्ट सक्रिय</span>
+</div>
+<div class="flex items-center gap-2 bg-[#F5F2EA] rounded-full p-1.5 pl-4 border border-[#E8E4DA] focus-within:border-[#4A2FBD] focus-within:bg-white transition-all">
+<button class="text-[#666158] hover:text-[#17141F] p-1" title="फ़ोटो या दस्तावेज़ जोड़ें">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<input class="flex-1 bg-transparent border-none outline-none text-sm text-[#17141F] placeholder-[#8F8A7E] font-medium px-2" placeholder="Meera को मैसेज लिखें..." type="text">
+<button class="w-10 h-10 rounded-full bg-[#4A2FBD] hover:bg-[#3C24A0] text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-sm" title="मैसेज भेजें">
+<svg class="w-4 h-4 translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- PANE 3: RIGHT PANE (360px) — Rishta Report  -->
+<!-- ========================================== -->
+<aside class="w-[360px] bg-white border-l border-[#E8E4DA] p-5 flex flex-col shrink-0 h-full overflow-y-auto custom-scroll">
+<!-- Header: "Rishta report" -->
+<div class="flex items-center justify-between pb-3 border-b border-[#E8E4DA] mb-4">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-extrabold text-[#17141F] tracking-tight">रिश्ता रिपोर्ट</h3>
+<span class="w-2 h-2 rounded-full bg-[#4A2FBD]"></span>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-[#D7F26B] text-[#17141F] text-xs font-extrabold shadow-2xs whitespace-nowrap">
+            94% मैच
+          </span>
+</div>
+<!-- Co-living Compatibility Summary -->
+<div class="mb-5">
+<div class="flex items-center justify-between text-xs font-bold text-[#666158] mb-1.5">
+<span>समग्र तालमेल</span>
+<span class="text-[#17141F]">हाई सिंक (94%)</span>
+</div>
+<div class="w-full h-2 rounded-full bg-[#F5F2EA] overflow-hidden">
+<div class="h-full bg-[#4A2FBD] rounded-full" style="width: 94%"></div>
+</div>
+</div>
+<!-- Compatibility Breakdown: Agreements & Habits -->
+<div class="mb-6">
+<span class="text-[11px] font-bold uppercase tracking-wider text-[#666158] block mb-2.5">समझौते और आदतें</span>
+<div class="space-y-2.5">
+<!-- Agreement 1: Cleanliness & Chores -->
+<div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+<div class="flex-1 min-w-0">
+<span class="text-xs font-bold text-[#17141F] block">दैनिक सफ़ाई और कुक</span>
+<p class="text-[11px] text-[#666158] mt-0.5">दोनों दैनिक कुक और बाई का ख़र्च बराबर बांटना पसंद करते हैं (₹2,500/माह प्रत्येक)।</p>
+</div>
+</div>
+<!-- Agreement 2: Sleep & Quiet Hours -->
+<div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+<div class="flex-1 min-w-0">
+<span class="text-xs font-bold text-[#17141F] block">नींद का तालमेल: रात 11:00 PM – 7:30 AM</span>
+<p class="text-[11px] text-[#666158] mt-0.5">समान शांत घंटे और वर्क-फ़्रॉम-होम की ध्वनि अनुकूलता।</p>
+</div>
+</div>
+<!-- Agreement 3: Food & Kitchen -->
+<div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+<div class="flex-1 min-w-0">
+<span class="text-xs font-bold text-[#17141F] block">खानपान: शुद्ध शाकाहारी और नॉन-वेज मंज़ूर</span>
+<p class="text-[11px] text-[#666158] mt-0.5">फ़्रिज के अलग शेल्व्स और कुकवेयर का सम्मान।</p>
+</div>
+</div>
+<!-- Neutral Row: Different on pets -->
+<div class="p-3 rounded-xl bg-[#FAF8F2] border border-[#E0DBCF] flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-[#EAE5D8] text-[#666158] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                •
+              </span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-[#17141F]">पालतू जानवरों पर अलग राय</span>
+<span class="text-[10px] font-semibold text-[#8F8A7E] bg-white px-1.5 py-0.5 rounded border border-[#E8E4DA]">तटस्थ</span>
+</div>
+<p class="text-[11px] text-[#666158] mt-0.5">Meera वीकेंड पर देसी कुत्तों को फ़ॉस्टर करती हैं; आप पेट-फ़्री कॉमन स्पेस पसंद करते हैं। कॉफ़ी पर चर्चा करें।</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Attached Listing Card -->
+<div class="mt-auto pt-3 border-t border-[#E8E4DA]">
+<span class="text-[11px] font-bold uppercase tracking-wider text-[#666158] block mb-2.5">संलग्न लिस्टिंग</span>
+<div class="rounded-2xl border border-[#E8E4DA] bg-white overflow-hidden shadow-xs hover:border-[#4A2FBD] transition-all group">
+<div class="relative h-28 w-full overflow-hidden">
+<img alt="DLF Phase 2 में कमरा" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="../../../assets/img/7ee54b9ed54f.jpg">
+<span class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 text-[#17141F] text-[10px] font-bold shadow-xs">
+                प्राइवेट कमरा 3BHK में
+              </span>
+<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-[#4A2FBD] text-white text-[10px] font-bold shadow-xs">
+                वीडियो वेरिफ़ाइड
+              </span>
+</div>
+<div class="p-3.5">
+<div class="flex items-baseline justify-between mb-1">
+<h4 class="font-extrabold text-sm text-[#17141F] group-hover:text-[#4A2FBD] transition-colors">3BHK में कमरा · Cyber City</h4>
+</div>
+<p class="text-xs text-[#666158] mb-2">DLF Phase 2, गुरुग्राम · आपके ऑफ़िस तक 18 मिनट</p>
+<div class="flex items-center justify-between pt-2 border-t border-[#F0ECE1]">
+<div>
+<span class="text-xs text-[#666158]">कुल मासिक ख़र्च</span>
+<p class="text-sm font-extrabold text-[#4A2FBD]">₹21,500/माह all-in</p>
+</div>
+<a class="px-3 py-1.5 rounded-full bg-[#F5F2EA] hover:bg-[#D7F26B] hover:text-[#17141F] text-[#4A2FBD] text-xs font-bold transition-colors" href="#">
+                  फ़्लैट देखें
+                </a>
+</div>
+</div>
+</div>
+</div>
+<!-- Verification Stamp -->
+<div class="mt-4 pt-3 flex items-center justify-between text-[11px] text-[#666158]">
+<div class="flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>
+<span>DigiLocker से वेरिफ़ाइड</span>
+</div>
+<span class="font-medium text-[#8F8A7E] font-['Plus_Jakarta_Sans']">ID: FLT-9428</span>
+</div>
+</aside>
+</main>
+</div>
+
+
+
+
+</body></html>

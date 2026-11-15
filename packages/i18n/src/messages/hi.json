@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "Flatrimony",
+    "tagline": "रिश्ता पक्का, रेंट स्प्लिट।",
+    "notDating": "फ़्लैटमेट्स, डेटिंग नहीं।",
+    "promise": "वेरिफ़ाइड लोग। असली कमरे।"
+  },
+  "language": {
+    "choose": "भाषा चुनें",
+    "continueEnglish": "Continue in English",
+    "continueHindi": "हिंदी में आगे बढ़ें"
+  },
+  "legal": {
+    "agreePrefix": "आगे बढ़कर आप हमारे",
+    "terms": "नियम व शर्तें",
+    "privacy": "प्राइवेसी पॉलिसी"
+  },
+  "glossary": {
+    "flatBiodata": "फ़्लैट बायोडाटा",
+    "rishta": "रिश्ता",
+    "itsARishta": "रिश्ता मिल गया!",
+    "rishtaReport": "रिश्ता रिपोर्ट",
+    "pehliMulaqat": "पहली मुलाक़ात",
+    "rishtaPakka": "रिश्ता पक्का",
+    "flatmatePassport": "फ़्लैटमेट पासपोर्ट",
+    "ghar": "घर",
+    "verifyWithDigiLocker": "DigiLocker से वेरिफ़ाई करें",
+    "allInMonthlyCost": "कुल मासिक ख़र्च",
+    "commuteMinutes": "आपके ऑफ़िस तक {minutes, plural, one {# मिनट} other {# मिनट}}"
+  },
+  "safety": {
+    "emergencyNumber": "आपातकाल: 112 पर कॉल करें"
+  },
+  "state": {
+    "loading": "लोड हो रहा है…",
+    "retry": "फिर से कोशिश करें",
+    "genericError": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।"
+  },
+  "money": {
+    "perMonthShort": "{amount}/माह",
+    "perMonth": "{amount} प्रति माह"
+  }
+}

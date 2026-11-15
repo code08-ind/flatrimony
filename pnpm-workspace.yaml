@@ -1,0 +1,22 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Expo / React Native resolve modules most reliably from a hoisted node_modules.
+nodeLinker: hoisted
+
+# Dependencies allowed to run install scripts (pnpm blocks all others by default).
+allowBuilds:
+  esbuild: true
+  supabase: true
+
+# Only fetch platform-specific optional binaries (turbo, supabase CLI, esbuild…) for the
+# machine running the install; CI fetches its own from the same lockfile.
+supportedArchitectures:
+  os: [current]
+  cpu: [current]
+  libc: [current]
+
+# Large native binaries (Next SWC, Supabase CLI) need more than the default 60 s on slow links.
+fetchTimeout: 600000
+networkConcurrency: 6

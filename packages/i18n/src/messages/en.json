@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "Flatrimony",
+    "tagline": "Rishta pakka, rent split.",
+    "notDating": "Flatmates, not dating.",
+    "promise": "Verified people. Real rooms."
+  },
+  "language": {
+    "choose": "Choose language",
+    "continueEnglish": "Continue in English",
+    "continueHindi": "हिंदी में आगे बढ़ें"
+  },
+  "legal": {
+    "agreePrefix": "By continuing you agree to our",
+    "terms": "Terms",
+    "privacy": "Privacy Policy"
+  },
+  "glossary": {
+    "flatBiodata": "Flat Biodata",
+    "rishta": "Rishta",
+    "itsARishta": "It's a Rishta!",
+    "rishtaReport": "Rishta report",
+    "pehliMulaqat": "Pehli Mulaqat",
+    "rishtaPakka": "Rishta pakka",
+    "flatmatePassport": "Flatmate Passport",
+    "ghar": "Ghar",
+    "verifyWithDigiLocker": "Verify with DigiLocker",
+    "allInMonthlyCost": "All-in monthly cost",
+    "commuteMinutes": "{minutes, plural, one {# min} other {# min}} to your office"
+  },
+  "safety": {
+    "emergencyNumber": "Emergency: call 112"
+  },
+  "state": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "money": {
+    "perMonthShort": "{amount}/mo",
+    "perMonth": "{amount} per month"
+  }
+}

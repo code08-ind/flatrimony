@@ -1,0 +1,35 @@
+{
+  "name": "@flatrimony/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "English + Hindi message files (ICU) and Indian formatters (INR, dates, times in IST)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./messages/en.json": "./src/messages/en.json",
+    "./messages/hi.json": "./src/messages/hi.json"
+  },
+  "files": ["dist", "src/messages"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "intl-messageformat": "^12.1.5"
+  },
+  "devDependencies": {
+    "@flatrimony/config": "workspace:*",
+    "@formatjs/icu-messageformat-parser": "^3.5.23",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.1.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,587 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flatrimony — Chat &amp; Rishta Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+Devanagari:wght@400;600;700&amp;display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4A2FBD',
+            secondary: '#D7F26B',
+            tertiary: '#C2185B',
+            bgwarm: '#F5F2EA',
+            ink: '#17141F',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            hindi: ['"Noto Sans Devanagari"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F5F2EA;
+      color: #17141F;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #DCDAD2;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-[#F5F2EA] min-h-screen text-[#17141F] flex flex-col antialiased selection:bg-[#D7F26B] selection:text-[#17141F]">
+
+  <!-- Top Header Navigation (Exactly 1 Logo Lockup at Top Left) -->
+  <header class="h-[72px] bg-white border-b border-[#E8E4DA] px-6 flex items-center justify-between sticky top-0 z-30 shrink-0">
+    <div class="flex items-center gap-6">
+      <!-- Verbatim Flatrimony Brand Lockup (Shown ONCE) -->
+      <a href="#" class="flex items-center gap-2.5 transition-transform hover:scale-105"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="40" height="40" role="img" aria-label="Flatrimony"><rect width="96" height="96" rx="28" fill="#4A2FBD"></rect><path d="M48 17.5c1.2 0 2.3.4 3.2 1.2l26.3 22.4c2.1 1.8.8 5.2-1.9 5.2H74v25.2c0 3.9-3.1 7-7 7H29c-3.9 0-7-3.1-7-7V46.3h-1.6c-2.7 0-4-3.4-1.9-5.2l26.3-22.4c.9-.8 2-1.2 3.2-1.2z" fill="#D7F26B"></path><circle cx="41" cy="57" r="9.5" fill="none" stroke="#4A2FBD" stroke-width="5"></circle><circle cx="55" cy="57" r="9.5" fill="none" stroke="#D7F26B" stroke-width="9"></circle><circle cx="55" cy="57" r="9.5" fill="none" stroke="#4A2FBD" stroke-width="5"></circle><path d="M44.86 48.32A9.5 9.5 0 0 1 50.04 54.06" fill="none" stroke="#D7F26B" stroke-width="9"></path><path d="M43.30 47.78A9.5 9.5 0 0 1 50.45 56.01" fill="none" stroke="#4A2FBD" stroke-width="5"></path><path d="M77 13l1.6 4.4L83 19l-4.4 1.6L77 25l-1.6-4.4L71 19l4.4-1.6z" fill="#FFFFFF"></path></svg><span class="font-extrabold text-[#17141F] tracking-[-0.03em] leading-none" style="font-size: 24px;">Flatrimony</span></a>
+
+      <!-- NCR Location Context -->
+      <div class="hidden md:flex items-center gap-2 pl-4 border-l border-[#E8E4DA] text-xs font-semibold text-[#666158]">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Gurugram &amp; Delhi NCR Hubs</span>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-3">
+      <!-- Language Pill -->
+      <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F2EA] border border-[#E8E4DA] text-xs font-semibold text-[#17141F]">
+        <span class="text-[#4A2FBD]">EN</span>
+        <span class="text-[#A5A096]">|</span>
+        <span class="font-hindi text-[#666158] hover:text-[#17141F] cursor-pointer">हिन्दी</span>
+      </div>
+
+      <!-- Emergency Helpline 112 Badge -->
+      <div class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-xs font-bold text-red-700">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>Emergency 112</span>
+      </div>
+
+      <!-- Notification Bell -->
+      <button class="w-10 h-10 rounded-full flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors relative" aria-label="Notifications">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-[#C2185B] rounded-full"></span>
+      </button>
+
+      <!-- User Avatar / Profile -->
+      <div class="flex items-center gap-2 pl-2">
+        <div class="w-10 h-10 rounded-full bg-[#4A2FBD] text-white font-bold flex items-center justify-center ring-2 ring-[#D7F26B] shadow-sm text-sm">
+          AD
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Body Shell: Left Icon Nav Rail + 3-Pane Chat Layout -->
+  <div class="flex-1 flex overflow-hidden max-w-[1440px] w-full mx-auto" style="height: calc(100vh - 72px);">
+
+    <!-- Left Icon Nav Rail (Starts immediately with first nav item, NO duplicate logo) -->
+    <aside class="w-[72px] bg-white border-r border-[#E8E4DA] flex flex-col items-center py-5 shrink-0 z-20 justify-between">
+      <nav class="flex flex-col items-center gap-4 w-full">
+        <!-- Explore / Discover -->
+        <a href="#" class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group relative" title="Explore">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+          <span class="text-[10px] font-semibold mt-1">Explore</span>
+        </a>
+
+        <!-- Rishtas (ACTIVE STATE) -->
+        <a href="#" class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center bg-[#4A2FBD] text-white shadow-md relative group transition-transform" title="Rishtas">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+          </svg>
+          <span class="text-[10px] font-bold mt-1 text-[#D7F26B]">Rishtas</span>
+          <!-- Unread pill badge -->
+          <span class="absolute -top-1 -right-1 px-1.5 py-0.5 bg-[#C2185B] text-white font-extrabold text-[10px] rounded-full border-2 border-white leading-none shadow-sm">3</span>
+        </a>
+
+        <!-- My Flat -->
+        <a href="#" class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group" title="My Flat">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          <span class="text-[10px] font-semibold mt-1">My Flat</span>
+        </a>
+
+        <!-- Profile -->
+        <a href="#" class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[#666158] hover:bg-[#F5F2EA] hover:text-[#17141F] transition-all group" title="Profile">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <span class="text-[10px] font-semibold mt-1">Profile</span>
+        </a>
+      </nav>
+
+      <!-- Bottom Help & Guidelines -->
+      <div class="flex flex-col items-center gap-3 w-full">
+        <a href="#" class="w-10 h-10 rounded-xl flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors" title="Safety Guidelines">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- 3-Pane App Content Canvas -->
+    <main class="flex-1 flex overflow-hidden bg-[#F5F2EA]">
+
+      <!-- ========================================== -->
+      <!-- PANE 1: LEFT PANE (320px) — "Rishtas" List -->
+      <!-- ========================================== -->
+      <section class="w-[320px] bg-white border-r border-[#E8E4DA] flex flex-col shrink-0 h-full">
+        <!-- Rishtas Header & Search -->
+        <div class="p-4 border-b border-[#E8E4DA] bg-white shrink-0">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-extrabold text-[#17141F] tracking-tight">Rishtas</h1>
+              <span class="px-2 py-0.5 rounded-full bg-[#F5F2EA] text-[#4A2FBD] font-bold text-xs whitespace-nowrap">4 Active</span>
+            </div>
+            <!-- Filter Action -->
+            <button class="p-1.5 text-[#666158] hover:text-[#17141F] rounded-lg hover:bg-[#F5F2EA]" title="Filter Rishtas">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            </button>
+          </div>
+
+          <!-- Pill Search Input -->
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A5A096]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+            <input type="text" placeholder="Search flatmates or areas..." class="w-full pl-9 pr-4 py-2 bg-[#F5F2EA] rounded-full border border-transparent focus:border-[#4A2FBD] focus:bg-white text-xs font-medium text-[#17141F] placeholder-[#8F8A7E] outline-none transition-all">
+          </div>
+        </div>
+
+        <!-- Scrollable Rishtas Rows (72px fixed height rows) -->
+        <div class="flex-1 overflow-y-auto custom-scroll divide-y divide-[#F0ECE1]">
+
+          <!-- Row 1: Meera (Active Selected Row) -->
+          <div class="h-[76px] px-3.5 py-3 bg-[#F0ECFC] border-l-4 border-[#4A2FBD] flex items-center gap-3 cursor-pointer transition-colors relative">
+            <!-- 48px avatar with green verified ring -->
+            <div class="relative w-12 h-12 shrink-0">
+              <img src="../../../assets/img/d1574887bdec.jpg" alt="Meera" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500 shadow-sm">
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+                <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              </span>
+            </div>
+
+            <!-- Middle Text & Status -->
+            <div class="flex-1 min-w-0 pr-1">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="font-bold text-sm text-[#17141F] break-words">Meera</span>
+                <span class="text-[11px] font-semibold text-[#4A2FBD] whitespace-nowrap">10:42 AM</span>
+              </div>
+              <div class="flex items-center justify-between gap-1">
+                <p class="text-xs text-[#17141F] font-semibold break-words leading-tight">Sounds great, a café near Galleria Market?</p>
+                <!-- Purple unread dot -->
+                <span class="w-2 h-2 rounded-full bg-[#4A2FBD] shrink-0"></span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-[10px] font-bold whitespace-nowrap">Chatting</span>
+                <span class="text-[10px] text-[#666158] break-words">DLF Phase 2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Kabir (Met) -->
+          <div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+            <!-- 48px avatar with green verified ring -->
+            <div class="relative w-12 h-12 shrink-0">
+              <img src="../../../assets/img/c8b194dc2f8f.jpg" alt="Kabir" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500">
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+                <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              </span>
+            </div>
+
+            <div class="flex-1 min-w-0 pr-1">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="font-bold text-sm text-[#17141F] break-words">Kabir</span>
+                <span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">Yesterday</span>
+              </div>
+              <p class="text-xs text-[#666158] break-words leading-tight">Nice meeting you at the café!</p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold whitespace-nowrap">Met</span>
+                <span class="text-[10px] text-[#666158] break-words">Hauz Khas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Aanya (Rishta Pakka) -->
+          <div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+            <!-- 48px avatar with green verified ring -->
+            <div class="relative w-12 h-12 shrink-0">
+              <img src="../../../assets/img/395c7c65f668.jpg" alt="Aanya" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500">
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+                <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              </span>
+            </div>
+
+            <div class="flex-1 min-w-0 pr-1">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="font-bold text-sm text-[#17141F] break-words">Aanya</span>
+                <span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">2d ago</span>
+              </div>
+              <p class="text-xs text-[#666158] break-words leading-tight">Sent the landlord our agreement copy.</p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#D7F26B] text-[#17141F] text-[10px] font-extrabold whitespace-nowrap">Rishta pakka ✓</span>
+                <span class="text-[10px] text-[#666158] break-words">Sector 54</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 4: Rohan (Chatting) -->
+          <div class="h-[76px] px-3.5 py-3 bg-white hover:bg-[#FBF9F4] flex items-center gap-3 cursor-pointer transition-colors">
+            <!-- 48px avatar with green verified ring -->
+            <div class="relative w-12 h-12 shrink-0">
+              <img src="../../../assets/img/aca198a3be19.jpg" alt="Rohan" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500">
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
+                <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              </span>
+            </div>
+
+            <div class="flex-1 min-w-0 pr-1">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="font-bold text-sm text-[#17141F] break-words">Rohan</span>
+                <span class="text-[11px] font-medium text-[#8F8A7E] whitespace-nowrap">3d ago</span>
+              </div>
+              <p class="text-xs text-[#666158] break-words leading-tight">Yes, master bedroom has a balcony.</p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-[10px] font-bold whitespace-nowrap">Chatting</span>
+                <span class="text-[10px] text-[#666158] break-words">Sector 56</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- safety session Trust Note in Left Pane Footer -->
+        <div class="p-3 bg-[#FAF8F2] border-t border-[#E8E4DA] text-[11px] text-[#666158] flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span class="leading-tight">All profiles government DigiLocker verified. Broker-free zone.</span>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- PANE 2: CENTRE PANE — Chat with Meera      -->
+      <!-- ========================================== -->
+      <section class="flex-1 flex flex-col h-full bg-[#F5F2EA] min-w-0 overflow-hidden border-r border-[#E8E4DA]">
+
+        <!-- Chat Header -->
+        <div class="h-[76px] bg-white border-b border-[#E8E4DA] px-6 flex items-center justify-between shrink-0 z-10">
+          <div class="flex items-center gap-3.5">
+            <div class="relative w-11 h-11 shrink-0">
+              <img src="../../../assets/img/d1574887bdec.jpg" alt="Meera" class="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500">
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-base font-extrabold text-[#17141F]">Meera, 28</h2>
+                <!-- Lime "94%" Match Pill -->
+                <span class="px-2.5 py-0.5 rounded-full bg-[#D7F26B] text-[#17141F] text-xs font-extrabold whitespace-nowrap shadow-xs">
+                  94% Match
+                </span>
+                <!-- "Chatting" Pill -->
+                <span class="px-2.5 py-0.5 rounded-full bg-[#E5F5D0] text-[#285700] text-xs font-bold whitespace-nowrap">
+                  Chatting
+                </span>
+              </div>
+              <p class="text-xs text-[#666158] font-medium mt-0.5">Sr. UX Designer @ DLF CyberCity · Looking in DLF Phase 2</p>
+            </div>
+          </div>
+
+          <!-- Header Actions (safety session button + Overflow Menu) -->
+          <div class="flex items-center gap-2">
+            <button class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F2EA] hover:bg-[#EAE5D8] border border-[#E8E4DA] text-xs font-bold text-[#17141F] transition-colors" title="Safety Details">
+              <svg class="w-3.5 h-3.5 text-[#4A2FBD]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Safety tools</span>
+            </button>
+            <button class="w-9 h-9 rounded-full flex items-center justify-center text-[#666158] hover:bg-[#F5F2EA] transition-colors" title="More Options">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step Timeline: "Chat ✓ → Verify ✓ → Meet first" -->
+        <div class="bg-white border-b border-[#E8E4DA] px-6 py-2.5 flex items-center justify-center shrink-0">
+          <div class="flex items-center gap-2 text-xs font-semibold">
+            <!-- Step 1 -->
+            <div class="flex items-center gap-1 text-[#4A2FBD]">
+              <span class="w-5 h-5 rounded-full bg-[#4A2FBD] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span class="font-bold">Chat</span>
+            </div>
+            <span class="text-[#A5A096]">→</span>
+
+            <!-- Step 2 -->
+            <div class="flex items-center gap-1 text-[#4A2FBD]">
+              <span class="w-5 h-5 rounded-full bg-[#4A2FBD] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span class="font-bold">Verify</span>
+            </div>
+            <span class="text-[#A5A096]">→</span>
+
+            <!-- Step 3 (Current Goal) -->
+            <div class="flex items-center gap-1 text-[#17141F]">
+              <span class="w-5 h-5 rounded-full bg-[#D7F26B] text-[#17141F] flex items-center justify-center text-[10px] font-extrabold ring-2 ring-[#4A2FBD]">3</span>
+              <span class="font-extrabold text-[#17141F]">Meet first</span>
+              <span class="text-[10px] font-medium text-[#666158] hidden md:inline">(Pehli Mulaqat)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages Area (Scrollable with 16px padding & 8px gap between same-sender bubbles) -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-4">
+
+          <!-- Time Separator -->
+          <div class="flex items-center justify-center my-1">
+            <span class="px-3 py-1 rounded-full bg-[#EAE5D8] text-[11px] font-semibold text-[#666158]">Today · October 24</span>
+          </div>
+
+          <!-- Received Message Group (Meera) -->
+          <div class="flex flex-col items-start gap-2 max-w-[70%]">
+            <div class="flex items-end gap-2">
+              <img src="../../../assets/img/d1574887bdec.jpg" alt="Meera" class="w-7 h-7 rounded-full object-cover shrink-0 mb-1">
+              <div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-bl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                Hi! Saw your profile — our office commutes match really well (I'm at DLF CyberPark too). Are you looking to move by the 1st of next month?
+              </div>
+            </div>
+            <div class="pl-9">
+              <div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-tl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                Also, my current 3BHK flatmate is transferring to Bangalore, so her private room with attached bath and balcony will be free.
+              </div>
+              <span class="text-[10px] font-semibold text-[#8F8A7E] ml-2 mt-1 block">10:28 AM</span>
+            </div>
+          </div>
+
+          <!-- Sent Message Group (User) -->
+          <div class="flex flex-col items-end gap-2 max-w-[70%] ml-auto">
+            <div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-br-sm shadow-sm text-sm leading-relaxed">
+              Hey Meera! Yes, exactly — 1st of next month works perfectly. I loved the unedited video walkthrough you uploaded for DLF Phase 2.
+            </div>
+            <div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-tr-sm shadow-sm text-sm leading-relaxed">
+              I generally sleep by 11:30 PM on weekdays and work hybrid (2 days WFH). Is the Wi-Fi stable for Zoom calls?
+            </div>
+            <span class="text-[10px] font-semibold text-[#8F8A7E] mr-2 block">10:34 AM · Sent</span>
+          </div>
+
+          <!-- Yellow System Warning Card -->
+          <div class="my-4 p-4 rounded-2xl bg-[#FEF9E7] border border-[#F5E296] text-[#7A5800] text-xs flex items-center gap-3.5 shadow-xs">
+            <div class="w-9 h-9 rounded-xl bg-[#F7DC6F] flex items-center justify-center shrink-0 text-[#7A5800]">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div class="flex-1">
+              <span class="font-bold block text-sm text-[#5B4200] mb-0.5">Flatrimony Zero-Token Rule</span>
+              <p class="leading-relaxed">Never pay a token or deposit before visiting the flat. Report if someone asks.</p>
+            </div>
+          </div>
+
+          <!-- Received Message Group (Meera) -->
+          <div class="flex flex-col items-start gap-2 max-w-[70%]">
+            <div class="flex items-end gap-2">
+              <img src="../../../assets/img/d1574887bdec.jpg" alt="Meera" class="w-7 h-7 rounded-full object-cover shrink-0 mb-1">
+              <div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-bl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">
+                Yes! We have a 300 Mbps fiber line with dual inverter DG backup, so power cuts never interrupt meetings.
+              </div>
+            </div>
+            <div class="pl-9">
+              <div class="bg-white text-[#17141F] p-4 rounded-2xl rounded-tl-sm border border-[#E8E4DA] shadow-xs text-sm leading-relaxed">Would you be open to doing a quick Pehli Mulaqat coffee first at a café near Galleria Market to see if our vibes match?</div>
+              <span class="text-[10px] font-semibold text-[#8F8A7E] ml-2 mt-1 block">10:39 AM</span>
+            </div>
+          </div>
+
+          <!-- Sent Message (User) -->
+          <div class="flex flex-col items-end gap-2 max-w-[70%] ml-auto">
+            <div class="bg-[#4A2FBD] text-white p-4 rounded-2xl rounded-br-sm shadow-sm text-sm leading-relaxed">Sounds great, 5 PM at a café near Galleria Market works for me!</div>
+            <span class="text-[10px] font-semibold text-[#8F8A7E] mr-2 block">10:42 AM · Delivered</span>
+          </div>
+
+          <!-- System Pill: "You shared your number · waiting for Meera" -->
+          <div class="flex justify-center my-3">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#EAE5D8] border border-[#DDD7C9] text-xs font-semibold text-[#544F46] shadow-2xs">
+              <svg class="w-4 h-4 text-[#4A2FBD]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+              <span>You shared your number · waiting for Meera</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Chat Composer Area -->
+        <div class="p-4 bg-white border-t border-[#E8E4DA] shrink-0">
+          <!-- Lime "Plan Pehli Mulaqat" Pill Action above composer -->
+          <div class="flex items-center justify-between mb-3">
+            <button class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D7F26B] hover:bg-[#C9E758] text-[#17141F] text-xs font-extrabold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <span>Plan Pehli Mulaqat</span>
+            </button>
+            <span class="text-[11px] font-medium text-[#666158]">Safety tools location broadcasting active</span>
+          </div>
+
+          <!-- Composer Input Pill with Attach & Send Button -->
+          <div class="flex items-center gap-2 bg-[#F5F2EA] rounded-full p-1.5 pl-4 border border-[#E8E4DA] focus-within:border-[#4A2FBD] focus-within:bg-white transition-all">
+            <button class="text-[#666158] hover:text-[#17141F] p-1" title="Attach picture or agreement">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+            </button>
+            <input type="text" placeholder="Write a message to Meera..." class="flex-1 bg-transparent border-none outline-none text-sm text-[#17141F] placeholder-[#8F8A7E] font-medium px-2">
+            <!-- Send Button -->
+            <button class="w-10 h-10 rounded-full bg-[#4A2FBD] hover:bg-[#3C24A0] text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-sm" title="Send Message">
+              <svg class="w-4 h-4 translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- PANE 3: RIGHT PANE (360px) — Rishta Report  -->
+      <!-- ========================================== -->
+      <aside class="w-[360px] bg-white border-l border-[#E8E4DA] p-5 flex flex-col shrink-0 h-full overflow-y-auto custom-scroll">
+
+        <!-- Header: "Rishta report" -->
+        <div class="flex items-center justify-between pb-3 border-b border-[#E8E4DA] mb-4">
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-extrabold text-[#17141F] tracking-tight">Rishta report</h3>
+            <span class="w-2 h-2 rounded-full bg-[#4A2FBD]"></span>
+          </div>
+          <!-- Lime "94% match" pill -->
+          <span class="px-2.5 py-1 rounded-full bg-[#D7F26B] text-[#17141F] text-xs font-extrabold shadow-2xs whitespace-nowrap">
+            94% match
+          </span>
+        </div>
+
+        <!-- Co-living Compatibility Summary -->
+        <div class="mb-5">
+          <div class="flex items-center justify-between text-xs font-bold text-[#666158] mb-1.5">
+            <span>Overall Compatibility</span>
+            <span class="text-[#17141F]">High Sync (94%)</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-[#F5F2EA] overflow-hidden">
+            <div class="h-full bg-[#4A2FBD] rounded-full" style="width: 94%"></div>
+          </div>
+        </div>
+
+        <!-- Compatibility Breakdown: 3 Agreements + 1 Neutral Row -->
+        <div class="mb-6">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#666158] block mb-2.5">Agreements &amp; Habits</span>
+          <div class="space-y-2.5">
+
+            <!-- Agreement 1: Cleanliness & Chores -->
+            <div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+              <div class="flex-1 min-w-0">
+                <span class="text-xs font-bold text-[#17141F] block">Daily Housekeeping &amp; Cook</span>
+                <p class="text-[11px] text-[#666158] mt-0.5">Both prefer splitting daily cook and maid costs equally (₹2,500/mo).</p>
+              </div>
+            </div>
+
+            <!-- Agreement 2: Sleep & Quiet Hours -->
+            <div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+              <div class="flex-1 min-w-0">
+                <span class="text-xs font-bold text-[#17141F] block">Sleep Sync: 11:00 PM – 7:30 AM</span>
+                <p class="text-[11px] text-[#666158] mt-0.5">Identical quiet hours and work-from-home acoustic rhythm.</p>
+              </div>
+            </div>
+
+            <!-- Agreement 3: Food & Kitchen -->
+            <div class="p-3 rounded-xl bg-[#FBF9F4] border border-[#E8E4DA] flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                ✓
+              </span>
+              <div class="flex-1 min-w-0">
+                <span class="text-xs font-bold text-[#17141F] block">Diet: Pure Veg &amp; Non-Veg OK</span>
+                <p class="text-[11px] text-[#666158] mt-0.5">Separate designated refrigerator shelves and cookware respect.</p>
+              </div>
+            </div>
+
+            <!-- Neutral Row: Different on pets -->
+            <div class="p-3 rounded-xl bg-[#FAF8F2] border border-[#E0DBCF] flex items-start gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-[#EAE5D8] text-[#666158] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                •
+              </span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-[#17141F]">Different on pets</span>
+                  <span class="text-[10px] font-semibold text-[#8F8A7E] bg-white px-1.5 py-0.5 rounded border border-[#E8E4DA]">Neutral</span>
+                </div>
+                <p class="text-[11px] text-[#666158] mt-0.5">Meera fosters Indie dogs on weekends; you prefer pet-free common spaces. Discuss at coffee.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Small Room Card -->
+        <div class="mt-auto pt-3 border-t border-[#E8E4DA]">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#666158] block mb-2.5">Attached Listing</span>
+          <div class="rounded-2xl border border-[#E8E4DA] bg-white overflow-hidden shadow-xs hover:border-[#4A2FBD] transition-all group">
+            <div class="relative h-28 w-full overflow-hidden">
+              <img src="../../../assets/img/7ee54b9ed54f.jpg" alt="Room in DLF Phase 2" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 text-[#17141F] text-[10px] font-bold shadow-xs">
+                Private Room in 3BHK
+              </span>
+              <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-[#4A2FBD] text-white text-[10px] font-bold shadow-xs">
+                Video Verified
+              </span>
+            </div>
+            <div class="p-3.5">
+              <div class="flex items-baseline justify-between mb-1">
+                <h4 class="font-extrabold text-sm text-[#17141F] group-hover:text-[#4A2FBD] transition-colors">Room in 3BHK · Cyber City</h4>
+              </div>
+              <p class="text-xs text-[#666158] mb-2">DLF Phase 2, Gurugram · 18 min to desk</p>
+              <div class="flex items-center justify-between pt-2 border-t border-[#F0ECE1]">
+                <div>
+                  <span class="text-xs text-[#666158]">All-in share</span>
+                  <p class="text-sm font-extrabold text-[#4A2FBD]">₹21,500/mo all-in</p>
+                </div>
+                <a href="#" class="px-3 py-1.5 rounded-full bg-[#F5F2EA] hover:bg-[#D7F26B] hover:text-[#17141F] text-[#4A2FBD] text-xs font-bold transition-colors">
+                  View flat
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification Stamp -->
+        <div class="mt-4 pt-3 flex items-center justify-between text-[11px] text-[#666158]">
+          <div class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>
+            <span>DigiLocker verified</span>
+          </div>
+          <span class="font-medium text-[#8F8A7E]">ID: FLT-9428</span>
+        </div>
+
+      </aside>
+
+    </main>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+</body></html>

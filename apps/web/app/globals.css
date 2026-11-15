@@ -1,0 +1,95 @@
+/* Uses only design-token CSS variables (packages/design-tokens). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-latin), var(--font-family-latin);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+body[data-locale='hi'] {
+  font-family: var(--font-devanagari), var(--font-family-devanagari);
+  line-height: var(--font-devanagari-line-height-ratio);
+}
+
+.shell {
+  max-width: var(--layout-web-content-max);
+  margin: 0 auto;
+  padding: var(--space-16) var(--layout-web-side-padding);
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  margin: 0 0 var(--space-6);
+}
+
+.tagline {
+  font-size: clamp(32px, 5vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+}
+
+.lead {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-8);
+}
+
+.langs {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch-min-web);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background var(--motion-fast) cubic-bezier(0.2, 0, 0, 1);
+}
+
+.pill:focus-visible {
+  outline: var(--border-width-focus) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.primary {
+  background: var(--semantic-action-primary-bg);
+  color: var(--semantic-action-primary-fg);
+}
+
+.primary:hover {
+  background: var(--color-brand-primary-pressed);
+}
+
+.secondary {
+  background: var(--semantic-action-secondary-bg);
+  color: var(--semantic-action-secondary-fg);
+  border: var(--border-width-default) solid var(--semantic-action-secondary-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}

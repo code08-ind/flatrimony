@@ -1,0 +1,615 @@
+// Generated from tokens.json by scripts/generate.ts. Do not edit; edit tokens.json instead.
+export const tokenTree = {
+  $description:
+    'Flatrimony design tokens (W3C Design Tokens format). Source: docs/06-ui-ux-design-standards.md §3. Edit here only; outputs are generated.',
+  color: {
+    $type: 'color',
+    brand: {
+      primary: {
+        $value: '#4A2FBD',
+        $description: 'Jamun purple: primary buttons, active tab, links on light, brand moments',
+      },
+      primaryPressed: {
+        $value: '#3A2496',
+        $description: 'Pressed/hover state of primary',
+      },
+      primarySubtle: {
+        $value: '#ECE6FF',
+        $description: 'Tinted backgrounds, info tiles, sent chat bubbles',
+      },
+      lavender: {
+        $value: '#B9A4FF',
+        $description: 'Decorative bento tiles; dark text only, never white text',
+      },
+    },
+    accent: {
+      lime: {
+        $value: '#D7F26B',
+        $description:
+          'Matcha lime: fill only with dark or purple text; never text or thin lines on light',
+      },
+      green: {
+        $value: '#1B7F4B',
+        $description: 'Verified, confirmed, success',
+      },
+      greenText: {
+        $value: '#166B40',
+        $description: 'Green text on tinted green backgrounds',
+      },
+      greenSubtle: {
+        $value: '#E6F5EC',
+        $description: 'Verified/confirmed chip background',
+      },
+      yellow: {
+        $value: '#FFC53D',
+        $description: 'Highlights, pending, Move Pass (always with dark text)',
+      },
+      yellowText: {
+        $value: '#8A5A00',
+        $description: 'Warning text',
+      },
+      yellowSubtle: {
+        $value: '#FFF4D6',
+        $description: 'Warning backgrounds',
+      },
+      blue: {
+        $value: '#2459C7',
+        $description: 'Links, info, commute',
+      },
+      blueSubtle: {
+        $value: '#E8EFFC',
+        $description: 'Info backgrounds',
+      },
+    },
+    match: {
+      likePink: {
+        $value: '#C2185B',
+        $description: 'Rishta pink: Like/heart button and heart icons ONLY',
+      },
+      likeSubtle: {
+        $value: '#FDE7EF',
+        $description: 'Like confirmation backgrounds',
+      },
+    },
+    danger: {
+      $value: '#C62828',
+      $description: 'Destructive actions, SOS, errors',
+    },
+    dangerSubtle: {
+      $value: '#FDECEC',
+      $description: 'Error backgrounds',
+    },
+    white: {
+      $value: '#FFFFFF',
+    },
+    bg: {
+      app: {
+        $value: '#F5F2EA',
+        $description: 'Matcha milk, warm off-white app background',
+      },
+      surface: {
+        $value: '#FFFFFF',
+        $description: 'Cards, sheets, inputs',
+      },
+      immersive: {
+        $value: '#17131F',
+        $description: 'Behind photos, immersive screens',
+      },
+    },
+    text: {
+      primary: {
+        $value: '#17141F',
+      },
+      secondary: {
+        $value: '#5E584A',
+      },
+      disabled: {
+        $value: '#8A8577',
+        $description: '>= 18 px or non-essential only',
+      },
+    },
+    border: {
+      default: {
+        $value: '#E4DFD2',
+        $description: 'Decorative dividers and card borders',
+      },
+      strong: {
+        $value: '#8C8676',
+        $description: 'Input borders, outlined chips',
+      },
+    },
+    focus: {
+      $value: '{color.brand.primary}',
+      $description: '2 px focus ring + 2 px offset',
+    },
+  },
+  semantic: {
+    $type: 'color',
+    action: {
+      primary: {
+        bg: {
+          $value: '{color.brand.primary}',
+        },
+        fg: {
+          $value: '{color.white}',
+        },
+      },
+      secondary: {
+        bg: {
+          $value: '{color.bg.surface}',
+        },
+        fg: {
+          $value: '{color.text.primary}',
+        },
+        border: {
+          $value: '{color.border.strong}',
+        },
+      },
+      destructive: {
+        bg: {
+          $value: '{color.danger}',
+        },
+        fg: {
+          $value: '{color.white}',
+        },
+      },
+    },
+    status: {
+      verified: {
+        bg: {
+          $value: '{color.accent.greenSubtle}',
+        },
+        fg: {
+          $value: '{color.accent.greenText}',
+        },
+      },
+      pending: {
+        bg: {
+          $value: '{color.accent.yellowSubtle}',
+        },
+        fg: {
+          $value: '{color.accent.yellowText}',
+        },
+      },
+      error: {
+        bg: {
+          $value: '{color.dangerSubtle}',
+        },
+        fg: {
+          $value: '{color.danger}',
+        },
+      },
+      info: {
+        bg: {
+          $value: '{color.accent.blueSubtle}',
+        },
+        fg: {
+          $value: '{color.accent.blue}',
+        },
+      },
+    },
+    selection: {
+      bg: {
+        $value: '{color.accent.lime}',
+      },
+      fg: {
+        $value: '{color.text.primary}',
+      },
+    },
+    match: {
+      score: {
+        bg: {
+          $value: '{color.accent.lime}',
+        },
+        fg: {
+          $value: '{color.text.primary}',
+        },
+      },
+      like: {
+        $value: '{color.match.likePink}',
+        $description: 'The only semantic use of Rishta pink',
+      },
+      pass: {
+        $value: '{color.text.secondary}',
+      },
+      superLike: {
+        $value: '{color.accent.yellow}',
+      },
+    },
+    tile: {
+      bentoPrimary: {
+        $value: '{color.brand.primary}',
+        $description: 'White/lime content',
+      },
+      bentoLavender: {
+        $value: '{color.brand.lavender}',
+        $description: 'Dark content',
+      },
+    },
+  },
+  glass: {
+    dark: {
+      fill: {
+        $type: 'color',
+        $value: 'rgba(23,19,31,0.45)',
+      },
+      blur: {
+        $type: 'number',
+        $value: 24,
+      },
+      border: {
+        $type: 'color',
+        $value: 'rgba(255,255,255,0.18)',
+      },
+      fallback: {
+        $type: 'color',
+        $value: 'rgba(23,19,31,0.70)',
+        $description: 'When blur is unsupported (low-end Android)',
+      },
+    },
+    light: {
+      fill: {
+        $type: 'color',
+        $value: 'rgba(255,255,255,0.72)',
+      },
+      blur: {
+        $type: 'number',
+        $value: 20,
+      },
+      border: {
+        $type: 'color',
+        $value: 'rgba(255,255,255,0.6)',
+      },
+    },
+  },
+  scrim: {
+    photo: {
+      from: {
+        $type: 'color',
+        $value: 'rgba(23,19,31,0)',
+      },
+      to: {
+        $type: 'color',
+        $value: 'rgba(23,19,31,0.85)',
+      },
+      coverage: {
+        $type: 'number',
+        $value: 0.5,
+        $description: 'Bottom 50% of the photo',
+      },
+    },
+  },
+  font: {
+    family: {
+      $type: 'fontFamily',
+      latin: {
+        $value: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
+      devanagari: {
+        $value: ['Noto Sans Devanagari', 'Plus Jakarta Sans', 'sans-serif'],
+      },
+    },
+    weight: {
+      $type: 'fontWeight',
+      regular: {
+        $value: 400,
+      },
+      medium: {
+        $value: 500,
+      },
+      semibold: {
+        $value: 600,
+      },
+      bold: {
+        $value: 700,
+      },
+      extrabold: {
+        $value: 800,
+      },
+    },
+    devanagariLineHeightRatio: {
+      $type: 'number',
+      $value: 1.6,
+      $description: 'Hindi line height = size x 1.6 minimum',
+    },
+  },
+  typography: {
+    $type: 'typography',
+    hero: {
+      $value: {
+        fontSize: 40,
+        lineHeight: 44,
+        fontWeight: 800,
+        letterSpacing: -0.02,
+      },
+    },
+    display: {
+      $value: {
+        fontSize: 32,
+        lineHeight: 38,
+        fontWeight: 800,
+        letterSpacing: -0.015,
+      },
+    },
+    h1: {
+      $value: {
+        fontSize: 26,
+        lineHeight: 32,
+        fontWeight: 700,
+        letterSpacing: -0.01,
+      },
+    },
+    h2: {
+      $value: {
+        fontSize: 20,
+        lineHeight: 26,
+        fontWeight: 700,
+        letterSpacing: -0.005,
+      },
+    },
+    h3: {
+      $value: {
+        fontSize: 17,
+        lineHeight: 24,
+        fontWeight: 600,
+        letterSpacing: 0,
+      },
+    },
+    bodyLg: {
+      $value: {
+        fontSize: 16,
+        lineHeight: 24,
+        fontWeight: 400,
+        letterSpacing: 0,
+      },
+    },
+    body: {
+      $value: {
+        fontSize: 15,
+        lineHeight: 22,
+        fontWeight: 400,
+        letterSpacing: 0,
+      },
+    },
+    label: {
+      $value: {
+        fontSize: 14,
+        lineHeight: 20,
+        fontWeight: 600,
+        letterSpacing: 0,
+      },
+    },
+    caption: {
+      $value: {
+        fontSize: 13,
+        lineHeight: 18,
+        fontWeight: 500,
+        letterSpacing: 0,
+      },
+    },
+    micro: {
+      $value: {
+        fontSize: 12,
+        lineHeight: 16,
+        fontWeight: 600,
+        letterSpacing: 0.02,
+      },
+    },
+  },
+  space: {
+    '0': {
+      $value: 0,
+    },
+    '1': {
+      $value: 4,
+    },
+    '2': {
+      $value: 8,
+    },
+    '3': {
+      $value: 12,
+    },
+    '4': {
+      $value: 16,
+    },
+    '5': {
+      $value: 20,
+    },
+    '6': {
+      $value: 24,
+    },
+    '8': {
+      $value: 32,
+    },
+    '10': {
+      $value: 40,
+    },
+    '12': {
+      $value: 48,
+    },
+    '16': {
+      $value: 64,
+    },
+    $type: 'dimension',
+  },
+  layout: {
+    $type: 'dimension',
+    screenPaddingMobile: {
+      $value: 20,
+    },
+    webContentMax: {
+      $value: 1200,
+    },
+    webSidePadding: {
+      $value: 32,
+    },
+    sectionGap: {
+      $value: 32,
+    },
+    cardPadding: {
+      $value: 20,
+    },
+    dockReserve: {
+      $value: 96,
+    },
+  },
+  radius: {
+    $type: 'dimension',
+    sm: {
+      $value: 12,
+      $description: 'Inputs',
+    },
+    md: {
+      $value: 16,
+      $description: 'List cards, small tiles',
+    },
+    lg: {
+      $value: 24,
+      $description: 'Bento tiles, bottom sheets (top corners)',
+    },
+    xl: {
+      $value: 32,
+      $description: 'Immersive deck cards',
+    },
+    full: {
+      $value: 9999,
+      $description: 'All buttons, chips, dock, avatars, FAB, score pill',
+    },
+  },
+  borderWidth: {
+    $type: 'dimension',
+    default: {
+      $value: 1,
+    },
+    focus: {
+      $value: 2,
+    },
+  },
+  elevation: {
+    '1': {
+      $value: {
+        offsetX: 0,
+        offsetY: 1,
+        blur: 2,
+        spread: 0,
+        color: 'rgba(28,27,41,0.06)',
+      },
+    },
+    '2': {
+      $value: {
+        offsetX: 0,
+        offsetY: 4,
+        blur: 12,
+        spread: 0,
+        color: 'rgba(28,27,41,0.10)',
+      },
+    },
+    '3': {
+      $value: {
+        offsetX: 0,
+        offsetY: 12,
+        blur: 32,
+        spread: 0,
+        color: 'rgba(28,27,41,0.16)',
+      },
+    },
+    $type: 'shadow',
+  },
+  size: {
+    $type: 'dimension',
+    touchMin: {
+      $value: 48,
+      $description: '48 dp Android; 44 px web',
+    },
+    touchMinWeb: {
+      $value: 44,
+    },
+    icon: {
+      sm: {
+        $value: 16,
+      },
+      md: {
+        $value: 20,
+      },
+      lg: {
+        $value: 24,
+      },
+    },
+    avatar: {
+      sm: {
+        $value: 32,
+      },
+      md: {
+        $value: 40,
+      },
+      lg: {
+        $value: 56,
+      },
+      xl: {
+        $value: 96,
+      },
+    },
+    button: {
+      primary: {
+        $value: 48,
+      },
+      compact: {
+        $value: 40,
+      },
+      primaryMobileFullWidth: {
+        $value: 56,
+      },
+    },
+    dock: {
+      $value: 64,
+    },
+  },
+  breakpoint: {
+    $type: 'dimension',
+    sm: {
+      $value: 600,
+    },
+    md: {
+      $value: 840,
+    },
+    lg: {
+      $value: 1200,
+    },
+  },
+  motion: {
+    fast: {
+      $type: 'duration',
+      $value: 120,
+      $description: 'Press states, chips',
+    },
+    base: {
+      $type: 'duration',
+      $value: 200,
+      $description: 'Sheets, toasts, page transitions',
+    },
+    slow: {
+      $type: 'duration',
+      $value: 320,
+      $description: 'Match screen entrance',
+    },
+    easing: {
+      $type: 'cubicBezier',
+      standard: {
+        $value: [0.2, 0, 0, 1],
+      },
+      emphasized: {
+        $value: [0.2, 0, 0, 1],
+      },
+    },
+    spring: {
+      card: {
+        $type: 'spring',
+        $value: {
+          damping: 18,
+          stiffness: 180,
+        },
+        $description: 'Deck card release',
+      },
+    },
+  },
+} as const;

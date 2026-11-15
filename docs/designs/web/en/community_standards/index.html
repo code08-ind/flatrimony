@@ -1,0 +1,429 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>Flatrimony</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@700;800&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary-container": "#586a00", "secondary-container": "#d1ec65", "primary-container": "#4a2fbd", "surface-container-highest": "#e7e0f0", "surface": "#fdf7ff", "on-tertiary-fixed": "#20005e", "on-surface": "#1d1a25", "on-secondary": "#ffffff", "primary": "#3204a7", "inverse-on-surface": "#f5eefe", "secondary-fixed": "#d4ee68", "on-primary-container": "#beb3ff", "on-primary-fixed": "#1a0063", "on-error-container": "#93000a", "surface-container-lowest": "#ffffff", "on-surface-variant": "#484554", "inverse-primary": "#c8bfff", "tertiary-container": "#513d90", "on-primary": "#ffffff", "inverse-surface": "#322f3b", "on-tertiary": "#ffffff", "on-error": "#ffffff", "primary-fixed-dim": "#c8bfff", "surface-container-low": "#f8f1ff", "surface-variant": "#e7e0f0", "on-tertiary-fixed-variant": "#4c388b", "on-background": "#1d1a25", "surface-container": "#f2ebfb", "on-secondary-fixed": "#181e00", "surface-tint": "#5d46d0", "tertiary": "#3a2478", "on-primary-fixed-variant": "#4528b8", "outline-variant": "#c9c4d6", "error": "#ba1a1a", "surface-bright": "#fdf7ff", "tertiary-fixed-dim": "#cdbdff", "error-container": "#ffdad6", "secondary-fixed-dim": "#b8d24f", "primary-fixed": "#e5deff", "outline": "#787585", "surface-dim": "#ded7e7", "on-secondary-fixed-variant": "#3f4c00", "secondary": "#546500", "background": "#fdf7ff", "surface-container-high": "#ede5f5", "on-tertiary-container": "#c3b1ff", "tertiary-fixed": "#e8deff" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "gutter": "1.25rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-md": "1rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "space-xl": "2.5rem", "margin": "2rem", "margin-mobile": "1rem" }, "fontFamily": { "body-sm": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "headline-sm": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "label-md": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "headline-lg-mobile": ["Space Grotesk"], "body-md": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "label-lg": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "display-lg-mobile": ["Space Grotesk"], "body-lg": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "label-sm": ["Plus Jakarta Sans", "Noto Sans Devanagari", "sans-serif"], "headline-lg": ["Space Grotesk"], "display-lg": ["Space Grotesk"], "brand": ["'Plus Jakarta Sans'", "sans-serif"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["15px", { "lineHeight": "24px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }] } } } };</script><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+</head><body class="bg-[#F5F2EA] font-body-md text-body-md text-on-surface font-brand"><header class="fixed top-0 left-0 right-0 w-full z-50 bg-[#F5F2EA]/90 backdrop-blur-md border-b border-[#17141F]/[0.08]"><div class="h-20 max-w-[1200px] mx-auto px-8 flex items-center justify-between gap-4"><a class="flex items-center gap-[10px] text-decoration-none shrink-0" data-path="home" href="#"><svg aria-label="Flatrimony" class="shrink-0" height="40" role="img" viewBox="0 0 96 96" width="40" xmlns="http://www.w3.org/2000/svg"><rect fill="#4A2FBD" height="96" rx="28" width="96"></rect><path d="M48 17.5c1.2 0 2.3.4 3.2 1.2l26.3 22.4c2.1 1.8.8 5.2-1.9 5.2H74v25.2c0 3.9-3.1 7-7 7H29c-3.9 0-7-3.1-7-7V46.3h-1.6c-2.7 0-4-3.4-1.9-5.2l26.3-22.4c.9-.8 2-1.2 3.2-1.2z" fill="#D7F26B"></path><circle cx="41" cy="57" fill="none" r="9.5" stroke="#4A2FBD" stroke-width="5"></circle><circle cx="55" cy="57" fill="none" r="9.5" stroke="#D7F26B" stroke-width="9"></circle><circle cx="55" cy="57" fill="none" r="9.5" stroke="#4A2FBD" stroke-width="5"></circle><path d="M44.86 48.32A9.5 9.5 0 0 1 50.04 54.06" fill="none" stroke="#D7F26B" stroke-width="9"></path><path d="M43.30 47.78A9.5 9.5 0 0 1 50.45 56.01" fill="none" stroke="#4A2FBD" stroke-width="5"></path><path d="M77 13l1.6 4.4L83 19l-4.4 1.6L77 25l-1.6-4.4L71 19l4.4-1.6z" fill="#FFFFFF"></path></svg><span class="font-brand font-extrabold text-[24px] leading-none tracking-[-0.03em] text-[#17141F]">Flatrimony</span></a><nav class="hidden lg:flex items-center gap-space-lg" data-active-classes="text-primary font-bold"><a class="text-on-surface-variant hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="how-it-works" href="#">How it works</a><a class="text-on-surface-variant hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="safety" href="#">Safety</a><a class="text-on-surface-variant hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="for-room-owners" href="#">For room owners</a><a class="text-on-surface-variant hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="areas" href="#">Areas</a></nav><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center bg-surface-container-lowest/80 rounded-full px-space-sm py-1 border border-[#17141F]/[0.08] font-label-sm text-label-sm text-on-surface-variant"><span class="px-2 py-0.5 rounded-full font-bold text-on-surface">EN</span><span class="text-outline-variant">|</span><span class="px-2 py-0.5 rounded-full hover:text-on-surface cursor-pointer transition-colors">हिन्दी</span></div><a class="inline-flex items-center justify-center bg-primary text-on-primary font-label-lg text-label-lg px-space-lg py-2.5 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-all shadow-[0_4px_20px_-2px_rgba(23,20,31,0.08)]" data-path="waitlist" href="#">Join the waitlist</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 bg-[#F5F2EA] min-h-[calc(100vh-80px)]"><div class="flex flex-col w-full">
+<!-- Content Canvas Container -->
+<div class="max-w-[1200px] w-full mx-auto px-8 py-10">
+<!-- Breadcrumb & Header Meta -->
+<div class="flex flex-col gap-3 mb-8">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">Home › Legal</div>
+<h1 class="font-display-lg text-display-lg text-on-surface tracking-[-0.03em] font-extrabold m-0">
+        Community Standards
+      </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mt-1">
+        How we keep Flatrimony real, safe and broker-free across Delhi NCR.
+      </p>
+<div class="flex flex-wrap items-center gap-3 text-on-surface-variant font-label-sm text-label-sm mt-1">
+<span class="flex items-center gap-1.5 bg-surface-container px-3 py-1 rounded-full font-semibold text-on-surface"><svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Last updated: [DD Month YYYY]</span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<span>Effective immediately for all members</span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<span class="inline-flex items-center gap-1 font-bold text-primary">
+<svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Zero Brokerage Mandate
+        </span>
+</div>
+</div>
+<!-- Draft Legal Warning Banner -->
+<div class="w-full bg-[#FFF4D6] rounded-2xl p-5 mb-10 flex items-start gap-4 shadow-sm">
+<div class="w-8 h-8 rounded-full bg-[#FFE494] text-[#8A5A00] flex items-center justify-center shrink-0 mt-0.5">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>
+</div>
+<div class="flex flex-col gap-0.5">
+<h2 class="font-label-lg text-label-lg font-bold text-[#8A5A00]">
+          Draft — Operational Beta Policy
+        </h2>
+<p class="font-body-sm text-body-sm text-[#8A5A00] leading-relaxed">
+          This document is pending final regulatory legal review and outlines our active operating principles, member code of conduct, and disciplinary actions enforced during our current Delhi NCR private beta.
+        </p>
+</div>
+</div>
+<!-- Two-Column Editorial Layout -->
+<div class="flex flex-col lg:flex-row items-start gap-8 w-full">
+<!-- Left Rail: Sticky Navigation (280px) -->
+<aside class="w-full lg:w-[280px] shrink-0 sticky top-28 flex flex-col gap-5">
+<!-- Table of Contents Card -->
+<nav aria-label="Table of Contents" class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold px-2">
+            On this page
+          </span>
+<div class="flex flex-col gap-1 text-on-surface font-label-md text-label-md">
+<a class="toc-link flex items-center px-3 py-2 rounded-xl transition-all text-on-surface-variant hover:bg-surface-container" href="#section-1">
+              1. Be Real
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-2">
+              2. Flatmates, Not Dating
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-3">
+              3. No Brokers or Landlords
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-4">
+              4. Never Ask for Advance Money
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-5">
+              5. Respect &amp; Fair Preferences
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-6">
+              6. Safety &amp; Protected Spaces
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-7">
+              7. Reporting &amp; Response Times
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all text-on-surface-variant hover:bg-surface-container" href="#section-8">
+              8. Enforcement Escalation Ladder
+            </a>
+<a class="toc-link flex items-center px-3 py-2 rounded-xl hover:text-on-surface transition-all bg-[#F0ECFC] text-primary font-bold" href="#section-9">
+              9. Appeals Process
+            </a>
+</div>
+</nav>
+<!-- Emergency Support Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+<div class="flex items-center gap-2 text-error font-label-sm text-label-sm font-bold uppercase tracking-wider">
+<svg class="w-4 h-4 text-error" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+            Emergency Incident
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            For imminent bodily harm, stalking, or domestic emergencies, dial national emergency <strong class="text-on-surface">112</strong> immediately.
+          </p>
+<a class="inline-flex items-center gap-1.5 text-primary hover:text-primary-container font-label-md text-label-md font-bold transition-colors pt-1" href="mailto:trust@flatrimony.in?subject=Emergency%20Safety%20Escalation">
+<span>Delhi NCR Safety Desk</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</a>
+</div>
+</aside>
+<!-- Right Column: Standards Document (720px equivalent desktop width) -->
+<main class="w-full flex-1 max-w-[840px] bg-surface-container-lowest rounded-[24px] p-8 sm:p-12 shadow-sm flex flex-col gap-12 text-on-surface">
+<!-- Section 1 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-1">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">01</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Be Real</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Authenticity is the bedrock of reliable shared living. Every individual listing a room or browsing for flatmates must maintain a singular, authentic persona backed by verified national credentials.
+          </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-primary font-bold font-label-md text-label-md">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+<span>DigiLocker Verification</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                To initiate conversations or schedule flat visits, your legal name and age must be corroborated via official government records. Unverified profiles cannot access member contact data.
+              </p>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface font-bold font-label-md text-label-md">
+<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+<span>Recent, Unaltered Imagery</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Photos must show you clearly and present real room conditions without deceptive filters or staging. Stock renders, avatars, and pictures of celebrities trigger automated removal.
+              </p>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container rounded-xl p-4 mt-1"><strong>Privacy:</strong> Only your verified first name and verified lifestyle biodata are shown publicly. Surnames, phone numbers, and company affiliations remain masked until you mutually accept an introduction request. Burner accounts are subject to automatic permanent hardware blocks.</p>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 2 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-2">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">02</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Flatmates, Not Dating</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Flatrimony is engineered purely for shared home tenancy, lease-splitting, and co-living logistics. We are fundamentally not a dating application, matrimonial matchmaker, or casual social mixer.
+          </p>
+<div class="bg-error-container text-on-error-container rounded-2xl p-5 flex flex-col gap-2">
+<div class="flex items-center gap-2 font-bold font-label-lg text-label-lg">
+<svg class="w-5 h-5 text-error" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"></line></svg>
+<span>Strictly Prohibited: Romantic or Sexual Solicitations</span>
+</div>
+<p class="font-body-sm text-body-sm leading-relaxed">
+              Any user sending flirtatious messages, sexual comments, unsolicited compliments on appearance, requests for dates, or attempting to leverage tenancy inquiries for romantic overtures will receive an irreversible, immediate lifetime platform ban.
+            </p>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            If an exchange makes you feel uncomfortable or strays beyond flat logistics, house rules, and rent arrangements, use the in-thread <strong>"Flag for Romance/Harassment"</strong> action. Trust moderators review flagged messages within 120 minutes.
+          </p>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 3 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-3">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">03</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">No Brokers or Landlords</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Our ecosystem is built exclusively by tenants, for tenants. We prohibit commercial intermediaries whose financial incentives distort real housing costs and misrepresent living situations.
+          </p>
+<!-- Zero Brokerage Callout Box -->
+<div class="bg-[#F5F2FD] rounded-2xl p-6 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg font-bold text-primary flex items-center gap-2"><svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="18" x2="23" y1="8" y2="13"></line><line x1="23" x2="18" y1="8" y2="13"></line></svg> No brokers</span>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-extrabold uppercase tracking-wider">Zero Fees</span>
+</div>
+<ul class="font-body-sm text-body-sm text-on-surface-variant flex flex-col gap-2 list-none p-0 m-0">
+<li class="flex items-start gap-2">
+<svg class="w-4 h-4 text-primary shrink-0 mt-1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span><strong>No Brokerage Fees:</strong> You will never be asked to pay half a month’s rent, consultation charges, or document fees to anyone on Flatrimony.</span>
+</li>
+<li class="flex items-start gap-2">
+<svg class="w-4 h-4 text-primary shrink-0 mt-1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span><strong>No Visiting Charges:</strong> Demanding petrol fees, key-access fees, or security-gate entry passes prior to a flat tour is an immediate offense.</span>
+</li>
+<li class="flex items-start gap-2">
+<svg class="w-4 h-4 text-primary shrink-0 mt-1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span><strong>Residents Only:</strong> Listings may only be created by an active co-tenant vacating their own room or seeking an incoming flatmate for an ongoing lease.</span>
+</li>
+</ul>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Property management companies, corporate hostel aggregators, and commercial dealers operating clandestine shell profiles will be identified by algorithmic device tracking and referred to local consumer dispute authorities.
+          </p>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 4 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-4">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">04</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Never Ask for Advance Money</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            The single most common co-living fraud across Gurgaon and Noida involves asking prospective flatmates to transfer “token amounts” or “gate pass security deposits” via UPI before an in-person physical inspection.
+          </p>
+<div class="bg-surface-container rounded-2xl p-5 flex flex-col gap-3">
+<div class="flex items-center gap-2 font-bold font-label-lg text-label-lg text-on-surface">
+<svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><rect height="14" rx="2" width="20" x="2" y="5"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg>
+<span>Automated Financial Guardrails</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Our secure messaging layer automatically detects payment handles (UPI IDs, QR codes, Google Pay links, phone numbers coupled with monetary requests) exchanged prior to a confirmed physical visit checklist. Both parties will see an explicit red warning banner advising against advance settlement.
+            </p>
+<div class="flex items-center gap-2 text-primary font-bold font-label-sm text-label-sm">
+<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="16" y2="12"></line><line x1="12" x2="12.01" y1="8" y2="8"></line></svg>
+              Always meet in daylight, inspect the original tenancy agreement, and verify landlord permissions before transferring rent or security deposits.
+            </div>
+</div>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 5 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">05</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Respect &amp; Fair Preferences</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Finding a compatible flatmate requires clear lifestyle alignment. We distinguish between reasonable day-to-day household habits and unlawful discriminatory exclusions.
+          </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-secondary font-bold font-label-md text-label-md">
+<svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span>Permitted Objective Preferences</span>
+</div>
+<ul class="font-body-sm text-body-sm text-on-surface-variant flex flex-col gap-1.5 list-none p-0 m-0">
+<li>• Gender preference for safe shared spaces</li>
+<li>• Kitchen policies (strictly vegetarian / vegan / non-veg permitted)</li>
+<li>• Sleep routines (early birds vs. night-shift professionals)</li>
+<li>• Smoking, alcohol, and house party policies</li>
+<li>• Pet compatibility and verified allergies</li>
+<li>• Work-from-home acoustic habits</li>
+</ul>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-error font-bold font-label-md text-label-md">
+<svg class="w-4 h-4 text-error" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+<span>Strictly Prohibited Bias</span>
+</div>
+<ul class="font-body-sm text-body-sm text-on-surface-variant flex flex-col gap-1.5 list-none p-0 m-0">
+<li>• Religion or caste requirements</li>
+<li>• State, linguistic, or regional origin bias</li>
+<li>• Marital status prejudices</li>
+<li>• Sexual orientation or gender identity discrimination</li>
+<li>• Degrading remarks regarding a member's profession</li>
+<li>• Verbal slurs, insults, or demeaning vocabulary</li>
+</ul>
+</div>
+</div>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 6 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-6">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">06</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Safety &amp; Protected Spaces</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Women moving into Delhi NCR face acute safety considerations. Flatrimony incorporates structural barriers designed to prevent intrusive profiling and maintain inviolable protective bubbles.
+          </p>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-3">
+<h3 class="font-label-lg text-label-lg font-bold text-on-surface m-0">Women-Only Enclaves</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Flats designated as "All-Women" and profiles of female seekers seeking female roommates are strictly hidden from male accounts. Only users with female government identity corroborated through DigiLocker can view these listings, initiate introductions, or receive location coordinates.
+            </p>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-3">
+<h3 class="font-label-lg text-label-lg font-bold text-on-surface m-0">In-app live safety session</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              When scheduling an on-site room tour, activate <strong>safety session</strong>. The app creates a temporary live-location audit link shareable with your trusted emergency contacts and offers an instantaneous one-touch SOS beacon that triggers an alert to local support desks.
+            </p>
+</div>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 7 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-7">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">07</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Reporting &amp; Response Times</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Account accountability is fast and unbureaucratic. A persistent contextual report button is present within two taps on every bio, card, and message thread across the product.
+          </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-error font-extrabold">Priority 1 · Safety Incident</span>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">&lt; 2 Hours Response</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Physical threats, stalking, romantic harassment, or unsolicited off-platform contact. Reviewed by human trust officers daily from 9:00 AM to 11:00 PM IST.
+              </p>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-extrabold">Priority 2 · Commercial Spam</span>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">&lt; 24 Hours Resolution</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Suspected property dealers, broker intermediaries, misleading rent amounts, or advance token requests. Involves forensic device cross-checks.
+              </p>
+</div>
+</div>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 8: Visual Escalation Ladder -->
+<section class="scroll-mt-28 flex flex-col gap-6" id="section-8">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">08</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Enforcement Escalation Ladder</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Except in severe safety breaches (which trigger immediate permanent termination), our trust operations apply an escalating 4-step compliance model:
+          </p>
+<!-- Ladder Visual -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+<!-- Step 1 -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3 relative">
+<div class="flex items-center justify-between">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-bold">Step 1</span>
+<span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-on-surface">Formal Warning</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                Account flag logged. Educational notice issued regarding specific clause infraction.
+              </p>
+</div>
+<!-- Step 2 -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3 relative">
+<div class="flex items-center justify-between">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-bold">Step 2</span>
+<span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-on-surface">Content Removal</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                Listing delisted, biodata masked from feed, and search shadow-ban activated.
+              </p>
+</div>
+<!-- Step 3 -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3 relative">
+<div class="flex items-center justify-between">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-bold">Step 3</span>
+<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-on-surface">7-Day Suspension</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                Complete platform freeze, instant chat lockout, and removal of pending visits.
+              </p>
+</div>
+<!-- Step 4 -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3 relative">
+<div class="flex items-center justify-between">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-bold">Step 4</span>
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-error">Permanent Ban</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                Irreversible hardware hash, phone, and DigiLocker ID blacklist.
+              </p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-surface-container flex items-center gap-3">
+<svg class="w-5 h-5 text-error shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+<span class="font-label-md text-label-md font-bold text-on-surface">
+              Predatory behavior, stalking, and advance fee scams bypass Steps 1–3 and trigger an immediate lifetime ban.
+            </span>
+</div>
+</section>
+<hr class="border-0 h-px bg-surface-container-highest my-0">
+<!-- Section 9 -->
+<section class="scroll-mt-28 flex flex-col gap-4" id="section-9">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface font-label-md text-label-md">09</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight m-0">Appeals Process</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            We value procedural justice. If your listing was removed or account restricted in error, you are entitled to submit one formal appeal per disciplinary action.
+          </p>
+<div class="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-3">
+<div class="font-label-lg text-label-lg font-bold text-on-surface">Independent Review Protocol</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Every appeal is reviewed independently by a senior trust moderator who was not involved in the original restriction decision. Reviews are conducted within 72 hours of submission. To request a review, email <code class="bg-surface-container px-2 py-0.5 rounded text-primary font-mono text-body-sm font-semibold">appeals@flatrimony.in</code> referencing your registered phone number and case token. Decisions issued following appeal review are definitive.
+            </p>
+</div>
+</section>
+<!-- Trust & Grievance Contact Card -->
+<div class="bg-[#F5F2FD] rounded-2xl p-6 sm:p-8 flex flex-col gap-4">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-extrabold">Trust, Safety &amp; Legal Grievance</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold m-0">Questions or Trust &amp; Safety Concerns?</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Flatrimony is committed to operating an uncompromised co-living standard across Delhi NCR. For legal inquiries, official law enforcement correspondence, or grievance redressal:
+          </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2"><div class="flex flex-col gap-1"><span class="font-label-sm text-label-sm text-on-surface-variant">Grievance Officer</span><strong class="font-label-lg text-label-lg text-on-surface">[Grievance Officer name]</strong></div><div class="flex flex-col gap-1"><span class="font-label-sm text-label-sm text-on-surface-variant">Direct Correspondence</span><a class="font-label-lg text-label-lg text-primary hover:text-primary-container font-bold" href="mailto:[grievance email]">[grievance email]</a><span class="font-body-sm text-body-sm text-on-surface-variant">SLA: 24 to 48 business hours</span></div></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+<script>
+  // Simple intersection observer to keep the left rail active state in sync
+  document.addEventListener('DOMContentLoaded', () => {
+    const sections = document.querySelectorAll('main section[id]');
+    const tocLinks = document.querySelectorAll('.toc-link');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          tocLinks.forEach(link => {
+            if (link.getAttribute('href') === `#${id}`) {
+              link.classList.remove('text-on-surface-variant', 'hover:bg-surface-container');
+              link.classList.add('bg-[#F0ECFC]', 'text-primary', 'font-bold');
+            } else {
+              link.classList.add('text-on-surface-variant', 'hover:bg-surface-container');
+              link.classList.remove('bg-[#F0ECFC]', 'text-primary', 'font-bold');
+            }
+          });
+        }
+      });
+    }, {
+      rootMargin: '-10% 0px -70% 0px',
+      threshold: 0
+    });
+
+    sections.forEach(section => observer.observe(section));
+  });
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-[#17141F]/[0.08] mt-space-xl"><div class="max-w-[1200px] mx-auto px-8 pt-space-xl pb-space-lg"><div class="grid grid-cols-1 md:grid-cols-12 gap-space-xl pb-space-xl border-b border-[#17141F]/[0.08]"><div class="md:col-span-5 flex flex-col gap-space-md"><div class="flex items-center gap-[10px]"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="32" height="32" role="img" aria-label="Flatrimony"><rect width="96" height="96" rx="28" fill="#4A2FBD"></rect><path d="M48 17.5c1.2 0 2.3.4 3.2 1.2l26.3 22.4c2.1 1.8.8 5.2-1.9 5.2H74v25.2c0 3.9-3.1 7-7 7H29c-3.9 0-7-3.1-7-7V46.3h-1.6c-2.7 0-4-3.4-1.9-5.2l26.3-22.4c.9-.8 2-1.2 3.2-1.2z" fill="#D7F26B"></path><circle cx="41" cy="57" r="9.5" fill="none" stroke="#4A2FBD" stroke-width="5"></circle><circle cx="55" cy="57" r="9.5" fill="none" stroke="#D7F26B" stroke-width="9"></circle><circle cx="55" cy="57" r="9.5" fill="none" stroke="#4A2FBD" stroke-width="5"></circle><path d="M44.86 48.32A9.5 9.5 0 0 1 50.04 54.06" fill="none" stroke="#D7F26B" stroke-width="9"></path><path d="M43.30 47.78A9.5 9.5 0 0 1 50.45 56.01" fill="none" stroke="#4A2FBD" stroke-width="5"></path><path d="M77 13l1.6 4.4L83 19l-4.4 1.6L77 25l-1.6-4.4L71 19l4.4-1.6z" fill="#FFFFFF"></path></svg><span class="font-brand font-extrabold text-headline-sm leading-none tracking-[-0.03em] text-[#17141F]">Flatrimony</span></div><p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">High-trust flatmate matching for urban professionals and graduates across Delhi NCR. Pragmatic tenancy biodatas paired with lifestyle compatibility.</p><div class="inline-flex items-center gap-2 self-start bg-[#E6F5EC] text-[#1B7F4B] rounded-full px-3 py-1 font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px]">verified</span><span>Govt ID Verified via DigiLocker</span></div></div><div class="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-space-lg"><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg text-on-surface font-bold">Hubs</h4><nav class="flex flex-col gap-space-xs" data-active-classes="text-primary font-bold"><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="gurgaon" href="#">Gurgaon Cyber City</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="noida" href="#">Noida Expressway</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="south-delhi" href="#">South Delhi</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="north-campus" href="#">North Campus</a></nav></div><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg text-on-surface font-bold">Safety &amp; Trust</h4><nav class="flex flex-col gap-space-xs" data-active-classes="text-primary font-bold"><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="safety" href="#">Identity Verification</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="lifestyle-matrices" href="#">Lifestyle Matrices</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="neighborhood-safety" href="#">Neighborhood Ratings</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="owner-screening" href="#">Owner Screening</a></nav></div><div class="flex flex-col gap-space-sm"><h4 class="font-label-lg text-label-lg text-on-surface font-bold">Legal &amp; Guidelines</h4><nav class="flex flex-col gap-space-xs" data-active-classes="text-primary font-bold"><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="terms-of-service" href="#">Terms of Service</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="privacy-policy" href="#">Privacy Policy</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="tenancy-guidelines" href="#">Tenancy Guidelines</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="community-standards" href="#">Community Standards</a></nav></div></div></div><div class="pt-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-sm font-label-sm text-label-sm text-on-surface-variant"><span>© [YYYY] Flatrimony</span><span>Crafted for curated co-living across Delhi NCR</span></div></div></footer>
+
+
+
+</body></html>

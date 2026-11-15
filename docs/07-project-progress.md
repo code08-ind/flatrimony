@@ -1,0 +1,310 @@
+# Flatrimony — Project Progress Document
+
+| Field | Value |
+| --- | --- |
+| Document version | 1.0 (baseline) |
+| Baseline date | 12 Nov 2026 |
+| Owner | Aryan Garg (founder, solo developer) |
+| Update cadence | At the end of every working week, and whenever a milestone changes status |
+| Related | All documents in `docs/` |
+
+> **For the implementing agent.** This is the living tracker. Update it as part of every pull request that changes a task's status (tick the box, set the status, add the PR link). Do not change scope here — scope changes go to `02-prd.md` first, then reflect here. Status values: `Not started`, `In progress`, `In review`, `On staging`, `Done`, `Blocked`, `Deferred`.
+
+---
+
+## 1. Current status at a glance
+
+| Item | Status |
+| --- | --- |
+| Overall phase | **Phase 0 — Validation and setup** (ideation and specification complete) |
+| Overall health | 🟢 On track (no build started yet) |
+| Next milestone | M1 — Foundations ready (repo, CI/CD, environments) |
+| Biggest risk right now | External dependencies with lead time: DLT SMS registration, DigiLocker provider onboarding, Razorpay KYC, Play developer account |
+| Decisions pending | ADR-0007 (custom domains), ADR-0008 (transit commute), ADR-0012 (Android billing), name clearance |
+
+## 2. Phases and milestones
+
+```mermaid
+flowchart LR
+  P0[Phase 0\nValidate + set up] --> M1[M1 Foundations]
+  M1 --> M2[M2 Onboarding + Biodata]
+  M2 --> M3[M3 Verification + Listings]
+  M3 --> M4[M4 Discovery + Matching]
+  M4 --> M5[M5 Chat + Meet + Safety]
+  M5 --> M6[M6 Admin + Hardening]
+  M6 --> L1[v1.0 Closed testing]
+  L1 --> L2[v1.0 Public launch NCR]
+  L2 --> V11[v1.1 Trust after match]
+  V11 --> V12[v1.2 Living together + iOS]
+```
+
+| ID | Milestone | Exit criteria | Status | Target date |
+| --- | --- | --- | --- | --- |
+| P0 | Validation + setup | Landing page live (EN/HI); waitlist target set by founder reached; vendor sign-ups started | In progress | Founder to set |
+| M1 | Foundations | Monorepo, CI, staging deploy pipeline green; Supabase + GCP staging; design tokens package; ADRs written | Not started | Founder to set |
+| M2 | Onboarding + Flat Biodata | FR-AUTH-*, FR-BIO-* P0 done on Android + web; E2E journey 1 passing | Not started | — |
+| M3 | Verification + Listings | FR-VER-* P0, FR-LST-* P0 done; video walkthrough upload; E2E journey 2 passing | Not started | — |
+| M4 | Discovery + Matching | FR-DISC-* P0; commute zones; deck p95 within budget | Not started | — |
+| M5 | Chat + Meet + Safety | FR-CHAT-*, FR-MEET-*, FR-SAFE-* P0; E2E journeys 3–6 passing | Not started | — |
+| M6 | Admin + Hardening | FR-ADM-* P0; security checklist; load test; privacy flows | Not started | — |
+| L1 | Closed testing | Play closed testing running with required testers/time; Sev-1/2 bugs zero | Not started | — |
+| L2 | Public launch (NCR) | PRD section 14 release criteria met | Not started | — |
+| V11 | v1.1 | Stays, Passport reviews, move-in log, deposits, replacement, payments, video tours | Not started | — |
+| V12 | v1.2 | Chores, bills, nudges, house agreement, iOS | Not started | — |
+
+> Dates are intentionally blank: the founder sets them after M1, once real velocity is known. Estimate in story points per ticket; track velocity weekly.
+
+## 3. Work breakdown (epics and tasks)
+
+Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tasks are referenced by the IDs below (e.g., `T1.4`).
+
+### Phase 0 — Validation and external setup
+
+| ID | Task | Status | Notes |
+| --- | --- | --- | --- |
+| T0.1 | Product spec v0.3 | Done | `01-product-spec.md` |
+| T0.2 | PRD, tech stack, DB, API, UI/UX, progress docs | Done | This document set |
+| T0.3 | Name clearance: trademark search, domains, social handles for "Flatrimony" | Not started | Pending (founder) |
+| T0.4 | Landing page + waitlist (EN/HI) with category, budget, office area questions | Not started | Static page; PostHog funnel |
+| T0.5 | Set validation target and channel plan (NCR flat groups, colleges, offices) | Not started | Founder |
+| T0.6 | SMS provider + DLT registration (sender ID, OTP template) | Not started | Long lead time |
+| T0.7 | DigiLocker provider selection, sandbox access, pricing | Not started | OQ-02 |
+| T0.8 | Google Play developer account; check Play billing policy for Move Pass | Not started | OQ-04 |
+| T0.9 | Decide timing of company registration (DigiLocker direct, Razorpay, funding) | Not started | OQ-06 |
+| T0.10 | Lawyer review plan: Terms, Privacy (DPDP), community rules, refund policy | Not started | Before L1 |
+| T0.11 | Generate v1.0 screen designs in Google Stitch (38 Android + 6 web) | Done | 15 Nov 2026: 38 Android + 10 web screens, English + Hindi (95 total), fully reviewed; exported to `docs/designs/`. Remaining items are founder tasks T0.12–T0.15 |
+| T0.12 | Hindi copy review of the Stitch Hindi screens by a fluent Hindi speaker (UI doc §11.1) | Blocked | Founder to arrange a reviewer; screens are named "… (Hindi)" in both Stitch projects |
+| T0.13 | Licences for photos used in designs: web Home hero and the generated portrait/room images | Blocked | Founder: buy/licence or replace before anything is published (review issue 5) |
+| T0.14 | Decide whether the 1091 women's helpline shows next to 112 on the SOS screens | Blocked | Founder decision; designs currently show 112 only on SOS Sent and Safety share page |
+| T0.15 | Legal review of the 4 web legal pages (Terms, Privacy, Community Standards, Tenancy Guidelines); fill grievance-officer details and date placeholders | Blocked | Part of T0.10; pages carry a "Draft — pending legal review" banner. Translate to Hindi only after legal sign-off |
+
+### M1 — Foundations (E0)
+
+| ID | Task | FR / doc ref | Status |
+| --- | --- | --- | --- |
+| T1.1 | Create repo, branch protection, Dependabot, issue/PR templates, Projects board | Tech §7 | Not started |
+| T1.2 | Scaffold monorepo (pnpm, Turborepo, shared configs, commitlint, husky, lint-staged) | Tech §3 | Not started |
+| T1.3 | `packages/shared` skeleton: enums, error codes, Zod base schemas | API §7, §13 | Not started |
+| T1.4 | `packages/design-tokens` + Style Dictionary → Tailwind/NativeWind | UI §3 | Not started |
+| T1.5 | `packages/i18n` with EN/HI files and formatters (INR, dates) | UI §13 | Not started |
+| T1.6 | Supabase local + staging project (Mumbai); migrations 0001–0003 (extensions, enums, ref tables + seed) | DB §15 | Not started |
+| T1.7 | Fastify API skeleton: plugins (auth, errors, request-id, rate limit, idempotency), `/healthz`, `/readyz`, `/v1/config`, `/v1/reference` | API §8.1 | Not started |
+| T1.8 | Expo app skeleton with Expo Router, tabs, theme, i18n, Sentry, PostHog | Tech §2 | Not started |
+| T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | Not started |
+| T1.10 | Terraform: GCP staging (WIF, Artifact Registry, Cloud Run services, Secret Manager, Scheduler, budgets) | Tech §4, §10 | Not started |
+| T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | Not started |
+| T1.12 | Staging CD (`deploy-staging.yml`) + smoke tests + EAS staging channel | Tech §10.2 | Not started |
+| T1.13 | Write ADRs 0001–0012 | Tech §18 | Not started |
+| T1.14 | Worker skeleton (job claim loop, tick, daily) + Cloud Run Job + Scheduler | DB §11 | Not started |
+
+### M2 — Onboarding and Flat Biodata (E1, E2)
+
+| ID | Task | FR | Status |
+| --- | --- | --- | --- |
+| T2.1 | Migrations 0004–0005 (profiles, preferences, anchors, lifestyle, verification tables) + RLS | DB §6.2–6.3 | Not started |
+| T2.2 | Supabase Auth phone OTP + Send SMS hook to provider | FR-AUTH-01 | Not started |
+| T2.3 | `POST /auth/otp-guard` with bans and rate limits | FR-AUTH-02, 08 | Not started |
+| T2.4 | Mobile: welcome, language, phone, OTP (SMS Retriever) | FR-AUTH-01, 05 | Not started |
+| T2.5 | `POST /me/bootstrap`, `GET/PATCH /me`, consents | FR-AUTH-06, 09 | Not started |
+| T2.6 | Onboarding screens (6 steps) mobile + web | FR-AUTH-06 | Not started |
+| T2.7 | Preferences, anchor, lifestyle, importance, scenario endpoints | FR-BIO-02..06 | Not started |
+| T2.8 | Places autocomplete proxy + anchor map picker | FR-BIO-03 | Not started |
+| T2.9 | Routing service (Valhalla NCR build) + `commute.compute` job + preview endpoint | FR-BIO-03 | Not started |
+| T2.10 | Photos: upload URL, confirm, media.process (EXIF strip, face check, phash) | FR-BIO-07 | Not started |
+| T2.11 | Profile tab: biodata editor, completion ring, pause | FR-BIO-01, 08 | Not started |
+| T2.12 | E2E journey 1 (Playwright + Maestro) | PRD §8.2 | Not started |
+
+### M3 — Verification and Listings (E3, E4)
+
+| ID | Task | FR | Status |
+| --- | --- | --- | --- |
+| T3.1 | DigiLocker provider integration: start, webhook, result handling, identity records, uniqueness | FR-VER-01..03, 06, 07 | Not started |
+| T3.2 | Verification gate UI + status polling + failure states | FR-VER-01, 07, 08 | Not started |
+| T3.3 | Work/college email verification | FR-VER-05 | Not started |
+| T3.4 | Migration 0006 (listings, rules, costs, media) + triggers | DB §6.4 | Not started |
+| T3.5 | Listing endpoints (create, patch, rules, costs, submit, confirm, pause, delete) | FR-LST-01..09 | Not started |
+| T3.6 | R2 bucket + presigned uploads; Play Integrity verification | FR-LST-05 | Not started |
+| T3.7 | In-app video recorder (vision-camera), compression, upload | FR-LST-05 | Not started |
+| T3.8 | Automatic listing checks (dup phash, keywords, phone numbers, price anomaly) | FR-LST-08 | Not started |
+| T3.9 | Listing editor stepper + My Flat management UI | FR-LST-* | Not started |
+| T3.10 | Listing expiry + reminders (worker) | FR-LST-07 | Not started |
+| T3.11 | E2E journey 2 | PRD §8.2 | Not started |
+
+### M4 — Discovery and Matching (E5)
+
+| ID | Task | FR | Status |
+| --- | --- | --- | --- |
+| T4.1 | `packages/matching`: similarity functions, weights, score, Rishta report (100% unit tested) | FR-DISC-03 | Not started |
+| T4.2 | Migration 0007 (swipes, matches, decisions, contact shares, deck cache, blocks) | DB §6.5 | Not started |
+| T4.3 | Candidate SQL (rooms + people modes) with women-only and block rules + pgTAP tests | FR-DISC-02, FR-SAFE-04 | Not started |
+| T4.4 | Deck, list, map, profile detail, empty-hints endpoints | FR-DISC-01, 04, 05, 11 | Not started |
+| T4.5 | Swipes endpoint with match creation, daily limit, push | FR-DISC-06, 08 | Not started |
+| T4.6 | Deck UI (gestures, buttons, prefetch, stamps), list/map UI, detail, match celebration | FR-DISC-01, 04..06 | Not started |
+| T4.7 | Performance: seed 50k profiles in staging copy; query p95; deck p95 | NFR-PERF-02 | Not started |
+
+### M5 — Chat, Pehli Mulaqat and Safety (E6, E7, E9)
+
+| ID | Task | FR | Status |
+| --- | --- | --- | --- |
+| T5.1 | Migrations 0008–0009 (messages, meetups, safety) + realtime publication | DB §6.6–6.7 | Not started |
+| T5.2 | Messages endpoints + content checks + new-conversation cap | FR-CHAT-01..05 | Not started |
+| T5.3 | Chat UI with realtime, receipts, warning bubbles, FLAG_SECURE | FR-CHAT-02, 05, 08 | Not started |
+| T5.4 | Contact and address share flows | FR-CHAT-03, FR-LST-06 | Not started |
+| T5.5 | Meet-ups endpoints + planner UI + reminders + decisions | FR-MEET-01..03 | Not started |
+| T5.6 | Trusted contacts, safety sessions, location batching, public share page, SOS | FR-SAFE-01..03 | Not started |
+| T5.7 | Notifications: devices, Expo push, in-app centre, settings | FR-NOTIF-01..04 | Not started |
+| T5.8 | Report and block flows | FR-CHAT-06 | Not started |
+| T5.9 | E2E journeys 3–6 | PRD §8.2 | Not started |
+
+### M6 — Admin, privacy and hardening (E8, E10)
+
+| ID | Task | FR | Status |
+| --- | --- | --- | --- |
+| T6.1 | Migrations 0010–0013 (moderation, bans, signals, devices, consents, audit, rate limits, roles, RLS) | DB §6.9, §7 | Not started |
+| T6.2 | Admin app: queues, user view, actions, PII reveal with reason, audit log | FR-ADM-01..05 | Not started |
+| T6.3 | Cloudflare Access for admin; admin roles in JWT | FR-ADM-01 | Not started |
+| T6.4 | Broker signal pipeline + risk score + auto-pause | PRD §9 | Not started |
+| T6.5 | Data export, account deletion, retention jobs | FR-PRIV-01..03 | Not started |
+| T6.6 | Security checklist (spec §7.7), ZAP baseline, RLS test coverage review | NFR-SEC-* | Not started |
+| T6.7 | Load test with k6 at 5× expected peak | NFR-PERF-* | Not started |
+| T6.8 | Production environment via Terraform; prod CD with approval + canary | Tech §10.3 | Not started |
+| T6.9 | Monitoring dashboards and alerts | Tech §13 | Not started |
+| T6.10 | Backup restore drill | NFR-REL-02 | Not started |
+| T6.11 | Legal pages live (after lawyer review) | PRD §13 | Not started |
+
+### L1/L2 — Launch
+
+| ID | Task | Status |
+| --- | --- | --- |
+| T7.1 | Play Console listing (EN/HI), data safety form, content rating, screenshots | Not started |
+| T7.2 | Closed testing with required testers and duration | Not started |
+| T7.3 | Seed supply: onboard first room owners in 2–3 NCR hubs | Not started |
+| T7.4 | Launch content: reel-style video, Instagram handle, waitlist email | Not started |
+| T7.5 | Go/no-go review against PRD §14 | Not started |
+| T7.6 | Production launch with staged rollout | Not started |
+
+### v1.1 and v1.2 (summary — expand into tasks after L2)
+
+| Epic | Scope | Status |
+| --- | --- | --- |
+| E11 Stays + Passport | Stays, review rounds, habit confirmations, references, double-blind reveal, flags | Deferred to v1.1 |
+| E12 Move-in log + deposit | Capture, sign, lock, PDF export, deposit shares | Deferred to v1.1 |
+| E13 Replacement finder | Requests, candidate approvals | Deferred to v1.1 |
+| E14 Payments | Products, Razorpay/Play Billing, webhooks, entitlements, refunds | Deferred to v1.1 |
+| Video tours + meet-up spots + check-in | FR-SAFE-05, 06 | Deferred to v1.1 |
+| E15 Living together | Chores, bills + UPI links, nudges, house agreement | Deferred to v1.2 |
+| iOS | EAS iOS builds, App Store review, DigiLocker/Integrity equivalents (App Attest) | Deferred to v1.2 |
+
+## 4. Definitions
+
+### 4.1 Definition of Ready (ticket)
+
+Linked FR-ID and acceptance criteria · UI states defined · API contract defined · DB changes identified · test plan · analytics events · estimate ≤ 8 points.
+
+### 4.2 Definition of Done (ticket)
+
+- [ ] Code merged to `main` via reviewed PR with green CI.
+- [ ] Unit/integration/E2E tests added as per test plan.
+- [ ] Deployed to staging and verified against acceptance criteria.
+- [ ] EN and HI strings present; accessibility checklist passed for UI.
+- [ ] Docs updated (API/DB/PRD if changed) and this progress document updated.
+- [ ] No new Sentry errors on staging from the change.
+
+## 5. Risk register
+
+| ID | Risk | Probability | Impact | Mitigation | Owner | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| R1 | Vendor onboarding delays (DLT SMS, DigiLocker provider, Razorpay) | High | High | Start in Phase 0; mock providers in dev/CI | Founder | Open |
+| R2 | Cold start: empty decks at launch | High | High | Supply-first in 2–3 hubs; commute matching; waitlist | Founder | Open |
+| R3 | Solo bandwidth; scope creep | High | High | Strict release scopes; P1/P2 deferral; managed services | Founder | Open |
+| R4 | Safety incident | Low | Very high | Women-only controls, SOS, moderation SLAs, guidelines | Founder | Open |
+| R5 | Brokers/scams | Medium | High | Video-only listings, signals, warnings, bans | Founder | Open |
+| R6 | Play billing policy conflict | Medium | Medium | Check early (T0.8); ADR-0012 | Founder | Open |
+| R7 | Commute accuracy for metro | Medium | Medium | ADR-0008; radius fallback; user feedback | Founder | Open |
+| R8 | Name/trademark conflict | Medium | Medium | T0.3 before brand spend | Founder | Open |
+| R9 | Costs exceed ₹5,000/month | Low | Medium | Budget alerts; scale-to-zero; review monthly | Founder | Open |
+| R10 | Legal non-compliance (DPDP, CERT-In) | Medium | High | Lawyer review (T0.10, T6.11) | Founder | Open |
+
+## 6. Decision log
+
+| Date | Decision | Reference |
+| --- | --- | --- |
+| 11 Nov 2026 | Build a flatmate matching product inspired by the "Tinder for flatmates" reel; compete on trust | Spec §2 |
+| 11 Nov 2026 | Solo build; seek funding after traction | Spec §2.1 |
+| 11 Nov 2026 | Launch across all Delhi NCR with commute-time matching | Spec §2.1 |
+| 11 Nov 2026 | Users choose categories: professional, student, women-only, relocating | Spec §3.8 |
+| 11 Nov 2026 | Android + web first; iOS in v1.2 | Spec §2.1 |
+| 11 Nov 2026 | DigiLocker (via provider) required before chatting | Spec §2.1 |
+| 11 Nov 2026 | Reviews: habit confirmations + private references, double-blind, no stars | Spec §3.9 |
+| 11 Nov 2026 | Monetisation: free core + Move Pass; free listing + paid boost; no landlords | Spec §6.1 |
+| 11 Nov 2026 | Budget under ₹5,000/month; cheap-first architecture | Spec §5.3 |
+| 11 Nov 2026 | Name: Flatrimony (clearance pending) | Spec §4.3 |
+| 12 Nov 2026 | Stack: Supabase (Mumbai) + Cloud Run (Mumbai) + Expo + Next.js + Fastify; GitHub Actions + EAS | Tech §2 |
+| 13 Nov 2026 | Onboarding = 6 steps, habits on one screen; unverified users see gendered rooms locked; web drafts listings, video on Android; swipes/matches per room; PostHog cloud with pseudonymous events | PRD §17.1 |
+| 13 Nov 2026 | Screens designed in Google Stitch before build | — |
+| 13 Nov 2026 | Visual direction: light base + immersive photo cards; Jamun purple primary, Matcha lime selection, Rishta pink for likes only; Poppins headings; glass dock (inspired by Matcha / Ronas IT Dribbble shots) | UI §3 |
+| 13 Nov 2026 | Design polish v2: Plus Jakarta Sans (+ Noto Sans Devanagari) replaces Poppins/Noto Sans; Phosphor Icons replace Lucide; spacing, layout and image rules added; logo mark + wordmark created (`assets/logo/`) | UI §2.2, §3 |
+
+## 7. Weekly status report template
+
+Copy this block into section 8 each week (newest first).
+
+```markdown
+### Week of <date>
+
+**Summary:** <one or two sentences>
+
+**Done this week**
+- <task id> <title> (PR #)
+
+**In progress**
+- <task id> <title> — <% / blocker>
+
+**Next week**
+- <task id> <title>
+
+**Metrics**
+- Velocity: <points done> (rolling 3-week average: <n>)
+- CI health: <% green on main>
+- Open bugs: Sev-1 <n>, Sev-2 <n>, Sev-3 <n>
+- Staging uptime: <%>
+- (after launch) Sign-ups <n>, verified <n>, matches <n>, Rishta pakka <n>, reports <n>
+
+**Risks / decisions needed**
+- <item>
+```
+
+## 8. Status log
+
+### Week of 9 Nov 2026
+
+**Summary:** Ideation and specification completed. Product named Flatrimony (name checks pending). Full document set prepared for implementation.
+
+**Done this week**
+- T0.1 Product spec v0.3
+- T0.2 PRD, technical stack and delivery, database design, API design, UI/UX standards, and this progress document
+
+**Next week**
+- T0.3 Name clearance
+- T0.4 Landing page and waitlist
+- T0.6–T0.8 Vendor sign-ups (long lead time)
+- T1.1–T1.3 Repository and monorepo scaffold
+
+**Risks / decisions needed**
+- Set Phase 0 validation target and milestone dates.
+- Confirm Play billing policy for Move Pass.
+
+## 9. Bug severity definitions
+
+| Severity | Definition | Response |
+| --- | --- | --- |
+| Sev-1 | Safety, security or data exposure issue; app unusable for most users | Fix immediately; hotfix |
+| Sev-2 | Core journey broken for some users (cannot verify, match, chat, list) | Fix within 2 days |
+| Sev-3 | Non-core feature broken or poor UX with a workaround | Next release |
+| Sev-4 | Cosmetic | Backlog |
+
+## 10. Changelog of this document
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.0 | 12 Nov 2026 | Baseline created |

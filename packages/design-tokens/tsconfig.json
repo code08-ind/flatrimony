@@ -1,0 +1,5 @@
+{
+  "extends": "@flatrimony/config/tsconfig.library.json",
+  "compilerOptions": { "types": ["node"], "noEmit": true },
+  "include": ["src", "scripts"]
+}

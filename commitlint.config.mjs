@@ -1,0 +1,15 @@
+// Conventional Commits with the scopes listed in docs/03-technical-stack.md §7.2.
+export default {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'scope-enum': [
+      2,
+      'always',
+      [
+        'auth', 'bio', 'verification', 'listings', 'discover', 'matching', 'chat', 'meetups',
+        'safety', 'stays', 'passport', 'payments', 'admin', 'infra', 'db', 'ui', 'i18n',
+        'tokens', 'shared', 'api', 'web', 'mobile', 'worker', 'ci', 'deps', 'docs', 'repo',
+      ],
+    ],
+  },
+};
