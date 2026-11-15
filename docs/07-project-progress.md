@@ -17,8 +17,8 @@
 | Item | Status |
 | --- | --- |
 | Overall phase | **M1 — Foundations** in progress (Phase 0 specs and designs complete; founder tasks open) |
-| Overall health | 🟢 On track (monorepo scaffold, shared packages, API/web skeletons and first migrations in place; all tests pass locally) |
-| Next milestone | M1 — Foundations ready (remaining: CI/CD, mobile app, worker, Terraform/staging, ADRs) |
+| Overall health | 🟢 On track (M1 code merged to `main` with CI green, except the worker and the rest of the API plugins; staging blocked on founder accounts) |
+| Next milestone | M1 — Foundations ready (remaining: API auth/rate-limit/idempotency + Supabase repository (T1.7); worker (T1.14); founder accounts for staging (T1.6, T1.10, T1.12) and branch protection (T1.1)) |
 | Biggest risk right now | External dependencies with lead time: DLT SMS registration, DigiLocker provider onboarding, Razorpay KYC, Play developer account |
 | Decisions pending | ADR-0007 (custom domains), ADR-0008 (transit commute), ADR-0012 (Android billing), name clearance |
 
@@ -82,20 +82,20 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 
 | ID | Task | FR / doc ref | Status |
 | --- | --- | --- | --- |
-| T1.1 | Create repo, branch protection, Dependabot, issue/PR templates, Projects board | Tech §7 | In progress — repo created and pushed (`code08-ind/flatrimony`); branch protection, Dependabot, templates and board not done |
-| T1.2 | Scaffold monorepo (pnpm, Turborepo, shared configs, commitlint, husky, lint-staged) | Tech §3 | Done — `f45de98` (no CI yet, see T1.11) |
+| T1.1 | Create repo, branch protection, Dependabot, issue/PR templates, Projects board | Tech §7 | In progress — repo pushed; PR template, issue forms (task/bug/idea) and Dependabot merged ([#2](https://github.com/code08-ind/flatrimony/pull/2)). **Blocked (founder):** branch protection with required checks, Projects board — need the repo owner in GitHub settings |
+| T1.2 | Scaffold monorepo (pnpm, Turborepo, shared configs, commitlint, husky, lint-staged) | Tech §3 | Done — `f45de98`; pnpm hardening in [#1](https://github.com/code08-ind/flatrimony/pull/1): `minimumReleaseAge` 7 days, `trustPolicy: no-downgrade`, `blockExoticSubdeps` |
 | T1.3 | `packages/shared` skeleton: enums, error codes, Zod base schemas | API §7, §13 | Done — `f45de98`; 21 tests |
-| T1.4 | `packages/design-tokens` + Style Dictionary → Tailwind/NativeWind | UI §3 | Done — `f45de98`; custom TS generator (not Style Dictionary) with contrast checks, CSS output; NativeWind wiring follows with T1.8; 39 tests |
+| T1.4 | `packages/design-tokens` + Style Dictionary → Tailwind/NativeWind | UI §3 | Done — `f45de98`; in-repo TS generator instead of Style Dictionary (ADR-0013, Proposed) with contrast checks; prototype-pollution guard added in [#1](https://github.com/code08-ind/flatrimony/pull/1); NativeWind wiring follows the first real screens; 40 tests |
 | T1.5 | `packages/i18n` with EN/HI files and formatters (INR, dates) | UI §13 | Done — `f45de98`; Hindi strings await T0.12 review; 38 tests |
-| T1.6 | Supabase local + staging project (Mumbai); migrations 0001–0003 (extensions, enums, ref tables + seed) | DB §15 | In progress — local config, migrations 0001–0003, dev seed and pgTAP test done; staging project not created; seed area data is placeholder |
+| T1.6 | Supabase local + staging project (Mumbai); migrations 0001–0003 (extensions, enums, ref tables + seed) | DB §15 | In progress — local config, migrations 0001–0003, dev seed and pgTAP tests done and **passing in CI** (`db` job, [#1](https://github.com/code08-ind/flatrimony/pull/1)). **Blocked (founder):** Supabase staging project (Mumbai). Seed area data is placeholder |
 | T1.7 | Fastify API skeleton: plugins (auth, errors, request-id, rate limit, idempotency), `/healthz`, `/readyz`, `/v1/config`, `/v1/reference` | API §8.1 | In progress — errors + request-id plugins and all four routes done (in-memory repo), 15 tests; auth, rate-limit, idempotency plugins and Supabase-backed repo remaining |
-| T1.8 | Expo app skeleton with Expo Router, tabs, theme, i18n, Sentry, PostHog | Tech §2 | Not started |
-| T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | In progress — web app with `[locale]` routing and tokens done; admin app and Sentry remaining |
-| T1.10 | Terraform: GCP staging (WIF, Artifact Registry, Cloud Run services, Secret Manager, Scheduler, budgets) | Tech §4, §10 | Not started |
-| T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | In progress — `ci.yml` added with `setup-and-static`, `db` (pgTAP), `security` (gitleaks, Semgrep, audit) and `build-images` (API); first GitHub run pending. API integration tests, OpenAPI diff, web E2E smoke and web image join as their tasks land; required checks set with branch protection (T1.1) |
-| T1.12 | Staging CD (`deploy-staging.yml`) + smoke tests + EAS staging channel | Tech §10.2 | Not started |
-| T1.13 | Write ADRs 0001–0012 | Tech §18 | Not started |
-| T1.14 | Worker skeleton (job claim loop, tick, daily) + Cloud Run Job + Scheduler | DB §11 | Not started |
+| T1.8 | Expo app skeleton with Expo Router, tabs, theme, i18n, Sentry, PostHog | Tech §2 | Done (merged; staging verification pending T1.12) — [#4](https://github.com/code08-ind/flatrimony/pull/4): Expo SDK 58 + Expo Router tabs (Discover, Rishtas, My Flat, Profile), token theme, fonts, i18next EN/HI, `app.config.ts`, `eas.json` profiles; Android bundle exported in CI (`mobile-bundle`). **Blocked (founder):** Sentry, PostHog, EAS project; Android package id pending name clearance (T0.3) |
+| T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | Done (merged; staging verification pending T1.12) — web (`f45de98`) and admin ([#3](https://github.com/code08-ind/flatrimony/pull/3)) with tokens, i18n (web) and security headers; Dockerfiles for both ([#3](https://github.com/code08-ind/flatrimony/pull/3), [#6](https://github.com/code08-ind/flatrimony/pull/6)); CI builds all apps and images. **Blocked (founder):** Sentry projects |
+| T1.10 | Terraform: GCP staging (WIF, Artifact Registry, Cloud Run services, Secret Manager, Scheduler, budgets) | Tech §4, §10 | Blocked — config merged in [#6](https://github.com/code08-ind/flatrimony/pull/6): `infra/terraform/envs/staging` (APIs, Artifact Registry, service accounts, WIF, Secret Manager, Cloud Run, worker job, schedulers, budget alerts); `terraform validate` runs in CI. Needs the founder's GCP project, billing account and state bucket; not applied |
+| T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | Done — [#1](https://github.com/code08-ind/flatrimony/pull/1), extended in [#3](https://github.com/code08-ind/flatrimony/pull/3), [#4](https://github.com/code08-ind/flatrimony/pull/4), [#6](https://github.com/code08-ind/flatrimony/pull/6): `setup-and-static` (build, typecheck, lint, tests), `db` (migrations + pgTAP), `security` (gitleaks, Semgrep, audit), `mobile-bundle`, `infra`, `build-images` (api, web, admin); Actions pinned by SHA; green on `main`. API integration tests, OpenAPI diff and web E2E smoke join with their tasks. Required-check enforcement waits on branch protection (T1.1) |
+| T1.12 | Staging CD (`deploy-staging.yml`) + smoke tests + EAS staging channel | Tech §10.2 | Blocked — config merged in [#6](https://github.com/code08-ind/flatrimony/pull/6): `deploy-staging.yml` (migrate → images → Cloud Run → smoke tests → EAS Update) and `scripts/smoke.mjs`; skipped until `STAGING_ENABLED`. Needs Supabase staging, GCP, Expo accounts and the GitHub `staging` environment secrets; smoke `/readyz` also needs the Supabase-backed repository (T1.7) |
+| T1.13 | Write ADRs 0001–0012 | Tech §18 | Done — [#5](https://github.com/code08-ind/flatrimony/pull/5): ADRs 0001–0006, 0009–0011 Accepted; 0007, 0008, 0012 Proposed (founder); 0013 (token generator) Proposed |
+| T1.14 | Worker skeleton (job claim loop, tick, daily) + Cloud Run Job + Scheduler | DB §11 | Not started — needs the `private.jobs` table, which docs/04 §15 schedules in migration 0012 (M6); decide whether to pull the jobs table forward into M1 |
 
 ### M2 — Onboarding and Flat Biodata (E1, E2)
 
@@ -244,6 +244,9 @@ Linked FR-ID and acceptance criteria · UI states defined · API contract define
 | 13 Nov 2026 | Screens designed in Google Stitch before build | — |
 | 13 Nov 2026 | Visual direction: light base + immersive photo cards; Jamun purple primary, Matcha lime selection, Rishta pink for likes only; Poppins headings; glass dock (inspired by Matcha / Ronas IT Dribbble shots) | UI §3 |
 | 13 Nov 2026 | Design polish v2: Plus Jakarta Sans (+ Noto Sans Devanagari) replaces Poppins/Noto Sans; Phosphor Icons replace Lucide; spacing, layout and image rules added; logo mark + wordmark created (`assets/logo/`) | UI §2.2, §3 |
+| 15 Nov 2026 | Design tokens built with an in-repo tested generator instead of Style Dictionary (founder to confirm) | ADR-0013 |
+| 15 Nov 2026 | Supply-chain policy: dependencies must be ≥ 7 days old (pnpm `minimumReleaseAge`, Dependabot cooldown); trust downgrades blocked; GitHub Actions pinned by SHA | ADR-0001, Tech §14 |
+| 15 Nov 2026 | One React version (19.3.0, as shipped by Expo SDK 58) across web, admin and mobile via pnpm overrides | — |
 
 ## 7. Weekly status report template
 
@@ -275,6 +278,32 @@ Copy this block into section 8 each week (newest first).
 ```
 
 ## 8. Status log
+
+### Week of 9 Nov 2026 (15 Nov, M1 pull requests)
+
+**Summary:** CI is live and green on `main`. Six M1 pull requests were merged in order on 15 Nov. Everything that needs a vendor account is merged as config and marked Blocked.
+
+**Done this week**
+- [#1](https://github.com/code08-ind/flatrimony/pull/1) T1.11 CI workflow (Semgrep fixes, Actions pinned by SHA, pnpm hardening)
+- [#2](https://github.com/code08-ind/flatrimony/pull/2) T1.1 PR template, issue forms, Dependabot
+- [#3](https://github.com/code08-ind/flatrimony/pull/3) T1.9 admin skeleton + Dockerfile; dependencies kept ≥ 7 days old
+- [#4](https://github.com/code08-ind/flatrimony/pull/4) T1.8 Expo mobile skeleton; Android bundle job in CI
+- [#5](https://github.com/code08-ind/flatrimony/pull/5) T1.13 ADRs 0001–0013
+- [#6](https://github.com/code08-ind/flatrimony/pull/6) T1.10 + T1.12 Terraform for GCP staging, staging deploy workflow, smoke tests, web Dockerfile (config only; Blocked)
+
+**Next**
+- T1.7 remainder: auth (Supabase JWT), rate-limit and idempotency plugins; Supabase-backed system repository (unblocks `/readyz` in staging smoke tests)
+- T1.14 worker skeleton (decision needed on the jobs table, see task row)
+
+**Metrics**
+- Tests: 129 passing (shared 21, design-tokens 40, i18n 44, api 15, web 2, admin 3, mobile 4)
+- CI: green on `main` after every merge
+
+**Blocked on the founder**
+- GitHub: branch protection + required checks, Projects board
+- Accounts: Supabase staging (Mumbai), GCP project + billing + state bucket, Expo/EAS, Sentry, PostHog
+- Decisions: ADR-0007, ADR-0008, ADR-0012, ADR-0013; name clearance (T0.3) for the Android package id
+- T0.12–T0.15 unchanged
 
 ### Week of 9 Nov 2026 (continued, to 15 Nov)
 
@@ -340,3 +369,4 @@ Copy this block into section 8 each week (newest first).
 | --- | --- | --- |
 | 1.0 | 12 Nov 2026 | Baseline created |
 | 1.1 | 15 Nov 2026 | M1 statuses updated to match the initial commit; status log for week of 9 Nov extended |
+| 1.2 | 15 Nov 2026 | M1 statuses updated after merging PRs #1–#6; founder blockers listed; three decision-log entries |
