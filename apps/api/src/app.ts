@@ -1,5 +1,9 @@
 import Fastify, { type FastifyInstance } from 'fastify';
-import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
+import {
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod';
 import { HEADERS } from '@flatrimony/shared';
 import type { Env } from './env.js';
 import { errorsPlugin } from './plugins/errors.js';

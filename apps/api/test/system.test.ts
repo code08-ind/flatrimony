@@ -40,9 +40,17 @@ describe('health', () => {
   });
 
   it('echoes a safe client request id and replaces an unsafe one', async () => {
-    const ok = await app.inject({ method: 'GET', url: '/healthz', headers: { 'x-request-id': 'abc-123' } });
+    const ok = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: { 'x-request-id': 'abc-123' },
+    });
     expect(ok.headers['x-request-id']).toBe('abc-123');
-    const bad = await app.inject({ method: 'GET', url: '/healthz', headers: { 'x-request-id': '<script>' } });
+    const bad = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: { 'x-request-id': '<script>' },
+    });
     expect(bad.headers['x-request-id']).toMatch(/^req_/);
   });
 });
@@ -61,10 +69,19 @@ describe('GET /v1/config', () => {
 
 describe('GET /v1/reference', () => {
   it('returns reference data and varies by language', async () => {
-    const res = await app.inject({ method: 'GET', url: '/v1/reference', headers: { 'accept-language': 'hi' } });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/reference',
+      headers: { 'accept-language': 'hi' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.headers.vary).toContain('Accept-Language');
-    expect(Object.keys(res.json()).sort()).toEqual(['areas', 'habitTags', 'products', 'scenarioQuestions']);
+    expect(Object.keys(res.json()).sort()).toEqual([
+      'areas',
+      'habitTags',
+      'products',
+      'scenarioQuestions',
+    ]);
   });
 
   it('refuses to serialise a response that breaks the contract', async () => {
@@ -98,9 +115,8 @@ describe('env', () => {
   it('requires DATABASE_URL outside local', () => {
     expect(() => loadEnv({ APP_ENV: 'staging' })).toThrow(/DATABASE_URL/);
     expect(() => loadEnv({ PORT: 'abc' })).toThrow(/PORT/);
-    expect(loadEnv({ CORS_ALLOWED_ORIGINS: 'https://a.test, https://b.test' }).CORS_ALLOWED_ORIGINS).toEqual([
-      'https://a.test',
-      'https://b.test',
-    ]);
+    expect(
+      loadEnv({ CORS_ALLOWED_ORIGINS: 'https://a.test, https://b.test' }).CORS_ALLOWED_ORIGINS,
+    ).toEqual(['https://a.test', 'https://b.test']);
   });
 });

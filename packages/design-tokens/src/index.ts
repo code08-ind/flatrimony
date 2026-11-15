@@ -80,16 +80,7 @@ export const font = nested.font as {
 };
 
 export type TypographyRole =
-  | 'hero'
-  | 'display'
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'bodyLg'
-  | 'body'
-  | 'label'
-  | 'caption'
-  | 'micro';
+  'hero' | 'display' | 'h1' | 'h2' | 'h3' | 'bodyLg' | 'body' | 'label' | 'caption' | 'micro';
 
 export const typography = nested.typography as Record<TypographyRole, TypographyStyle>;
 
@@ -98,7 +89,12 @@ export const space = nested.space as Record<
   number
 >;
 export const layout = nested.layout as Record<
-  'screenPaddingMobile' | 'webContentMax' | 'webSidePadding' | 'sectionGap' | 'cardPadding' | 'dockReserve',
+  | 'screenPaddingMobile'
+  | 'webContentMax'
+  | 'webSidePadding'
+  | 'sectionGap'
+  | 'cardPadding'
+  | 'dockReserve',
   number
 >;
 export const radius = nested.radius as Record<'sm' | 'md' | 'lg' | 'xl' | 'full', number>;
@@ -162,7 +158,11 @@ export const tailwindPreset = {
       ),
       boxShadow: mapValues(elevation, shadowCss),
       screens: mapValues(breakpoint, px),
-      transitionDuration: { fast: `${motion.fast}ms`, base: `${motion.base}ms`, slow: `${motion.slow}ms` },
+      transitionDuration: {
+        fast: `${motion.fast}ms`,
+        base: `${motion.base}ms`,
+        slow: `${motion.slow}ms`,
+      },
     },
   },
 } as const;

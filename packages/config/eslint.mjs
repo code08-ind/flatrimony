@@ -30,8 +30,20 @@ export const packageBoundaries = [
         'error',
         {
           patterns: [
-            { group: ['**/apps/**', '@flatrimony/api', '@flatrimony/web', '@flatrimony/admin', '@flatrimony/mobile'], message: 'Packages must never import apps (docs/03 §3).' },
-            { group: ['@flatrimony/*/src/*'], message: 'Import packages through their public entry point.' },
+            {
+              group: [
+                '**/apps/**',
+                '@flatrimony/api',
+                '@flatrimony/web',
+                '@flatrimony/admin',
+                '@flatrimony/mobile',
+              ],
+              message: 'Packages must never import apps (docs/03 §3).',
+            },
+            {
+              group: ['@flatrimony/*/src/*'],
+              message: 'Import packages through their public entry point.',
+            },
           ],
         },
       ],
@@ -47,7 +59,10 @@ export const appBoundaries = [
         'error',
         {
           patterns: [
-            { group: ['@flatrimony/*/src/*', '**/packages/**'], message: 'Import packages through their public entry point.' },
+            {
+              group: ['@flatrimony/*/src/*', '**/packages/**'],
+              message: 'Import packages through their public entry point.',
+            },
           ],
         },
       ],

@@ -28,7 +28,11 @@ export type Badge = z.infer<typeof Badge>;
 export const Photo = z.object({
   id: Uuid,
   url: z.url(),
-  position: z.number().int().min(0).max(LIMITS.profilePhotos.max - 1),
+  position: z
+    .number()
+    .int()
+    .min(0)
+    .max(LIMITS.profilePhotos.max - 1),
   moderationStatus: ModerationStatus,
 });
 

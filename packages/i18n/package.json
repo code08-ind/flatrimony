@@ -14,7 +14,10 @@
     "./messages/en.json": "./src/messages/en.json",
     "./messages/hi.json": "./src/messages/hi.json"
   },
-  "files": ["dist", "src/messages"],
+  "files": [
+    "dist",
+    "src/messages"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

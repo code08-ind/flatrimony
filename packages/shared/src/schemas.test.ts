@@ -135,7 +135,12 @@ describe('Flat Biodata schemas', () => {
   });
 
   it('anchors default to a 45-minute commute within 15–90', () => {
-    const base = { kind: 'office', label: 'Cyber City', location: { lat: 28.495, lng: 77.089 }, travelMode: 'metro_transit' };
+    const base = {
+      kind: 'office',
+      label: 'Cyber City',
+      location: { lat: 28.495, lng: 77.089 },
+      travelMode: 'metro_transit',
+    };
     expect(Anchor.parse(base).maxCommuteMin).toBe(45);
     expect(Anchor.safeParse({ ...base, maxCommuteMin: 10 }).success).toBe(false);
     expect(Anchor.safeParse({ ...base, maxCommuteMin: 91 }).success).toBe(false);
@@ -185,7 +190,14 @@ describe('Flat Biodata schemas', () => {
       passport,
     };
     expect(PublicProfile.parse(pub).displayName).toBe('Meera');
-    for (const leak of ['phone', 'dob', 'verifiedName', 'exactLocation', 'address', 'digilockerIdHash']) {
+    for (const leak of [
+      'phone',
+      'dob',
+      'verifiedName',
+      'exactLocation',
+      'address',
+      'digilockerIdHash',
+    ]) {
       expect(PublicProfile.safeParse({ ...pub, [leak]: 'x' }).success, leak).toBe(false);
     }
   });
@@ -209,11 +221,20 @@ describe('listings', () => {
 
   it('allows zero brokerage only (FR-LST-03)', () => {
     expect(ListingCosts.safeParse(costs).success).toBe(true);
-    expect(ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'Brokerage', amountInr: 0 }] }).success).toBe(true);
-    const bad = ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'Broker fee', amountInr: 5000 }] });
+    expect(
+      ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'Brokerage', amountInr: 0 }] })
+        .success,
+    ).toBe(true);
+    const bad = ListingCosts.safeParse({
+      ...costs,
+      oneTimeCosts: [{ label: 'Broker fee', amountInr: 5000 }],
+    });
     expect(bad.success).toBe(false);
     expect(bad.error?.issues[0]?.path).toEqual(['oneTimeCosts', 0, 'amountInr']);
-    expect(ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'दलाली', amountInr: 1 }] }).success).toBe(false);
+    expect(
+      ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'दलाली', amountInr: 1 }] })
+        .success,
+    ).toBe(false);
   });
 
   it('computes the all-in monthly cost per person', () => {
@@ -226,15 +247,41 @@ describe('listings', () => {
 describe('system contracts', () => {
   it('public config and reference data', () => {
     expect(
-      PublicConfig.parse({ dailyLikeLimit: 50, features: { videoTours: false, houseAgreement: false }, minSupportedAppVersion: '1.0.0' }),
+      PublicConfig.parse({
+        dailyLikeLimit: 50,
+        features: { videoTours: false, houseAgreement: false },
+        minSupportedAppVersion: '1.0.0',
+      }),
     ).toBeTruthy();
-    expect(PublicConfig.safeParse({ dailyLikeLimit: 50, features: { videoTours: false, houseAgreement: false }, minSupportedAppVersion: 'v1' }).success).toBe(false);
+    expect(
+      PublicConfig.safeParse({
+        dailyLikeLimit: 50,
+        features: { videoTours: false, houseAgreement: false },
+        minSupportedAppVersion: 'v1',
+      }).success,
+    ).toBe(false);
     expect(
       ReferenceData.parse({
-        areas: [{ id: 1, slug: 'gurugram-cyber-city', name: 'Cyber City', city: 'gurugram', centroid: { lat: 28.495, lng: 77.089 } }],
+        areas: [
+          {
+            id: 1,
+            slug: 'gurugram-cyber-city',
+            name: 'Cyber City',
+            city: 'gurugram',
+            centroid: { lat: 28.495, lng: 77.089 },
+          },
+        ],
         habitTags: [{ id: 'tidy', label: 'Tidy', attribute: 'cleaning' }],
         scenarioQuestions: [
-          { id: 'sink_dishes_10pm', attribute: 'cleaning', prompt: 'x', options: [{ id: 'a', label: 'A', value: 1 }, { id: 'b', label: 'B', value: 0 }] },
+          {
+            id: 'sink_dishes_10pm',
+            attribute: 'cleaning',
+            prompt: 'x',
+            options: [
+              { id: 'a', label: 'A', value: 1 },
+              { id: 'b', label: 'B', value: 0 },
+            ],
+          },
         ],
         products: [],
       }).areas,
@@ -242,13 +289,21 @@ describe('system contracts', () => {
   });
 
   it('OTP guard accepts Indian numbers only', () => {
-    expect(OtpGuardRequest.safeParse({ phone: '+919812345678', deviceId: 'b7c1d2e3f4' }).success).toBe(true);
-    expect(OtpGuardRequest.safeParse({ phone: '+919812345678', deviceId: 'x' }).success).toBe(false);
+    expect(
+      OtpGuardRequest.safeParse({ phone: '+919812345678', deviceId: 'b7c1d2e3f4' }).success,
+    ).toBe(true);
+    expect(OtpGuardRequest.safeParse({ phone: '+919812345678', deviceId: 'x' }).success).toBe(
+      false,
+    );
   });
 
   it('Rishta report bounds', () => {
-    expect(RishtaReport.safeParse({ score: 94, agreements: [], perAttribute: { bedtime: 1 } }).success).toBe(true);
-    expect(RishtaReport.safeParse({ score: 101, agreements: [], perAttribute: {} }).success).toBe(false);
+    expect(
+      RishtaReport.safeParse({ score: 94, agreements: [], perAttribute: { bedtime: 1 } }).success,
+    ).toBe(true);
+    expect(RishtaReport.safeParse({ score: 101, agreements: [], perAttribute: {} }).success).toBe(
+      false,
+    );
   });
 
   it('112 is the emergency number', () => {

@@ -3,7 +3,10 @@ import type { FlatToken } from './resolve.js';
 const PX_TYPES = new Set(['dimension']);
 
 function kebab(path: string): string {
-  return path.replace(/\./g, '-').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  return path
+    .replace(/\./g, '-')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
 }
 
 export function cssVarName(path: string): string {
@@ -28,7 +31,13 @@ export function cssValue(token: FlatToken): string | undefined {
     case 'cubicBezier':
       return `cubic-bezier(${(value as number[]).join(', ')})`;
     case 'shadow': {
-      const s = value as { offsetX: number; offsetY: number; blur: number; spread: number; color: string };
+      const s = value as {
+        offsetX: number;
+        offsetY: number;
+        blur: number;
+        spread: number;
+        color: string;
+      };
       return `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px ${s.color}`;
     }
     default:

@@ -15,7 +15,9 @@ export const LatLng = z.object({
 export type LatLng = z.infer<typeof LatLng>;
 
 /** Indian mobile number in E.164: +91 followed by 10 digits starting 6–9. */
-export const IndianPhone = z.string().regex(/^\+91[6-9]\d{9}$/, 'Expected an Indian mobile number (+91XXXXXXXXXX)');
+export const IndianPhone = z
+  .string()
+  .regex(/^\+91[6-9]\d{9}$/, 'Expected an Indian mobile number (+91XXXXXXXXXX)');
 
 /** Listing prices: whole rupees (docs/04 §1.6). */
 export const Inr = z.number().int().nonnegative();

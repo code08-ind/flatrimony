@@ -56,7 +56,12 @@ export function flattenTokens(tree: Node): FlatToken[] {
     const target = byPath.get(targetPath);
     if (!target) throw new Error(`Token ${token.path} references missing token {${targetPath}}`);
     const resolved = resolve(target, [...seen, targetPath]);
-    return { ...token, type: token.type ?? resolved.type, value: resolved.value, aliasOf: targetPath };
+    return {
+      ...token,
+      type: token.type ?? resolved.type,
+      value: resolved.value,
+      aliasOf: targetPath,
+    };
   };
 
   return raw.map((t) => resolve(t, [t.path]));

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Document version | 1.0 (baseline) |
+| Document version | 1.1 |
 | Baseline date | 12 Nov 2026 |
 | Owner | Aryan Garg (founder, solo developer) |
 | Update cadence | At the end of every working week, and whenever a milestone changes status |
@@ -16,9 +16,9 @@
 
 | Item | Status |
 | --- | --- |
-| Overall phase | **Phase 0 — Validation and setup** (ideation and specification complete) |
-| Overall health | 🟢 On track (no build started yet) |
-| Next milestone | M1 — Foundations ready (repo, CI/CD, environments) |
+| Overall phase | **M1 — Foundations** in progress (Phase 0 specs and designs complete; founder tasks open) |
+| Overall health | 🟢 On track (monorepo scaffold, shared packages, API/web skeletons and first migrations in place; all tests pass locally) |
+| Next milestone | M1 — Foundations ready (remaining: CI/CD, mobile app, worker, Terraform/staging, ADRs) |
 | Biggest risk right now | External dependencies with lead time: DLT SMS registration, DigiLocker provider onboarding, Razorpay KYC, Play developer account |
 | Decisions pending | ADR-0007 (custom domains), ADR-0008 (transit commute), ADR-0012 (Android billing), name clearance |
 
@@ -41,7 +41,7 @@ flowchart LR
 | ID | Milestone | Exit criteria | Status | Target date |
 | --- | --- | --- | --- | --- |
 | P0 | Validation + setup | Landing page live (EN/HI); waitlist target set by founder reached; vendor sign-ups started | In progress | Founder to set |
-| M1 | Foundations | Monorepo, CI, staging deploy pipeline green; Supabase + GCP staging; design tokens package; ADRs written | Not started | Founder to set |
+| M1 | Foundations | Monorepo, CI, staging deploy pipeline green; Supabase + GCP staging; design tokens package; ADRs written | In progress | Founder to set |
 | M2 | Onboarding + Flat Biodata | FR-AUTH-*, FR-BIO-* P0 done on Android + web; E2E journey 1 passing | Not started | — |
 | M3 | Verification + Listings | FR-VER-* P0, FR-LST-* P0 done; video walkthrough upload; E2E journey 2 passing | Not started | — |
 | M4 | Discovery + Matching | FR-DISC-* P0; commute zones; deck p95 within budget | Not started | — |
@@ -82,15 +82,15 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 
 | ID | Task | FR / doc ref | Status |
 | --- | --- | --- | --- |
-| T1.1 | Create repo, branch protection, Dependabot, issue/PR templates, Projects board | Tech §7 | Not started |
-| T1.2 | Scaffold monorepo (pnpm, Turborepo, shared configs, commitlint, husky, lint-staged) | Tech §3 | Not started |
-| T1.3 | `packages/shared` skeleton: enums, error codes, Zod base schemas | API §7, §13 | Not started |
-| T1.4 | `packages/design-tokens` + Style Dictionary → Tailwind/NativeWind | UI §3 | Not started |
-| T1.5 | `packages/i18n` with EN/HI files and formatters (INR, dates) | UI §13 | Not started |
-| T1.6 | Supabase local + staging project (Mumbai); migrations 0001–0003 (extensions, enums, ref tables + seed) | DB §15 | Not started |
-| T1.7 | Fastify API skeleton: plugins (auth, errors, request-id, rate limit, idempotency), `/healthz`, `/readyz`, `/v1/config`, `/v1/reference` | API §8.1 | Not started |
+| T1.1 | Create repo, branch protection, Dependabot, issue/PR templates, Projects board | Tech §7 | In progress — repo created and pushed (`code08-ind/flatrimony`); branch protection, Dependabot, templates and board not done |
+| T1.2 | Scaffold monorepo (pnpm, Turborepo, shared configs, commitlint, husky, lint-staged) | Tech §3 | Done — `f45de98` (no CI yet, see T1.11) |
+| T1.3 | `packages/shared` skeleton: enums, error codes, Zod base schemas | API §7, §13 | Done — `f45de98`; 21 tests |
+| T1.4 | `packages/design-tokens` + Style Dictionary → Tailwind/NativeWind | UI §3 | Done — `f45de98`; custom TS generator (not Style Dictionary) with contrast checks, CSS output; NativeWind wiring follows with T1.8; 39 tests |
+| T1.5 | `packages/i18n` with EN/HI files and formatters (INR, dates) | UI §13 | Done — `f45de98`; Hindi strings await T0.12 review; 38 tests |
+| T1.6 | Supabase local + staging project (Mumbai); migrations 0001–0003 (extensions, enums, ref tables + seed) | DB §15 | In progress — local config, migrations 0001–0003, dev seed and pgTAP test done; staging project not created; seed area data is placeholder |
+| T1.7 | Fastify API skeleton: plugins (auth, errors, request-id, rate limit, idempotency), `/healthz`, `/readyz`, `/v1/config`, `/v1/reference` | API §8.1 | In progress — errors + request-id plugins and all four routes done (in-memory repo), 15 tests; auth, rate-limit, idempotency plugins and Supabase-backed repo remaining |
 | T1.8 | Expo app skeleton with Expo Router, tabs, theme, i18n, Sentry, PostHog | Tech §2 | Not started |
-| T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | Not started |
+| T1.9 | Next.js web + admin skeletons with tokens, i18n, Sentry | Tech §2 | In progress — web app with `[locale]` routing and tokens done; admin app and Sentry remaining |
 | T1.10 | Terraform: GCP staging (WIF, Artifact Registry, Cloud Run services, Secret Manager, Scheduler, budgets) | Tech §4, §10 | Not started |
 | T1.11 | CI workflow (`ci.yml`) with all required checks | Tech §9 | Not started |
 | T1.12 | Staging CD (`deploy-staging.yml`) + smoke tests + EAS staging channel | Tech §10.2 | Not started |
@@ -276,6 +276,37 @@ Copy this block into section 8 each week (newest first).
 
 ## 8. Status log
 
+### Week of 9 Nov 2026 (continued, to 15 Nov)
+
+**Summary:** Stitch designs finished and exported. M1 started: monorepo scaffold, shared packages, API and web skeletons and the first three migrations landed in the initial commit (`f45de98`, pushed to `main`).
+
+**Done this week**
+- T0.11 Stitch screen designs (95 screens, EN + HI) exported to `docs/designs/`
+- T1.2 Monorepo scaffold
+- T1.3 `packages/shared`
+- T1.4 `packages/design-tokens`
+- T1.5 `packages/i18n`
+
+**In progress**
+- T1.1 Repo setup — repo pushed; protection, Dependabot, templates pending
+- T1.6 Supabase — local + migrations 0001–0003 done; staging project pending
+- T1.7 API skeleton — routes, errors, request-id done; auth, rate limit, idempotency pending
+- T1.9 Web skeleton — web done; admin + Sentry pending
+
+**Next week**
+- T1.11 CI workflow
+- T1.13 ADRs 0001–0012
+- T1.8 Expo app skeleton
+- T1.14 Worker skeleton
+
+**Metrics**
+- Tests: 115 passing (shared 21, design-tokens 39, i18n 38, api 15, web 2); `pnpm test`, `typecheck`, `lint` and `format:check` green from the root (26 files reformatted with Prettier on 15 Nov)
+- CI health: no CI yet
+
+**Risks / decisions needed**
+- Founder tasks T0.12–T0.15 blocked on reviewer, licences, helpline decision and legal review.
+
+
 ### Week of 9 Nov 2026
 
 **Summary:** Ideation and specification completed. Product named Flatrimony (name checks pending). Full document set prepared for implementation.
@@ -308,3 +339,4 @@ Copy this block into section 8 each week (newest first).
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 12 Nov 2026 | Baseline created |
+| 1.1 | 15 Nov 2026 | M1 statuses updated to match the initial commit; status log for week of 9 Nov extended |

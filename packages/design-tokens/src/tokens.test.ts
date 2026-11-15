@@ -77,9 +77,21 @@ describe('measured contrast (WCAG 2.x)', () => {
     ['white', 'match.likePink', W, color.match.likePink, 4.5],
     ['white', 'bg.immersive', W, color.bg.immersive, 4.5],
     ['white', 'accent.green', W, color.accent.green, 4.5],
-    ['accent.greenText', 'accent.greenSubtle', color.accent.greenText, color.accent.greenSubtle, 4.5],
+    [
+      'accent.greenText',
+      'accent.greenSubtle',
+      color.accent.greenText,
+      color.accent.greenSubtle,
+      4.5,
+    ],
     ['text.primary', 'accent.yellow', color.text.primary, color.accent.yellow, 4.5],
-    ['accent.yellowText', 'accent.yellowSubtle', color.accent.yellowText, color.accent.yellowSubtle, 4.5],
+    [
+      'accent.yellowText',
+      'accent.yellowSubtle',
+      color.accent.yellowText,
+      color.accent.yellowSubtle,
+      4.5,
+    ],
     ['white', 'danger', W, color.danger, 4.5],
     ['danger', 'dangerSubtle', color.danger, color.dangerSubtle, 4.5],
     ['accent.blue', 'accent.blueSubtle', color.accent.blue, color.accent.blueSubtle, 4.5],
@@ -130,8 +142,14 @@ describe('type, spacing, radii', () => {
   });
 
   it('type scale weights stay within 400/500/600/700/800', () => {
-    for (const t of Object.values(typography)) expect([400, 500, 600, 700, 800]).toContain(t.fontWeight);
-    expect(typography.h1).toEqual({ fontSize: 26, lineHeight: 32, fontWeight: 700, letterSpacing: -0.01 });
+    for (const t of Object.values(typography))
+      expect([400, 500, 600, 700, 800]).toContain(t.fontWeight);
+    expect(typography.h1).toEqual({
+      fontSize: 26,
+      lineHeight: 32,
+      fontWeight: 700,
+      letterSpacing: -0.01,
+    });
   });
 
   it('Hindi line height is at least 1.6x the font size', () => {
@@ -165,22 +183,37 @@ describe('outputs', () => {
     expect(ext.spacing['5']).toBe('20px');
     expect(ext.borderRadius.xl).toBe('32px');
     expect(ext.fontFamily.devanagari[0]).toBe('Noto Sans Devanagari');
-    expect(ext.fontSize.h1).toEqual(['26px', { lineHeight: '32px', fontWeight: '700', letterSpacing: '-0.01em' }]);
+    expect(ext.fontSize.h1).toEqual([
+      '26px',
+      { lineHeight: '32px', fontWeight: '700', letterSpacing: '-0.01em' },
+    ]);
   });
 
   it('builds a React Native theme with unitless values', () => {
     expect(nativeTheme.space['5']).toBe(20);
     expect(nativeTheme.typography.display.letterSpacing).toBe(-0.48);
-    expect(nativeTheme.elevation['2']).toMatchObject({ shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1 });
+    expect(nativeTheme.elevation['2']).toMatchObject({
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+    });
   });
 });
 
 describe('resolver', () => {
   it('inherits group $type and resolves chains of references', () => {
     const flat = flattenTokens({
-      c: { $type: 'color', a: { $value: '#000000' }, b: { $value: '{c.a}' }, d: { $value: '{c.b}' } },
+      c: {
+        $type: 'color',
+        a: { $value: '#000000' },
+        b: { $value: '{c.a}' },
+        d: { $value: '{c.b}' },
+      },
     });
-    expect(flat.find((t) => t.path === 'c.d')).toMatchObject({ type: 'color', value: '#000000', aliasOf: 'c.b' });
+    expect(flat.find((t) => t.path === 'c.d')).toMatchObject({
+      type: 'color',
+      value: '#000000',
+      aliasOf: 'c.b',
+    });
   });
 
   it('rejects missing and circular references', () => {

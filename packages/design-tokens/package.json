@@ -14,7 +14,10 @@
     "./tokens.css": "./dist/css/tokens.css",
     "./tokens.json": "./tokens.json"
   },
-  "files": ["dist", "tokens.json"],
+  "files": [
+    "dist",
+    "tokens.json"
+  ],
   "scripts": {
     "generate": "tsx scripts/generate.ts data && prettier --write src/tokens.data.ts",
     "build": "tsc -p tsconfig.build.json && tsx scripts/generate.ts css",

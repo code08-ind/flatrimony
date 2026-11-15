@@ -46,7 +46,11 @@ function istYear(date: Date): number {
 }
 
 /** "12 Nov" when in the same (IST) year as `now`, otherwise "12 Nov 2026". */
-export function formatDate(date: Date | string, locale: Locale = 'en', now: Date = new Date()): string {
+export function formatDate(
+  date: Date | string,
+  locale: Locale = 'en',
+  now: Date = new Date(),
+): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (Number.isNaN(d.getTime())) throw new RangeError('Invalid date');
   const sameYear = istYear(d) === istYear(now);

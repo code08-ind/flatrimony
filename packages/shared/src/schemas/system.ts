@@ -38,7 +38,13 @@ export const ScenarioQuestion = z.object({
   attribute: LifestyleAttribute,
   prompt: z.string().min(1),
   options: z
-    .array(z.object({ id: z.string().min(1), label: z.string().min(1), value: z.number().min(0).max(1) }))
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        value: z.number().min(0).max(1),
+      }),
+    )
     .min(2)
     .max(5),
 });

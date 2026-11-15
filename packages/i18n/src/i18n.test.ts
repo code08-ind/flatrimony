@@ -24,7 +24,13 @@ function leaves(obj: unknown, prefix = ''): Record<string, string> {
 
 function placeholders(elements: MessageFormatElement[], acc = new Set<string>()): Set<string> {
   for (const el of elements) {
-    if (el.type === TYPE.argument || el.type === TYPE.number || el.type === TYPE.date || el.type === TYPE.time) acc.add(el.value);
+    if (
+      el.type === TYPE.argument ||
+      el.type === TYPE.number ||
+      el.type === TYPE.date ||
+      el.type === TYPE.time
+    )
+      acc.add(el.value);
     if (el.type === TYPE.plural || el.type === TYPE.select) {
       acc.add(el.value);
       for (const opt of Object.values(el.options)) placeholders(opt.value, acc);
@@ -41,11 +47,14 @@ describe('message files', () => {
     expect(Object.keys(hi).sort()).toEqual(Object.keys(en).sort());
   });
 
-  it.each(Object.keys(en))('%s parses as ICU with the same placeholders in both languages', (key) => {
-    const pe = [...placeholders(parse(en[key]!))].sort();
-    const ph = [...placeholders(parse(hi[key]!))].sort();
-    expect(ph).toEqual(pe);
-  });
+  it.each(Object.keys(en))(
+    '%s parses as ICU with the same placeholders in both languages',
+    (key) => {
+      const pe = [...placeholders(parse(en[key]!))].sort();
+      const ph = [...placeholders(parse(hi[key]!))].sort();
+      expect(ph).toEqual(pe);
+    },
+  );
 
   it('no message is empty', () => {
     for (const v of [...Object.values(en), ...Object.values(hi)]) expect(v.trim()).not.toBe('');

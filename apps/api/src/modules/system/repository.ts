@@ -29,7 +29,9 @@ export function inMemorySystemRepository(
       return overrides.config ?? DEFAULT_PUBLIC_CONFIG;
     },
     async referenceData() {
-      return overrides.reference ?? { areas: [], habitTags: [], scenarioQuestions: [], products: [] };
+      return (
+        overrides.reference ?? { areas: [], habitTags: [], scenarioQuestions: [], products: [] }
+      );
     },
   };
 }

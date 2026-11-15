@@ -47,13 +47,20 @@ export type ListingCosts = z.infer<typeof ListingCosts>;
 /** Per-person monthly total shown on cards: rent + recurring costs (FR-LST-03). */
 export function trueMonthlyPerPersonInr(
   rentPerPersonInr: number,
-  costs: Pick<ListingCosts, 'maintenanceInr' | 'electricityEstimateInr' | 'wifiInr' | 'helpInr' | 'otherRecurringInr'>,
+  costs: Pick<
+    ListingCosts,
+    'maintenanceInr' | 'electricityEstimateInr' | 'wifiInr' | 'helpInr' | 'otherRecurringInr'
+  >,
   sharingPeople: number,
 ): number {
   if (!Number.isInteger(sharingPeople) || sharingPeople < 1) {
     throw new RangeError('sharingPeople must be a positive integer');
   }
   const shared =
-    costs.maintenanceInr + costs.electricityEstimateInr + costs.wifiInr + costs.helpInr + costs.otherRecurringInr;
+    costs.maintenanceInr +
+    costs.electricityEstimateInr +
+    costs.wifiInr +
+    costs.helpInr +
+    costs.otherRecurringInr;
   return rentPerPersonInr + Math.ceil(shared / sharingPeople);
 }

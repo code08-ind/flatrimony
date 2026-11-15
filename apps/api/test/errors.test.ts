@@ -12,9 +12,14 @@ beforeAll(async () => {
   app = await buildApp({ env: loadEnv({ NODE_ENV: 'test' }) });
   // Test-only routes exercising the error handler before real endpoints exist.
   const typed = app.withTypeProvider<ZodTypeProvider>();
-  typed.post('/test/validate', { schema: { body: OtpGuardRequest } }, async () => ({ allowed: true }));
+  typed.post('/test/validate', { schema: { body: OtpGuardRequest } }, async () => ({
+    allowed: true,
+  }));
   typed.get('/test/api-error', async () => {
-    throw new ApiError('verification.required', { title: 'Verification required', detail: 'Verify to chat.' });
+    throw new ApiError('verification.required', {
+      title: 'Verification required',
+      detail: 'Verify to chat.',
+    });
   });
   typed.get('/test/crash', async () => {
     throw new Error('secret internal detail');
@@ -29,7 +34,11 @@ afterAll(async () => {
 
 describe('error handler', () => {
   it('422 validation.failed lists the failing fields without echoing input', async () => {
-    const res = await app.inject({ method: 'POST', url: '/test/validate', payload: { phone: '12345', deviceId: 'abcdefgh' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/test/validate',
+      payload: { phone: '12345', deviceId: 'abcdefgh' },
+    });
     expect(res.statusCode).toBe(422);
     const body = ProblemDetails.parse(res.json());
     expect(body.code).toBe('validation.failed');

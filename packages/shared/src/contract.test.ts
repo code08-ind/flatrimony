@@ -18,7 +18,9 @@ function sqlEnums(): Record<string, string[]> {
     out[m[1]!] = [...m[2]!.matchAll(/'([^']+)'/g)].map((v) => v[1]!);
   }
   // `alter type ... add value 'x'` in later migrations
-  for (const m of sql.matchAll(/alter type public\.(\w+)\s+add value(?: if not exists)?\s+'([^']+)'/gi)) {
+  for (const m of sql.matchAll(
+    /alter type public\.(\w+)\s+add value(?: if not exists)?\s+'([^']+)'/gi,
+  )) {
     (out[m[1]!] ??= []).push(m[2]!);
   }
   return out;
