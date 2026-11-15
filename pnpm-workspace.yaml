@@ -31,3 +31,9 @@ trustPolicy: no-downgrade
 trustPolicyExclude:
   - undici-types@6.21.0
 blockExoticSubdeps: true
+
+# One React for every app: React Native's renderer requires the exact version Expo SDK 58
+# ships with (19.3.0). Bump together with the Expo SDK.
+overrides:
+  react: 19.3.0
+  react-dom: 19.3.0
