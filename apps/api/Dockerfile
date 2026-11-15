@@ -1,6 +1,6 @@
 # apps/api/Dockerfile — multi-stage, non-root, minimal (docs/03 §9.1).
 # Pin base images by digest for production builds; Dependabot keeps them current.
-FROM node:22-slim AS base
+FROM node:25-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
 WORKDIR /repo
