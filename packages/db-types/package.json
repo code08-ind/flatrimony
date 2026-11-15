@@ -1,0 +1,33 @@
+{
+  "name": "@flatrimony/db-types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kysely table types generated from supabase/migrations (run `pnpm --filter @flatrimony/db-types generate` with the local DB running)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "kysely-codegen --dialect postgres --url \"${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" --include-pattern \"(ref|private|public|supabase_migrations).*\" --out-file src/db.ts && prettier --write src/db.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "kysely": "^0.29.8"
+  },
+  "devDependencies": {
+    "@flatrimony/config": "workspace:*",
+    "kysely-codegen": "^0.20.0",
+    "pg": "^8.23.1",
+    "typescript": "~6.0.3"
+  }
+}
