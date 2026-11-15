@@ -1,0 +1,106 @@
+# Staging CD on every merge to main (docs/03 §10.2, T1.12).
+#
+# BLOCKED until the founder creates the vendor accounts. The job is skipped unless the
+# repository variable STAGING_ENABLED is "true". To enable, configure the GitHub
+# environment `staging` with:
+#   secrets: SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD,
+#            GCP_WIF_PROVIDER, GCP_DEPLOYER_SA, GCP_PROJECT_ID, EXPO_TOKEN
+#   vars:    STAGING_ENABLED=true, API_URL, WEB_URL
+# The Terraform in infra/terraform/envs/staging creates the GCP side (WIF, Artifact
+# Registry, service accounts, Cloud Run services, worker job, scheduler).
+name: deploy-staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation; no JSON keys exist (docs/03 §10.1)
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  REGION: asia-south1
+  REGISTRY: asia-south1-docker.pkg.dev
+
+jobs:
+  deploy:
+    name: deploy
+    if: vars.STAGING_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # 1. Database first: migrations must be safe for the code still running (expand-only).
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+      - name: Migrate database
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      # 2. Build and push images.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Build and push images
+        env:
+          PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          gcloud auth configure-docker "$REGISTRY" --quiet
+          for svc in api web admin worker; do
+            if [ ! -f "apps/$svc/Dockerfile" ]; then echo "skip $svc (no Dockerfile yet)"; continue; fi
+            image="$REGISTRY/$PROJECT/flatrimony/$svc:$GITHUB_SHA"
+            docker build -f "apps/$svc/Dockerfile" -t "$image" .
+            docker push "$image"
+          done
+
+      # 3. Deploy. Services are created by Terraform; CI only rolls new revisions.
+      - name: Deploy services
+        env:
+          PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          for svc in api web admin; do
+            [ -f "apps/$svc/Dockerfile" ] || continue
+            gcloud run deploy "$svc" --region "$REGION" --project "$PROJECT" \
+              --image "$REGISTRY/$PROJECT/flatrimony/$svc:$GITHUB_SHA" --quiet
+          done
+          if [ -f apps/worker/Dockerfile ]; then
+            gcloud run jobs update worker --region "$REGION" --project "$PROJECT" \
+              --image "$REGISTRY/$PROJECT/flatrimony/worker:$GITHUB_SHA" --quiet
+          fi
+
+      # 4. Smoke tests against the deployed URLs (fails the deploy on any check).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Smoke tests
+        run: node scripts/smoke.mjs --base-url "${{ vars.API_URL }}" --web-url "${{ vars.WEB_URL }}"
+
+      # 5. Mobile JS update to the staging channel (EAS Update).
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: EAS Update (staging channel)
+        if: hashFiles('apps/mobile/eas.json') != ''
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: staging
+        run: |
+          pnpm turbo run build --filter=@flatrimony/mobile^...
+          npx --yes eas-cli@27.5.0 update --channel staging --message "$GITHUB_SHA" --non-interactive
