@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (git-ignored). Values come from the founder's GCP account.
+project_id         = "flatrimony-staging"
+billing_account_id = ""   # e.g. 0X0X0X-0X0X0X-0X0X0X
+# monthly_budget_inr = <founder sets>
