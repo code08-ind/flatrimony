@@ -11,19 +11,24 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage --exclude \"test/integration/**\"",
+    "test:integration": "vitest run test/integration"
   },
   "dependencies": {
+    "@flatrimony/db-types": "workspace:*",
     "@flatrimony/shared": "workspace:*",
     "fastify": "^5.12.8",
     "fastify-plugin": "^6.0.1",
     "fastify-type-provider-zod": "^7.0.0",
     "jose": "^6.2.15",
+    "kysely": "^0.29.8",
+    "pg": "^8.23.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@flatrimony/config": "workspace:*",
     "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "^5.1.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",

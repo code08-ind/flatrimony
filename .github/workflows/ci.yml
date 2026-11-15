@@ -51,6 +51,16 @@ jobs:
         run: pnpm exec supabase db start
       - name: pgTAP tests
         run: pnpm exec supabase test db
+      - name: Generated DB types match the migrations
+        run: |
+          pnpm --filter @flatrimony/db-types generate
+          git diff --exit-code packages/db-types/src/db.ts
+      - name: API integration tests (Postgres)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          pnpm turbo run build --filter=@flatrimony/api^...
+          pnpm --filter @flatrimony/api test:integration
       - name: Stop Postgres
         if: always()
         run: pnpm exec supabase stop --no-backup
