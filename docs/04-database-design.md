@@ -1391,6 +1391,10 @@ Deliberate changes made while implementing; keep them when editing the DDL above
 | Index (§9) | `profiles_discoverable_idx` has no `suspended_until is null` predicate. | The §10 query filters `suspended_until is null or suspended_until < now()`, which that partial index could never serve. |
 | Generated types | `@flatrimony/db-types` uses `--date-parser string`; the API keeps `DATE` as `'YYYY-MM-DD'` strings. | Avoids a one-day shift of dates of birth when the process timezone is not UTC. |
 
+### 15.2 Auth hooks (T2.2, migration 0006)
+
+Migration 0006 is outside the original §15 order: `public.hook_before_user_created(event jsonb)` (refuses anything but an Indian mobile before Auth creates a user) and `public.hook_password_verification_attempt(event jsonb)` (rejects every password attempt; phone OTP is the only sign-in). Both are executable only by `supabase_auth_admin`. Listings (planned 0006) and later migrations keep their content; only their numbers shift.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:

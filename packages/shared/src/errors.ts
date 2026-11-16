@@ -42,6 +42,7 @@ export const ERROR_CATALOGUE = {
   bad_request: 400,
   'precondition.failed': 412,
   payload_too_large: 413,
+  unsupported_media_type: 415,
   'upstream.unavailable': 503,
 } as const;
 

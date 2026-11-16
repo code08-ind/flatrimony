@@ -42,5 +42,6 @@ variable "secret_ids" {
     "SUPABASE_SERVICE_ROLE_KEY",
     "FIELD_ENCRYPTION_KEY",
     "HASH_PEPPER",
+    "SEND_SMS_HOOK_SECRETS",
   ]
 }

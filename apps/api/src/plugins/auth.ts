@@ -46,6 +46,12 @@ export interface JwtVerifierOptions {
   jwks?: JWTVerifyGetKey;
   /** Legacy shared secret (HS256). Used only when no JWKS is configured. */
   secret?: string;
+  /**
+   * Accept only sessions that were established with a phone OTP (`amr` contains `otp`).
+   * Default true: Flatrimony has no other sign-in method, so a password or email session is a
+   * misconfiguration or an attack (QA T2.2 D1). Refreshed sessions keep their original `amr`.
+   */
+  requireOtp?: boolean;
 }
 
 export type JwtVerifier = (token: string) => Promise<AuthUser>;
@@ -58,6 +64,8 @@ const Claims = z.object({
     .object({ role: z.enum(['moderator', 'admin']).optional() })
     .loose()
     .optional(),
+  // Authentication methods of the session (e.g. [{ method: 'otp', timestamp }]).
+  amr: z.array(z.object({ method: z.string() }).loose()).optional(),
 });
 
 export function createJwtVerifier(opts: JwtVerifierOptions): JwtVerifier {
@@ -80,6 +88,9 @@ export function createJwtVerifier(opts: JwtVerifierOptions): JwtVerifier {
         })
       : await jwtVerify(token, secret!, { ...verifyOpts, algorithms: ['HS256'] });
     const claims = Claims.parse(payload);
+    if ((opts.requireOtp ?? true) && !claims.amr?.some((a) => a.method === 'otp')) {
+      throw new Error('session_not_established_by_otp');
+    }
     return {
       id: claims.sub,
       appRole: claims.app_metadata?.role ?? 'user',

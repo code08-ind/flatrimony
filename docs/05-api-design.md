@@ -76,7 +76,7 @@
    - `supabase.auth.signInWithOtp({ phone: '+91XXXXXXXXXX' })`
    - `supabase.auth.verifyOtp({ phone, token, type: 'sms' })` → returns `access_token` (JWT, short-lived) and `refresh_token` (rotating).
    - Supabase's Send SMS hook calls our SMS provider (DLT-registered template). OTP rate limits are configured in Supabase Auth **and** enforced by `POST /v1/auth/otp-guard` (see below) for ban checks and device limits.
-2. **API calls** send `Authorization: Bearer <access_token>`. The API verifies signature, issuer, audience (`authenticated`), expiry, and that the session is not revoked (`sessions` check via Supabase admin API cache, 60 s).
+2. **API calls** send `Authorization: Bearer <access_token>`. The API verifies signature, issuer, audience (`authenticated`), expiry, that the session was established by phone OTP (`amr` contains `otp`; T2.2), and that the session is not revoked (`sessions` check via Supabase admin API cache, 60 s).
 3. **Token storage:** mobile in `expo-secure-store`; web in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie set by the Next.js server (web never stores tokens in `localStorage`).
 4. **Bootstrap:** after the first OTP login, the client calls `POST /v1/me/bootstrap` once to create the profile row, record consents and register the device.
 5. **Logout:** client calls `supabase.auth.signOut({ scope: 'local' | 'global' })` and `DELETE /v1/devices/current`.
@@ -770,6 +770,7 @@ Client opens Razorpay Checkout with `razorpayOrderId`. Entitlements are granted 
 | Method | Path | Source | Verification | Behaviour |
 | --- | --- | --- | --- | --- |
 | POST | `/webhooks/digilocker` | DigiLocker provider | HMAC signature header with `DIGILOCKER_WEBHOOK_SECRET`; timestamp tolerance 5 min | Fetch result server-to-server; complete verification |
+| POST | `/webhooks/auth/send-sms` | Supabase Auth (Send SMS hook) | Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature` (HMAC-SHA256 of `id.timestamp.raw body`) with `SEND_SMS_HOOK_SECRETS`; timestamp tolerance 5 min; replayed `webhook-id`s are no-ops per instance (cross-instance dedupe with migration 0012) | Synchronous (Auth waits ≤ 5 s): Indian mobiles only (a Postgres `before_user_created` hook also refuses other numbers before Auth creates a user), send the OTP via the SMS provider (DLT; mock until T0.6) with a 2 s abortable timeout, reply `200 {}` or `{ "error": { "http_code", "message" } }`; provider failure or in-flight duplicate → `503` + `retry-after: 1`. Never logs phone or OTP. Exempt from the per-IP request limit (all calls come from Auth); failed signature checks are capped per IP. T2.2 |
 | POST | `/webhooks/razorpay` | Razorpay | `X-Razorpay-Signature` HMAC-SHA256 of raw body with webhook secret | Store in `private.payment_events` (unique `event_id`), process idempotently, grant entitlement |
 | POST | `/internal/jobs/run` | Cloud Scheduler / worker | Google OIDC token, audience = service URL, service account allow-list | Optional HTTP trigger for maintenance tasks |
 

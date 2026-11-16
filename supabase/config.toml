@@ -221,7 +221,8 @@ web3 = 30
 [auth.email]
 # Allow/disallow the email provider. When false, users can't sign up or sign in with email.
 # To block new signups only, set enable_signup = false under [auth] instead.
-enabled = true
+# Flatrimony: phone OTP only (FR-AUTH-01); no email accounts.
+enabled = false
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -263,13 +264,17 @@ otp_expiry = 3600
 [auth.sms]
 # Allow/disallow the phone provider. When false, users can't sign up or sign in with SMS.
 # To block new signups only, set enable_signup = false under [auth] instead.
-enabled = false
+# Flatrimony: phone OTP is the only sign-in method (FR-AUTH-01); SMS goes through the Send SMS hook.
+enabled = true
 # If enabled, users need to confirm their phone number before signing in.
-enable_confirmations = false
+# Flatrimony: a phone number counts only after its OTP is verified (QA T2.2 D1/D2: without this,
+# /signup with phone+password and PUT /user {phone} skip the OTP entirely).
+enable_confirmations = true
 # Template for sending OTP to users
 template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
-max_frequency = "5s"
+# 30 s matches the OTP screen's resend timer (docs/06 §8.2).
+max_frequency = "30s"
 
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.
@@ -283,10 +288,26 @@ max_frequency = "5s"
 # Force log out if the user has been inactive longer than the specified duration.
 # inactivity_timeout = "8h"
 
+# Send every OTP SMS through the API (T2.2): signature-verified, Indian numbers only, DLT provider
+# behind it (mocked until T0.6). The API must be running on the host (pnpm --filter @flatrimony/api dev).
+# Generate the shared secret with `pnpm dev:secrets` (writes supabase/.env and apps/api/.env.local).
+# LOCAL ONLY: never `supabase config push` this file to staging/production. The hosted projects set
+# the hook URI (the API's Cloud Run URL) and its secret in the Supabase dashboard.
+[auth.hook.send_sms]
+enabled = true
+uri = "http://host.docker.internal:8080/webhooks/auth/send-sms"
+secrets = "env(SEND_SMS_HOOK_SECRETS)"
+
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+# Flatrimony: refuse anything but an Indian mobile before Auth creates a user (migration 0006, T2.2).
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/hook_before_user_created"
+
+# Reject every password attempt and revoke sessions: phone OTP is the only sign-in (migration 0006).
+[auth.hook.password_verification_attempt]
+enabled = true
+uri = "pg-functions://postgres/public/hook_password_verification_attempt"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
@@ -294,12 +315,15 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# LOCAL ONLY (see the note on [auth.hook.send_sms]).
+# Flatrimony: the CLI disables phone login unless some provider is enabled, even though every SMS
+# goes through [auth.hook.send_sms] (Auth never calls the provider while the hook is on). This
+# entry is an inert placeholder with no credentials; the real DLT provider sits behind the API.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "unused-send-sms-hook"
+message_service_sid = "unused-send-sms-hook"
+auth_token = "unused-send-sms-hook"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]
