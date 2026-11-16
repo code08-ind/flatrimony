@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { LIMITS } from './constants.js';
 import { ENUMS } from './enums.js';
 
 const migrationsDir = join(import.meta.dirname, '../../../supabase/migrations');
@@ -38,5 +39,68 @@ describe('enum contract with supabase/migrations', () => {
 
   it('packages/shared declares no enum that SQL does not have', () => {
     expect(Object.keys(ENUMS).sort()).toEqual(Object.keys(fromSql).sort());
+  });
+});
+
+/** The `create table <name> ( ... );` block, whitespace-normalised. */
+// Plain string search (no RegExp built from input): the `create table` statement ends at the first
+// line that is exactly ");".
+const lowerSql = sql.toLowerCase();
+function tableBlock(name: string): string {
+  const start = lowerSql.indexOf(`create table ${name.toLowerCase()} (`);
+  if (start === -1) throw new Error(`table ${name} not found in migrations`);
+  const end = lowerSql.indexOf('\n);', start);
+  return sql.slice(start, end).replace(/\s+/g, ' ');
+}
+const norm = (s: string) => s.replace(/\s+/g, ' ');
+
+describe('limits contract with supabase/migrations', () => {
+  // [table, expected fragment of its own CREATE TABLE block, whitespace-insensitive]
+  const expectations: [string, string][] = [
+    ['public.profiles', `char_length(display_name) between 1 and ${LIMITS.displayNameMaxChars}`],
+    ['public.profiles', `char_length(bio) <= ${LIMITS.bioMaxChars}`],
+    ['public.profiles', `cardinality(languages) <= ${LIMITS.languagesMax}`],
+    ['public.profiles', `(current_date - interval '${LIMITS.minAge} years')`],
+    ['public.preferences', `budget_min_inr >= ${LIMITS.budgetInr.min}`],
+    ['public.preferences', `budget_max_inr <= ${LIMITS.budgetInr.max}`],
+    [
+      'public.preferences',
+      `lease_months between ${LIMITS.leaseMonths.min} and ${LIMITS.leaseMonths.max}`,
+    ],
+    ['public.preferences', `lease_months smallint not null default ${LIMITS.leaseMonths.default}`],
+    ['public.anchors', `char_length(label) between 1 and ${LIMITS.anchorLabelMaxChars}`],
+    [
+      'public.anchors',
+      `max_commute_min between ${LIMITS.commuteMinutes.min} and ${LIMITS.commuteMinutes.max}`,
+    ],
+    [
+      'public.anchors',
+      `max_commute_min smallint not null default ${LIMITS.commuteMinutes.default}`,
+    ],
+    [
+      'public.commute_zones',
+      `max_minutes between ${LIMITS.commuteMinutes.min} and ${LIMITS.commuteMinutes.max}`,
+    ],
+    ['public.profile_photos', `position between 0 and ${LIMITS.profilePhotos.max - 1}`],
+  ];
+
+  it.each(expectations)('%s enforces: %s', (table, fragment) => {
+    expect(tableBlock(table)).toContain(norm(fragment));
+  });
+
+  it('preferred areas are capped by the max-rows trigger', () => {
+    expect(norm(sql)).toContain(
+      `on public.preference_areas for each row execute function public.enforce_max_rows('${LIMITS.preferredAreasMax}'`,
+    );
+  });
+
+  it('no later migration alters these constraints behind the contract', () => {
+    for (const table of new Set(expectations.map(([t]) => t))) {
+      const alters = lowerSql
+        .split(';')
+        .map((stmt) => stmt.replace(/\s+/g, ' ').trim())
+        .some((stmt) => stmt.includes(`alter table ${table} `) && stmt.includes('constraint'));
+      expect(alters, `${table} has an ALTER ... CONSTRAINT; update this contract test`).toBe(false);
+    }
   });
 });

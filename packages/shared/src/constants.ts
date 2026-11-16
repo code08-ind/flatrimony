@@ -6,6 +6,15 @@ export const LIMITS = {
   /** FR-BIO-01 */
   profilePhotos: { min: 1, max: 6 },
   bioMaxChars: 300,
+  /** profiles.display_name (docs/04 §6.2) */
+  displayNameMaxChars: 40,
+  /** preferences (docs/04 §6.2): rent share per person per month */
+  budgetInr: { min: 1000, max: 200_000 },
+  leaseMonths: { min: 1, max: 36, default: 11 },
+  /** anchors.label (docs/04 §6.2) */
+  anchorLabelMaxChars: 80,
+  /** profiles.languages: ISO 639-1 codes */
+  languagesMax: 10,
   /** FR-BIO-02 */
   preferredAreasMax: 3,
   /** FR-BIO-03 */

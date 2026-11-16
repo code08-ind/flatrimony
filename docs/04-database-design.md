@@ -280,7 +280,7 @@ create table public.profiles (
   deleted_at         timestamptz,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now(),
-  constraint profiles_women_only_chk check (category <> 'women_only' or verified_gender = 'female' or is_identity_verified = false),
+  constraint profiles_women_only_chk check (category <> 'women_only' or verified_gender is not distinct from 'female' or is_identity_verified = false),  -- NULL-safe; see §15.1
   constraint profiles_adult_chk check (date_of_birth is null or date_of_birth <= (current_date - interval '18 years'))
 );
 -- Note: a women_only user who is not yet verified is allowed to exist but is invisible to everyone
@@ -1373,6 +1373,23 @@ Encryption at rest for the whole database and storage is provided by Supabase/AW
 | 0016 | Move-in logs, items, signatures, deposit shares | v1.1 |
 | 0017 | Replacement requests, approvals | v1.1 |
 | 0018 | House agreements, signatures, chores, completions, bills, shares, nudges, payment handles | v1.2 |
+
+### 15.1 Implementation notes (T2.1, migrations 0004–0005)
+
+Deliberate changes made while implementing; keep them when editing the DDL above.
+
+| Area | Change | Why |
+| --- | --- | --- |
+| Grants and RLS | Each migration revokes client privileges and enables RLS on the tables it creates; 0004 also revokes Supabase's **default privileges** in `public` and `ref` for all future tables, sequences and functions. 0013 now only adds the `app_api` / `app_service` roles and their grants. | Supabase grants `anon`/`authenticated` full rights on new `public` objects by default; waiting for 0013 left tables writable by clients. |
+| Women-only | `profiles_women_only_chk` uses `verified_gender is not distinct from 'female'`; new `profiles_verified_gender_chk`: `is_identity_verified = (verified_gender is not null)`. | With `verified_gender = 'female'`, a NULL gender made the check NULL, which Postgres treats as passing. |
+| Identity coupling | Deferred constraint triggers (`profiles_identity_consistent`, `identity_records_profile_consistent`, function `private.check_profile_identity`) require a verified profile to have an `identity_records` row with the same gender and DOB. `identity_records_adult_chk` rejects under-18 verified DOBs. | FR-VER-06 / FR-VER-03 must hold even if the API has a bug. |
+| `public.uid()` | Returns NULL (not an error) for unset, empty, `sub`-less or non-UUID claims. Policies use `(select public.uid())`. | Pooled connections hold `''` after an earlier `SET LOCAL`; the sub-select is evaluated once per statement. |
+| Max rows (§8.4) | `enforce_max_rows(max, key_column)` is `SECURITY DEFINER`, takes a per-(table, user) advisory lock (assumes READ COMMITTED), fires on `INSERT` and `UPDATE OF user_id`, and lets upserts of an existing key through. Photos rely on `position 0..5` + unique instead of the trigger. | Count could be filtered by a writer's RLS, bypassed by moving rows, raced, or block legitimate upserts. |
+| Human text | `public.is_human_text()` on `display_name`, `anchors.label`, `college_name`: trimmed, visible, no control/zero-width/bidi characters (mirrored by `humanText` in `packages/shared`). | Blank, invisible or spoofed names. |
+| Extra checks | Photo `storage_path` = `<user_id>/<uuid>.webp`; ISO 639-1 `languages` (≤ 10); finite dates, DOB ≥ 1900; `bedtime`/`wake_time` < 24:00; `scenario_answers.option_id` must be one of the question's options (trigger); verification status/completion/failure-code consistency, known failure codes, no Aadhaar-like `provider_ref`, one pending verification per user and type; identity name envelope has version byte 1; email `token_hash` unique, `expires_at` index. | Data integrity and data minimisation (FR-VER-02). |
+| Photo order | `(user_id, position)` stays non-deferrable so the API can upsert by position; reordering happens in one API transaction. | Postgres `ON CONFLICT` cannot use deferrable constraints. |
+| Index (§9) | `profiles_discoverable_idx` has no `suspended_until is null` predicate. | The §10 query filters `suspended_until is null or suspended_until < now()`, which that partial index could never serve. |
+| Generated types | `@flatrimony/db-types` uses `--date-parser string`; the API keeps `DATE` as `'YYYY-MM-DD'` strings. | Avoids a one-day shift of dates of birth when the process timezone is not UTC. |
 
 ## 16. Testing the database
 

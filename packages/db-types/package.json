@@ -16,7 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "generate": "kysely-codegen --dialect postgres --url \"${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" --include-pattern \"(ref|private|public|supabase_migrations).*\" --out-file src/db.ts && prettier --write src/db.ts",
+    "generate": "kysely-codegen --dialect postgres --date-parser string --url \"${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" --include-pattern \"(ref|private|public|supabase_migrations).*\" --out-file src/db.ts && prettier --write src/db.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@flatrimony/config": "workspace:*",
+    "@types/node": "^22.20.5",
     "kysely-codegen": "^0.20.0",
     "pg": "^8.23.1",
     "typescript": "~6.0.3"

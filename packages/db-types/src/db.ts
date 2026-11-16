@@ -5,10 +5,24 @@
 
 import type { ColumnType } from 'kysely';
 
+export type AnchorKind = 'college' | 'office';
+
+export type AppLocale = 'en' | 'hi';
+
+export type CleaningLevel = 'daily' | 'few_times_week' | 'rarely' | 'weekly';
+
+export type FoodHabit = 'eggetarian' | 'non_veg' | 'veg' | 'vegan';
+
+export type FrequencyLevel = 'never' | 'often' | 'rarely' | 'sometimes';
+
+export type GenderPreference = 'any' | 'female_only' | 'male_only';
+
 export type Generated<T> =
   T extends ColumnType<infer S, infer I, infer U>
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
+
+export type ImportanceLevel = 'dealbreaker' | 'dont_care' | 'matters';
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
@@ -37,9 +51,149 @@ export type LifestyleAttribute =
   | 'wake_time'
   | 'work_mode';
 
+export type ModerationStatus = 'approved' | 'pending' | 'rejected';
+
+export type PetAttitude = 'have' | 'love' | 'no' | 'ok';
+
 export type ProductCode = 'listing_boost_7d' | 'move_pass_30d';
 
+export type SmokingHabit = 'no' | 'outside_only' | 'yes';
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export type TravelMode = 'car' | 'metro_transit' | 'two_wheeler' | 'walk';
+
+export type UserCategory = 'professional' | 'relocating' | 'student' | 'women_only';
+
+export type UserIntent = 'have_room' | 'need_room' | 'pair_up';
+
+export type VerificationStatus = 'expired' | 'failed' | 'pending' | 'verified';
+
+export type VerificationType =
+  'college_email' | 'digilocker' | 'listing_proof' | 'selfie' | 'work_email';
+
+export type VerifiedGender = 'female' | 'male' | 'transgender';
+
+export type WorkMode = 'hybrid' | 'night_shift' | 'office' | 'student' | 'wfh';
+
+export interface Anchors {
+  kind: AnchorKind;
+  label: string;
+  location: string;
+  max_commute_min: Generated<number>;
+  travel_mode: Generated<TravelMode>;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface CommuteZones {
+  computed_at: Generated<Timestamp>;
+  max_minutes: number;
+  source: Generated<string>;
+  travel_mode: TravelMode;
+  user_id: string;
+  zone: string;
+}
+
+export interface Lifestyle {
+  bedtime: string;
+  cleaning: CleaningLevel;
+  cooks_at_home: boolean | null;
+  drinking: FrequencyLevel | null;
+  food: FoodHabit;
+  guests: FrequencyLevel | null;
+  parties: FrequencyLevel | null;
+  pets: PetAttitude;
+  smoking: SmokingHabit;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+  wake_time: string;
+  work_mode: WorkMode | null;
+}
+
+export interface LifestyleImportance {
+  attribute: LifestyleAttribute;
+  importance: Generated<ImportanceLevel>;
+  user_id: string;
+}
+
+export interface PreferenceAreas {
+  area_id: number;
+  user_id: string;
+}
+
+export interface Preferences {
+  budget_max_inr: number;
+  budget_min_inr: number;
+  flatmate_gender_pref: Generated<GenderPreference>;
+  lease_months: Generated<number>;
+  move_in_from: string;
+  move_in_to: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface PrivateEmailVerifications {
+  consumed_at: Timestamp | null;
+  email_domain: string;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  token_hash: Buffer;
+  type: VerificationType;
+  user_id: string;
+}
+
+export interface PrivateIdentityRecords {
+  digilocker_id_hash: Buffer;
+  user_id: string;
+  verified_at: Generated<Timestamp>;
+  verified_dob: string;
+  verified_gender: VerifiedGender;
+  verified_name_enc: Buffer;
+}
+
+export interface PrivateUserContact {
+  phone_hash: Buffer;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface ProfilePhotos {
+  created_at: Generated<Timestamp>;
+  has_face: boolean | null;
+  height: number | null;
+  id: Generated<string>;
+  moderation_status: Generated<ModerationStatus>;
+  phash: string | null;
+  position: number;
+  storage_path: string;
+  user_id: string;
+  width: number | null;
+}
+
+export interface Profiles {
+  bio: string | null;
+  biodata_completion: Generated<number>;
+  category: Generated<UserCategory>;
+  college_name: string | null;
+  course_end_date: string | null;
+  created_at: Generated<Timestamp>;
+  date_of_birth: string | null;
+  deleted_at: Timestamp | null;
+  display_name: string;
+  has_college_badge: Generated<boolean>;
+  has_work_badge: Generated<boolean>;
+  id: string;
+  intent: UserIntent;
+  is_identity_verified: Generated<boolean>;
+  is_paused: Generated<boolean>;
+  languages: Generated<string[]>;
+  last_active_at: Generated<Timestamp>;
+  locale: Generated<AppLocale>;
+  suspended_until: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+  verified_gender: VerifiedGender | null;
+}
 
 export interface RefAppConfig {
   description: string | null;
@@ -90,6 +244,13 @@ export interface RefScenarioQuestions {
   sort_order: Generated<number>;
 }
 
+export interface ScenarioAnswers {
+  answered_at: Generated<Timestamp>;
+  option_id: string;
+  question_id: string;
+  user_id: string;
+}
+
 export interface SupabaseMigrationsSchemaMigrations {
   name: string | null;
   statements: string[] | null;
@@ -101,12 +262,41 @@ export interface SupabaseMigrationsSeedFiles {
   path: string;
 }
 
+export interface Verifications {
+  completed_at: Timestamp | null;
+  expires_at: Timestamp | null;
+  failure_code: string | null;
+  id: Generated<string>;
+  provider: string | null;
+  /**
+   * Provider transaction reference only. Never a document number or Aadhaar number (FR-VER-02).
+   */
+  provider_ref: string | null;
+  started_at: Generated<Timestamp>;
+  status: Generated<VerificationStatus>;
+  type: VerificationType;
+  user_id: string;
+}
+
 export interface DB {
+  anchors: Anchors;
+  commute_zones: CommuteZones;
+  lifestyle: Lifestyle;
+  lifestyle_importance: LifestyleImportance;
+  preference_areas: PreferenceAreas;
+  preferences: Preferences;
+  'private.email_verifications': PrivateEmailVerifications;
+  'private.identity_records': PrivateIdentityRecords;
+  'private.user_contact': PrivateUserContact;
+  profile_photos: ProfilePhotos;
+  profiles: Profiles;
   'ref.app_config': RefAppConfig;
   'ref.areas': RefAreas;
   'ref.habit_tags': RefHabitTags;
   'ref.products': RefProducts;
   'ref.scenario_questions': RefScenarioQuestions;
+  scenario_answers: ScenarioAnswers;
   'supabase_migrations.schema_migrations': SupabaseMigrationsSchemaMigrations;
   'supabase_migrations.seed_files': SupabaseMigrationsSeedFiles;
+  verifications: Verifications;
 }

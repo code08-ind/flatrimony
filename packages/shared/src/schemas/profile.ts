@@ -18,7 +18,16 @@ import {
   TravelMode,
   WorkMode,
 } from '../enums.js';
-import { Inr, IsoDate, IsoDateTime, LatLng, TimeOfDay, Uuid } from '../primitives.js';
+import {
+  humanText,
+  Inr,
+  IsoDate,
+  IsoDateTime,
+  LanguageCode,
+  LatLng,
+  TimeOfDay,
+  Uuid,
+} from '../primitives.js';
 
 export const Badge = z.object({
   type: z.enum(['identity_verified', 'female_verified', 'work_verified', 'student_verified']),
@@ -38,11 +47,11 @@ export const Photo = z.object({
 
 export const Preferences = z
   .object({
-    budgetMinInr: Inr,
-    budgetMaxInr: Inr,
+    budgetMinInr: Inr.min(LIMITS.budgetInr.min).max(LIMITS.budgetInr.max),
+    budgetMaxInr: Inr.min(LIMITS.budgetInr.min).max(LIMITS.budgetInr.max),
     moveInFrom: IsoDate,
     moveInTo: IsoDate,
-    leaseMonths: z.number().int().positive(),
+    leaseMonths: z.number().int().min(LIMITS.leaseMonths.min).max(LIMITS.leaseMonths.max),
     flatmateGenderPref: GenderPreference,
     areaIds: z.array(z.number().int().positive()).max(LIMITS.preferredAreasMax),
   })
@@ -62,7 +71,7 @@ export type Preferences = z.infer<typeof Preferences>;
 
 export const Anchor = z.object({
   kind: AnchorKind,
-  label: z.string().trim().min(1).max(120),
+  label: humanText(LIMITS.anchorLabelMaxChars),
   location: LatLng,
   travelMode: TravelMode,
   maxCommuteMin: z
@@ -107,12 +116,12 @@ export const PassportSummary = z.object({
 
 export const Me = z.object({
   id: Uuid,
-  displayName: z.string().trim().min(1).max(50),
+  displayName: humanText(LIMITS.displayNameMaxChars),
   age: z.number().int().min(LIMITS.minAge).nullable(),
   intent: Intent,
   category: Category,
   bio: z.string().max(LIMITS.bioMaxChars).optional(),
-  languages: z.array(z.string().min(2).max(35)),
+  languages: z.array(LanguageCode).max(LIMITS.languagesMax),
   locale: AppLocale,
   isIdentityVerified: z.boolean(),
   badges: z.array(Badge),
@@ -137,12 +146,12 @@ export type Me = z.infer<typeof Me>;
 export const PublicProfile = z
   .object({
     id: Uuid,
-    displayName: z.string().min(1).max(50),
+    displayName: humanText(LIMITS.displayNameMaxChars),
     age: z.number().int().min(LIMITS.minAge).nullable(),
     category: Category,
     intent: Intent,
     bio: z.string().max(LIMITS.bioMaxChars).optional(),
-    languages: z.array(z.string()),
+    languages: z.array(LanguageCode).max(LIMITS.languagesMax),
     badges: z.array(Badge),
     photos: z.array(z.object({ id: Uuid, url: z.url() })).max(LIMITS.profilePhotos.max),
     lifestyle: Lifestyle,
