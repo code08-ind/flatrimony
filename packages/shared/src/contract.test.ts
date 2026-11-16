@@ -43,11 +43,14 @@ describe('enum contract with supabase/migrations', () => {
 });
 
 /** The `create table <name> ( ... );` block, whitespace-normalised. */
+// Plain string search (no RegExp built from input): the `create table` statement ends at the first
+// line that is exactly ");".
+const lowerSql = sql.toLowerCase();
 function tableBlock(name: string): string {
-  const re = new RegExp(`create table ${name.replace('.', '\\.')} \\(([\\s\\S]*?)\\n\\);`, 'i');
-  const m = re.exec(sql);
-  if (!m) throw new Error(`table ${name} not found in migrations`);
-  return m[1]!.replace(/\s+/g, ' ');
+  const start = lowerSql.indexOf(`create table ${name.toLowerCase()} (`);
+  if (start === -1) throw new Error(`table ${name} not found in migrations`);
+  const end = lowerSql.indexOf('\n);', start);
+  return sql.slice(start, end).replace(/\s+/g, ' ');
 }
 const norm = (s: string) => s.replace(/\s+/g, ' ');
 
@@ -93,11 +96,11 @@ describe('limits contract with supabase/migrations', () => {
 
   it('no later migration alters these constraints behind the contract', () => {
     for (const table of new Set(expectations.map(([t]) => t))) {
-      const alters = new RegExp(`alter table ${table.replace('.', '\\.')}\\b[^;]*constraint`, 'i');
-      expect(
-        alters.test(sql),
-        `${table} has an ALTER ... CONSTRAINT; update this contract test`,
-      ).toBe(false);
+      const alters = lowerSql
+        .split(';')
+        .map((stmt) => stmt.replace(/\s+/g, ' ').trim())
+        .some((stmt) => stmt.includes(`alter table ${table} `) && stmt.includes('constraint'));
+      expect(alters, `${table} has an ALTER ... CONSTRAINT; update this contract test`).toBe(false);
     }
   });
 });
