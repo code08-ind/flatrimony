@@ -47,6 +47,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Throwaway Send SMS hook secret (config.toml requires one)
+        run: echo "SEND_SMS_HOOK_SECRETS=v1,whsec_$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       - name: Start Postgres (applies migrations + seed)
         run: pnpm exec supabase db start
       - name: pgTAP tests

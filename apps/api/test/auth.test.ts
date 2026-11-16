@@ -19,7 +19,12 @@ async function token(
   claims: Record<string, unknown> = {},
   opts: { key?: CryptoKey; exp?: string; iss?: string; aud?: string } = {},
 ) {
-  return new SignJWT({ role: 'authenticated', session_id: 'sess-1', ...claims })
+  return new SignJWT({
+    role: 'authenticated',
+    session_id: 'sess-1',
+    amr: [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }],
+    ...claims,
+  })
     .setProtectedHeader({ alg: 'ES256', kid: 'k1' })
     .setSubject(typeof claims.sub === 'string' ? claims.sub : USER)
     .setIssuer(opts.iss ?? ISSUER)
@@ -77,6 +82,11 @@ describe('auth plugin', () => {
     ['anon role', () => token({ role: 'anon' })],
     ['service_role', () => token({ role: 'service_role' })],
     ['non-UUID subject', () => token({ sub: 'user-1' })],
+    [
+      'password session (amr password)',
+      () => token({ amr: [{ method: 'password', timestamp: 1 }] }),
+    ],
+    ['session without amr', () => token({ amr: undefined })],
   ])('rejects a token with %s', async (_name, make) => {
     const res = await get('/test/me', `Bearer ${await make()}`);
     expect(res.statusCode).toBe(401);
@@ -110,7 +120,7 @@ describe('auth plugin', () => {
 describe('verifier configuration', () => {
   it('supports the legacy HS256 secret when no JWKS is configured', async () => {
     const verify = createJwtVerifier({ issuer: ISSUER, secret: SECRET });
-    const hs = await new SignJWT({ role: 'authenticated' })
+    const hs = await new SignJWT({ role: 'authenticated', amr: [{ method: 'otp', timestamp: 1 }] })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(USER)
       .setIssuer(ISSUER)
@@ -145,6 +155,7 @@ describe('verifier configuration', () => {
         DATABASE_URL: 'postgres://u:p@h:5432/d',
         SUPABASE_JWT_ISSUER: ISSUER,
         SUPABASE_JWT_SECRET: SECRET,
+        SEND_SMS_HOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
       }).APP_ENV,
     ).toBe('staging');
   });

@@ -102,8 +102,8 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 | ID | Task | FR | Status |
 | --- | --- | --- | --- |
 | T2.1 | Migrations 0004–0005 (profiles, preferences, anchors, lifestyle, verification tables) + RLS | DB §6.2–6.3 | In review — migrations 0004–0005 with grants/RLS, profile ↔ DigiLocker identity triggers, 135 pgTAP tests; Zod limits aligned to the DB with a per-table contract test; Code Reviewer + Manual QA findings addressed (see PR). Deviations recorded in docs/04 §15.1 |
-| T2.2 | Supabase Auth phone OTP + Send SMS hook to provider | FR-AUTH-01 | Not started |
-| T2.3 | `POST /auth/otp-guard` with bans and rate limits | FR-AUTH-02, 08 | Not started |
+| T2.2 | Supabase Auth phone OTP + Send SMS hook to provider | FR-AUTH-01 | In review — phone OTP is the only sign-in: signed Send SMS hook `POST /webhooks/auth/send-sms` (mock provider), Postgres hooks refusing non-Indian numbers and every password attempt, phone confirmations on, email off, API requires `amr: otp`; 7 E2E tests against local Supabase Auth. **Blocked (founder):** DLT SMS provider (T0.6 / OQ-03); hosted Auth settings in `docs/runbooks/supabase-auth-settings.md` (OTP expiry ≤ 5 min cannot be set locally) |
+| T2.3 | `POST /auth/otp-guard` with bans and rate limits | FR-AUTH-02, 08 | Not started — note from T2.2 QA: Supabase does not count wrong OTP guesses per number; the 5-failures/30-min lock (FR-AUTH-02) needs its own mechanism, and `trustProxy` is now hop-limited so per-IP limits cannot be spoofed |
 | T2.4 | Mobile: welcome, language, phone, OTP (SMS Retriever) | FR-AUTH-01, 05 | Not started |
 | T2.5 | `POST /me/bootstrap`, `GET/PATCH /me`, consents | FR-AUTH-06, 09 | Not started |
 | T2.6 | Onboarding screens (6 steps) mobile + web | FR-AUTH-06 | Not started |

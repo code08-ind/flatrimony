@@ -41,6 +41,13 @@ export const errorsPlugin = fp(async (app: FastifyInstance) => {
       }));
       return send(reply, req, problem('validation.failed', { title: 'Validation failed', errors }));
     }
+    if (err.statusCode === 415) {
+      return send(
+        reply,
+        req,
+        problem('unsupported_media_type', { title: 'Unsupported media type' }),
+      );
+    }
     if (err.statusCode === 413)
       return send(reply, req, problem('payload_too_large', { title: 'Payload too large' }));
     if (err.statusCode === 400 || err.code === 'FST_ERR_CTP_INVALID_JSON_BODY') {
