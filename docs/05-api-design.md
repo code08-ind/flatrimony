@@ -99,6 +99,8 @@ Response `200`:
 
 Response `403` with code `auth.banned` or `429` with `auth.otp_rate_limited` (`retryAfterSeconds`). The phone number is hashed immediately and never logged.
 
+Implementation notes (T2.3): phone and `deviceId` are HMAC-SHA-256'd with `HASH_PEPPER` (kind-separated; phones canonicalised to `+91…` first) before any use. Limits are **sliding** windows checked in the order IP (IPv6 by /64) → device → phone; nothing is recorded unless all three pass, so a caller over its own budget cannot burn a victim's per-phone quota, and a request over any limit gets `429` **before** any ban lookup (the limits bound ban probing). `integrityToken` is accepted but not yet verified (Play Integrity, T3.6). The client IP is the socket address unless `TRUST_PROXY_HOPS` is set (Cloud Run: 1). This endpoint is advisory, since a client can call Supabase's `/otp` directly, so the Send SMS hook (§8.22) re-applies the enforceable part: banned phones get no OTP, and at most 5 OTPs are sent per phone per 15 minutes, counting only successful sends; "banned" and "over the limit" get the same hook answer. Residual risk: anyone can hold one number's per-phone quota for 15 minutes with 5 requests from fresh IPs/devices (no SMS is sent); stronger client proof (OQ-08 c/d) mitigates it. Counters are per API instance until `private.rate_limits` (migration 0012).
+
 ## 3. Authorisation model
 
 | Principal | How identified | Can do |

@@ -7,6 +7,7 @@
  * Run with the full local stack and the API up (docs/07 T2.2):
  *   E2E_SUPABASE_URL=http://127.0.0.1:54321 E2E_SUPABASE_ANON_KEY=<anon key> \
  *   E2E_API_URL=http://127.0.0.1:8080 [E2E_DATABASE_URL=postgresql://…:54322/postgres] \
+ *   [E2E_HASH_PEPPER=<HASH_PEPPER from apps/api/.env.local>] \
  *   pnpm --filter @flatrimony/api test:e2e
  * Skipped when the first three variables are not set.
  */
@@ -14,11 +15,17 @@ import { randomBytes, randomInt } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createJwtVerifier } from '../../src/plugins/auth.js';
+import { createIdentifierHasher } from '../../src/lib/hashing.js';
 
 const SUPABASE = process.env.E2E_SUPABASE_URL;
 const ANON = process.env.E2E_SUPABASE_ANON_KEY;
 const API = process.env.E2E_API_URL;
 const DB = process.env.E2E_DATABASE_URL;
+/** The API's HASH_PEPPER (apps/api/.env.local), to plant a ban the API recognises. */
+const PEPPER = process.env.E2E_HASH_PEPPER;
+if (SUPABASE && !PEPPER)
+  console.warn('E2E: E2E_HASH_PEPPER not set, skipping the banned-number test');
+// otp-guard allows 50 calls per hour per IP; each run uses 5 from 127.0.0.1. Restart the API to reset.
 
 const created: string[] = [];
 const indianPhone = () => {
@@ -178,6 +185,43 @@ describe.skipIf(!SUPABASE || !ANON || !API)('phone OTP sign-in (local stack)', (
       expect(code).toMatch(/^\d{6}$/);
       const done = await auth('verify', { type: 'phone_change', phone: next, token: code }, token);
       expect(done.status).toBe(200);
+    },
+  );
+
+  it('otp-guard allows a fresh number, then rate-limits the same number', async () => {
+    const phone = indianPhone();
+    const deviceId = `e2e-${randomBytes(8).toString('hex')}`;
+    const call = () =>
+      fetch(`${API}/v1/auth/otp-guard`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ phone, deviceId }),
+      });
+    for (let i = 0; i < 5; i++) expect((await call()).status).toBe(200);
+    const blocked = await call();
+    expect(blocked.status).toBe(429);
+    expect((await json(blocked)).code).toBe('auth.otp_rate_limited');
+  });
+
+  it.skipIf(!DB || !PEPPER)(
+    'a banned number gets no OTP even when the app skips otp-guard',
+    async () => {
+      const phone = indianPhone();
+      const hash = createIdentifierHasher(PEPPER!)('phone', phone);
+      const client = new pg.Client({ connectionString: DB });
+      await client.connect();
+      await client.query(
+        "insert into private.banned_identities (phone_hash, reason) values ($1, 'e2e')",
+        [hash],
+      );
+      try {
+        const res = await auth('otp', { phone });
+        expect(res.status).toBeGreaterThanOrEqual(400);
+        expect(await latestOtp(phone)).toBeFalsy();
+      } finally {
+        await client.query("delete from private.banned_identities where reason = 'e2e'");
+        await client.end();
+      }
     },
   );
 

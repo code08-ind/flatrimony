@@ -17,6 +17,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { verifyWebhook } from '../../lib/standard-webhooks.js';
 import type { MockSmsProvider, SmsProvider } from '../../lib/sms.js';
+import { normaliseIndianMobile } from '../../lib/phone.js';
+import type { SendSmsGate } from '../auth/otp-guard.js';
 
 // Supabase sends a 6-digit OTP (Auth's SMS OTP length, default 6). If that setting ever changes,
 // change this pattern with it, or every hook call fails and nobody can sign in.
@@ -38,11 +40,7 @@ const Payload = z.object({
     .loose(),
 });
 
-/** Supabase stores E.164 with or without '+'; we accept Indian mobile numbers only. */
-export function normaliseIndianMobile(phone: string): string | null {
-  const digits = phone.replace(/^\+/, '');
-  return /^91[6-9]\d{9}$/.test(digits) ? `+${digits}` : null;
-}
+export { normaliseIndianMobile } from '../../lib/phone.js';
 
 export interface SendSmsHookOptions {
   keys: readonly Buffer[];
@@ -52,9 +50,26 @@ export interface SendSmsHookOptions {
   providerTimeoutMs?: number;
   /** Failed signature checks allowed per IP per minute before answering 429 without verifying. */
   maxFailuresPerMinute?: number;
+  /**
+   * Server-side OTP policy (T2.3): banned phones and the per-phone send limit. Runs before the
+   * provider; cannot be bypassed by skipping /v1/auth/otp-guard.
+   */
+  gate?: SendSmsGate;
+  /** Give up on the gate (DB lookup) after this long and fail closed. */
+  gateTimeoutMs?: number;
 }
 
 const REPLAY_WINDOW_SECONDS = 600; // > 2 × the 5-minute timestamp tolerance
+
+function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('deadline_exceeded')), ms);
+    p.then(
+      (v) => (clearTimeout(timer), resolve(v)),
+      (e: unknown) => (clearTimeout(timer), reject(e)),
+    );
+  });
+}
 
 function hookError(reply: FastifyReply, httpCode: number, message: string, retry = false) {
   if (retry) reply.header('retry-after', '1');
@@ -156,7 +171,29 @@ export async function sendSmsHookRoutes(app: FastifyInstance, opts: SendSmsHookO
         return hookError(reply, 400, 'Only Indian mobile numbers are supported');
       }
 
+      // Claim the delivery BEFORE any await, so a concurrent duplicate sees it in flight.
       deliveries.set(verdict.id, { state: 'in_flight', at: now });
+
+      if (opts.gate) {
+        let decision;
+        try {
+          decision = await withDeadline(opts.gate.check(phone), opts.gateTimeoutMs ?? 1_000);
+        } catch (err) {
+          deliveries.delete(verdict.id);
+          req.log.error(
+            { userId: payload.user.id, error: (err as Error).name },
+            'send-sms hook: policy check failed',
+          );
+          return hookError(reply, 500, 'OTP policy check failed');
+        }
+        if (!decision.ok) {
+          deliveries.delete(verdict.id);
+          // One answer for "banned" and "over the limit" (no oracle). No retry-after: retrying cannot help.
+          req.log.info({ userId: payload.user.id }, 'send-sms hook: OTP refused by policy');
+          return hookError(reply, 403, 'OTP not available for this number');
+        }
+      }
+
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(new Error('sms_provider_timeout')), timeoutMs);
       try {
@@ -181,6 +218,7 @@ export async function sendSmsHookRoutes(app: FastifyInstance, opts: SendSmsHookO
       }
 
       deliveries.set(verdict.id, { state: 'done', at: now });
+      opts.gate?.recordSent(phone);
       req.log.info(
         { userId: payload.user.id, provider: opts.provider.name, webhookId: verdict.id },
         'OTP SMS sent',
