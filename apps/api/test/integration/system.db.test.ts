@@ -4,6 +4,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { PublicConfig, ReferenceData } from '@flatrimony/shared';
 import { buildApp } from '../../src/app.js';
 import { loadEnv } from '../../src/env.js';
@@ -77,6 +78,11 @@ describe.skipIf(!url)('system endpoints on Postgres', () => {
     expect(sinkHi!.prompt).toContain('सिंक');
     expect(en.habitTags.map((t) => t.id)).toContain('tidy');
     expect(en.products).toEqual([]); // prices are the founder's to set
+  });
+
+  it('returns DATE columns as YYYY-MM-DD strings, never shifted by the process timezone', async () => {
+    const { rows } = await sql<{ d: unknown }>`select date '2002-01-01' as d`.execute(db);
+    expect(rows[0]!.d).toBe('2002-01-01');
   });
 
   it('/readyz reports failure when the database is unreachable', async () => {

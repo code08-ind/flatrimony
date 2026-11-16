@@ -12,3 +12,4 @@ supabase/tests/
 apps/mobile/expo-env.d.ts
 apps/web/next-env.d.ts
 apps/admin/next-env.d.ts
+.claude/

@@ -101,7 +101,7 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 
 | ID | Task | FR | Status |
 | --- | --- | --- | --- |
-| T2.1 | Migrations 0004–0005 (profiles, preferences, anchors, lifestyle, verification tables) + RLS | DB §6.2–6.3 | Not started |
+| T2.1 | Migrations 0004–0005 (profiles, preferences, anchors, lifestyle, verification tables) + RLS | DB §6.2–6.3 | In review — migrations 0004–0005 with grants/RLS, profile ↔ DigiLocker identity triggers, 135 pgTAP tests; Zod limits aligned to the DB with a per-table contract test; Code Reviewer + Manual QA findings addressed (see PR). Deviations recorded in docs/04 §15.1 |
 | T2.2 | Supabase Auth phone OTP + Send SMS hook to provider | FR-AUTH-01 | Not started |
 | T2.3 | `POST /auth/otp-guard` with bans and rate limits | FR-AUTH-02, 08 | Not started |
 | T2.4 | Mobile: welcome, language, phone, OTP (SMS Retriever) | FR-AUTH-01, 05 | Not started |

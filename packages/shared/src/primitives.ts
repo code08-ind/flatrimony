@@ -24,6 +24,30 @@ export const Inr = z.number().int().nonnegative();
 /** Payments and bills: integer paise. */
 export const Paise = z.number().int().nonnegative();
 
+// Control, soft-hyphen, zero-width and bidirectional-override characters (invisible or spoofing).
+// Mirrors public.is_human_text() in supabase/migrations/*_profiles_and_biodata.sql.
+const INVISIBLE =
+  // eslint-disable-next-line no-control-regex -- matching control characters is the point
+  /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028-\u202E\u2060-\u2064\uFEFF]/u;
+
+/**
+ * Text people will read (names, labels): trimmed, 1..max characters counted in code points like
+ * Postgres `char_length`, at least one visible character, no invisible or bidi-control characters.
+ */
+export function humanText(max: number) {
+  return z
+    .string()
+    .trim()
+    .refine((s) => {
+      const length = [...s].length;
+      return length >= 1 && length <= max;
+    }, `Must be 1 to ${max} characters`)
+    .refine((s) => !INVISIBLE.test(s) && /\S/u.test(s), 'Must contain only visible characters');
+}
+
+/** ISO 639-1 language code, e.g. 'hi', 'en'. */
+export const LanguageCode = z.string().regex(/^[a-z]{2}$/, 'Expected an ISO 639-1 code');
+
 export const SemVer = z.string().regex(/^\d+\.\d+\.\d+$/, 'Expected MAJOR.MINOR.PATCH');
 
 /** Cursor pagination query (docs/05 §5). */

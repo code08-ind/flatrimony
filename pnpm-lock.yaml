@@ -266,6 +266,9 @@ importers:
       '@flatrimony/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
       kysely-codegen:
         specifier: ^0.20.0
         version: 0.20.0(kysely@0.29.8)(pg@8.23.1)(typescript@6.0.3)

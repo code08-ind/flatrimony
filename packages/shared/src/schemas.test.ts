@@ -28,6 +28,7 @@ import {
   Uuid,
 } from './index.js';
 import { z } from 'zod';
+import { humanText, LanguageCode } from './primitives.js';
 
 const id = '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f';
 
@@ -121,6 +122,39 @@ describe('primitives', () => {
   });
 });
 
+describe('human text (mirrors public.is_human_text)', () => {
+  const name = humanText(40);
+
+  it('trims and accepts real names, including Hindi', () => {
+    expect(name.parse('  Karan  ')).toBe('Karan');
+    expect(name.safeParse('K').success).toBe(true);
+    expect(name.safeParse('क'.repeat(40)).success).toBe(true);
+    expect(name.safeParse('मीरा').success).toBe(true);
+  });
+
+  it('counts code points like Postgres, not UTF-16 units', () => {
+    expect(name.safeParse('😀'.repeat(40)).success).toBe(true);
+    expect(name.safeParse('😀'.repeat(41)).success).toBe(false);
+  });
+
+  it.each([
+    ['empty', ''],
+    ['spaces only', '   '],
+    ['zero-width only', '\u200B'],
+    ['bidi override', 'Admin\u202E'],
+    ['control character', 'Ka\u0007ran'],
+    ['41 characters', 'x'.repeat(41)],
+  ])('rejects %s', (_label, value) => {
+    expect(name.safeParse(value).success).toBe(false);
+  });
+
+  it('accepts ISO 639-1 language codes only', () => {
+    expect(LanguageCode.safeParse('hi').success).toBe(true);
+    expect(LanguageCode.safeParse('HI').success).toBe(false);
+    expect(LanguageCode.safeParse('klingon').success).toBe(false);
+  });
+});
+
 describe('Flat Biodata schemas', () => {
   it('accepts a valid quick biodata', () => {
     expect(Preferences.parse(preferences)).toEqual(preferences);
@@ -132,6 +166,16 @@ describe('Flat Biodata schemas', () => {
     expect(Preferences.safeParse({ ...preferences, moveInTo: '2026-11-30' }).success).toBe(false);
     expect(Preferences.safeParse({ ...preferences, areaIds: [1, 2, 3, 4] }).success).toBe(false);
     expect(Preferences.safeParse({ ...preferences, areaIds: [1, 1] }).success).toBe(false);
+  });
+
+  it('enforces the database limits on budget and lease (docs/04 §6.2)', () => {
+    expect(Preferences.safeParse({ ...preferences, budgetMinInr: 999 }).success).toBe(false);
+    expect(Preferences.safeParse({ ...preferences, budgetMaxInr: 200_001 }).success).toBe(false);
+    expect(
+      Preferences.safeParse({ ...preferences, budgetMinInr: 1000, budgetMaxInr: 200_000 }).success,
+    ).toBe(true);
+    expect(Preferences.safeParse({ ...preferences, leaseMonths: 0 }).success).toBe(false);
+    expect(Preferences.safeParse({ ...preferences, leaseMonths: 37 }).success).toBe(false);
   });
 
   it('anchors default to a 45-minute commute within 15–90', () => {
@@ -172,6 +216,7 @@ describe('Flat Biodata schemas', () => {
     expect(Me.safeParse({ ...me, age: 17 }).success).toBe(false);
     expect(Me.safeParse({ ...me, importance: { cleaning: 'very' } }).success).toBe(false);
     expect(Me.safeParse({ ...me, bio: 'x'.repeat(301) }).success).toBe(false);
+    expect(Me.safeParse({ ...me, displayName: 'x'.repeat(41) }).success).toBe(false);
   });
 
   it('PublicProfile never carries private fields', () => {
