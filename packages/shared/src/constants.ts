@@ -78,3 +78,10 @@ export const RATE_LIMITS = {
 
 /** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */
 export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60_000;
+
+/** OTP request limits (docs/05 §6.3; FR-AUTH-02). Initial values; remote-configurable later. */
+export const OTP_LIMITS = {
+  perPhone: { max: 5, windowMs: 15 * 60_000 },
+  perDevice: { max: 20, windowMs: 60 * 60_000 },
+  perIp: { max: 50, windowMs: 60 * 60_000 },
+} as const;

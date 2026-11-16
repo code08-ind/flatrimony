@@ -38,14 +38,17 @@ export const EnvSchema = z.object({
         ctx.addIssue({ code: 'custom', message: (err as Error).message });
       }
     }),
+  /** Pepper for HMAC lookup hashes of phones, devices, DigiLocker ids (docs/04 §13). Never rotate casually: bans and uniqueness depend on it. */
+  HASH_PEPPER: z.string().min(32).optional(),
   /** OTP SMS provider. Only 'mock' exists until DLT registration (T0.6); refused in production. */
   SMS_PROVIDER: z.enum(['mock']).default('mock'),
   /**
-   * Proxies in front of the API whose X-Forwarded-For entries are trusted. Cloud Run's front end is
-   * 1; add Cloudflare (+1) once ADR-0007 is decided. Never `true`: clients could spoof req.ip and
-   * bypass per-IP limits.
+   * Proxies in front of the API whose X-Forwarded-For entries are trusted. Default 0: nothing is
+   * trusted, so a client cannot pick its own IP (QA T2.3 D3). Cloud Run sets 1 (its front end;
+   * infra/terraform). With Cloudflare in front (ADR-0007) use CF-Connecting-IP and restrict ingress
+   * instead of raising this, or the run.app URL becomes spoofable.
    */
-  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   CORS_ALLOWED_ORIGINS: csv,
   APP_VERSION: z.string().default('0.0.0'),
 });
@@ -72,6 +75,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     if (!env.SEND_SMS_HOOK_SECRETS) {
       throw new Error('SEND_SMS_HOOK_SECRETS is required outside local development');
     }
+    if (!env.HASH_PEPPER) throw new Error('HASH_PEPPER is required outside local development');
   }
   return env;
 }

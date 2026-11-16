@@ -159,6 +159,11 @@ resource "google_cloud_run_v2_service" "svc" {
         name  = "APP_ENV"
         value = "staging"
       }
+      env {
+        # Cloud Run's front end is the one proxy whose X-Forwarded-For entry is trusted (API env).
+        name  = "TRUST_PROXY_HOPS"
+        value = "1"
+      }
     }
   }
 

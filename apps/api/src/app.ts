@@ -21,6 +21,10 @@ import { healthRoutes, v1SystemRoutes } from './modules/system/routes.js';
 import { devSmsOutboxRoutes, sendSmsHookRoutes } from './modules/auth-hooks/routes.js';
 import { createSmsProvider, isMockSmsProvider, type SmsProvider } from './lib/sms.js';
 import { parseWebhookSecrets } from './lib/standard-webhooks.js';
+import { createIdentifierHasher, ephemeralPepper } from './lib/hashing.js';
+import { memoryBansRepository, type BansRepository } from './modules/auth/bans.js';
+import { createSendSmsGate, otpGuardRoutes } from './modules/auth/otp-guard.js';
+import { memorySlidingWindowStore, type SlidingWindowStore } from './lib/sliding-window.js';
 import { inMemorySystemRepository, type SystemRepository } from './modules/system/repository.js';
 
 export interface BuildOptions {
@@ -33,6 +37,12 @@ export interface BuildOptions {
   now?: () => number;
   /** OTP SMS provider (defaults to the one named by SMS_PROVIDER; tests inject their own). */
   smsProvider?: SmsProvider;
+  /** Banned identities (Postgres in server.ts; in-memory default). */
+  bansRepo?: BansRepository;
+  /** OTP counters (sliding windows; in-memory default). */
+  otpStore?: SlidingWindowStore;
+  /** Capture logs (tests assert that no personal data is logged). */
+  logStream?: { write(line: string): void };
 }
 
 /** Builds the JWT verifier from env; undefined when auth is not configured (local only). */
@@ -64,9 +74,16 @@ export async function buildApp({
   idempotencyStore,
   now,
   smsProvider,
+  bansRepo,
+  otpStore,
+  logStream,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: { level: env.NODE_ENV === 'test' ? 'silent' : env.LOG_LEVEL, redact: REDACT },
+    logger: {
+      level: logStream ? 'debug' : env.NODE_ENV === 'test' ? 'silent' : env.LOG_LEVEL,
+      redact: REDACT,
+      ...(logStream ? { stream: logStream } : {}),
+    },
     genReqId,
     requestIdHeader: false,
     bodyLimit: 100 * 1024, // docs/03 §14: body ≤ 100 KB
@@ -85,8 +102,9 @@ export async function buildApp({
   await app.register(errorsPlugin);
   const verifier = jwtVerifier ?? verifierFromEnv(env);
   await app.register(authPlugin, verifier ? { verifier } : {});
+  const limiter = rateLimitStore ?? memoryRateLimitStore();
   await app.register(rateLimitPlugin, {
-    store: rateLimitStore ?? memoryRateLimitStore(),
+    store: limiter,
     ...(now ? { now } : {}),
   });
   await app.register(idempotencyPlugin, {
@@ -98,6 +116,19 @@ export async function buildApp({
   await app.register(healthRoutes, { repo });
   await app.register(v1SystemRoutes, { prefix: '/v1', repo });
 
+  // OTP guard (T2.3). Identifiers are HMAC'd with HASH_PEPPER (required outside local; a throwaway
+  // pepper locally, so local bans by hash do not survive a restart).
+  const hasher = createIdentifierHasher(env.HASH_PEPPER ?? ephemeralPepper());
+  const bans = bansRepo ?? memoryBansRepository();
+  const otpCounters = otpStore ?? memorySlidingWindowStore();
+  await app.register(otpGuardRoutes, {
+    prefix: '/v1',
+    hasher,
+    bans,
+    store: otpCounters,
+    ...(now ? { now } : {}),
+  });
+
   // Supabase Auth Send SMS hook (only when its secret is configured; required outside local).
   const sms = smsProvider ?? createSmsProvider(env.SMS_PROVIDER);
   if (env.SEND_SMS_HOOK_SECRETS) {
@@ -105,6 +136,7 @@ export async function buildApp({
     await app.register(sendSmsHookRoutes, {
       keys,
       provider: sms,
+      gate: createSendSmsGate({ hasher, bans, store: otpCounters, ...(now ? { now } : {}) }),
       ...(now ? { nowSeconds: () => Math.floor(now() / 1000) } : {}),
     });
   }

@@ -156,6 +156,7 @@ describe('verifier configuration', () => {
         SUPABASE_JWT_ISSUER: ISSUER,
         SUPABASE_JWT_SECRET: SECRET,
         SEND_SMS_HOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
+        HASH_PEPPER: randomBytes(32).toString('base64'),
       }).APP_ENV,
     ).toBe('staging');
   });

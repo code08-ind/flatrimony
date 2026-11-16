@@ -2,12 +2,16 @@ import { buildApp } from './app.js';
 import { loadEnv } from './env.js';
 import { createDatabase } from './lib/db.js';
 import { pgSystemRepository } from './modules/system/pg-repository.js';
+import { pgBansRepository } from './modules/auth/bans.js';
 
 const env = loadEnv();
 // Without DATABASE_URL (local only, enforced by loadEnv) the API serves in-memory defaults
 // and /readyz reports the database as skipped.
 const db = env.DATABASE_URL ? createDatabase(env.DATABASE_URL) : undefined;
-const app = await buildApp({ env, ...(db ? { systemRepo: pgSystemRepository(db) } : {}) });
+const app = await buildApp({
+  env,
+  ...(db ? { systemRepo: pgSystemRepository(db), bansRepo: pgBansRepository(db) } : {}),
+});
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down');

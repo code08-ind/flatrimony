@@ -33,6 +33,7 @@ async function setup(
           DATABASE_URL: 'postgres://u:p@h:5432/d',
           SUPABASE_JWT_ISSUER: 'https://x.supabase.co/auth/v1',
           SUPABASE_JWT_SECRET: randomBytes(32).toString('hex'),
+          HASH_PEPPER: randomBytes(32).toString('base64'),
         }
       : {}),
   });
@@ -290,7 +291,8 @@ describe('Send SMS hook', () => {
     const { app } = await setup();
     const results = [];
     for (let i = 0; i < 305; i++) {
-      const body = payload();
+      // Different numbers: the per-phone OTP limit (T2.3) is a separate, intended cap.
+      const body = payload(`+9198${String(10_000_000 + i)}`);
       results.push((await post(app, body, signed(body))).statusCode);
     }
     expect(results.every((s) => s === 200)).toBe(true);

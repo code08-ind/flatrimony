@@ -133,6 +133,16 @@ export interface Preferences {
   user_id: string;
 }
 
+export interface PrivateBannedIdentities {
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  device_hash: Buffer | null;
+  digilocker_id_hash: Buffer | null;
+  id: Generated<string>;
+  phone_hash: Buffer | null;
+  reason: string;
+}
+
 export interface PrivateEmailVerifications {
   consumed_at: Timestamp | null;
   email_domain: string;
@@ -285,6 +295,7 @@ export interface DB {
   lifestyle_importance: LifestyleImportance;
   preference_areas: PreferenceAreas;
   preferences: Preferences;
+  'private.banned_identities': PrivateBannedIdentities;
   'private.email_verifications': PrivateEmailVerifications;
   'private.identity_records': PrivateIdentityRecords;
   'private.user_contact': PrivateUserContact;

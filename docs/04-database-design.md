@@ -1393,7 +1393,7 @@ Deliberate changes made while implementing; keep them when editing the DDL above
 
 ### 15.2 Auth hooks (T2.2, migration 0006)
 
-Migration 0006 is outside the original §15 order: `public.hook_before_user_created(event jsonb)` (refuses anything but an Indian mobile before Auth creates a user) and `public.hook_password_verification_attempt(event jsonb)` (rejects every password attempt; phone OTP is the only sign-in). Both are executable only by `supabase_auth_admin`. Listings (planned 0006) and later migrations keep their content; only their numbers shift.
+Migration 0006 is outside the original §15 order: `public.hook_before_user_created(event jsonb)` (refuses anything but an Indian mobile before Auth creates a user) and `public.hook_password_verification_attempt(event jsonb)` (rejects every password attempt; phone OTP is the only sign-in). Both are executable only by `supabase_auth_admin`. Migration 0007 pulls `private.banned_identities` (§6.9) forward from 0010 for the OTP guard (T2.3), adding 32-byte hash checks, a non-empty reason, a `created_by` column (moderator, T6.2) and partial indexes per hash column. Listings (planned 0006) and later migrations keep their content; only their numbers shift.
 
 ## 16. Testing the database
 
