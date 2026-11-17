@@ -16,6 +16,20 @@ const csv = z
       .filter(Boolean),
   );
 
+/** A bare browser origin (`https://app.example.com`, no path or trailing slash): what CORS compares. */
+const isBareOrigin = (value: string) => {
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'https:' || url.protocol === 'http:') && url.origin === value;
+  } catch {
+    return false;
+  }
+};
+const isLocalOrigin = (origin: string) => {
+  const host = new URL(origin).hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+};
+
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']).default('development'),
   APP_ENV: z.enum(['local', 'staging', 'production']).default('local'),
@@ -49,7 +63,10 @@ export const EnvSchema = z.object({
    * instead of raising this, or the run.app URL becomes spoofable.
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
-  CORS_ALLOWED_ORIGINS: csv,
+  /** Origins whose browser pages may call the API (docs/05 §1). Empty: no cross-origin calls. */
+  CORS_ALLOWED_ORIGINS: csv.refine((origins) => origins.every(isBareOrigin), {
+    message: 'each entry must be a bare origin such as https://app.example.com',
+  }),
   APP_VERSION: z.string().default('0.0.0'),
 });
 
@@ -62,6 +79,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment configuration: ${fields}`);
   }
   const env = parsed.data;
+  if (
+    env.APP_ENV === 'production' &&
+    env.CORS_ALLOWED_ORIGINS.some((o) => o.startsWith('http:') || isLocalOrigin(o))
+  ) {
+    throw new Error('CORS_ALLOWED_ORIGINS must be https and not local in production');
+  }
   if (env.APP_ENV === 'production' && env.SMS_PROVIDER === 'mock') {
     throw new Error('SMS_PROVIDER=mock is not allowed in production');
   }

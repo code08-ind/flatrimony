@@ -1,4 +1,5 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
+import { useSession } from '../../src/auth/session';
 import { useTranslation } from 'react-i18next';
 import { theme } from '../../src/theme';
 
@@ -8,6 +9,9 @@ import { theme } from '../../src/theme';
  */
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const { session, loading } = useSession();
+  if (loading) return null;
+  if (!session) return <Redirect href="/welcome" />;
   return (
     <Tabs
       screenOptions={{

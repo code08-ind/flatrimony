@@ -66,6 +66,7 @@
 | Locations | `{ "lat": 28.4950, "lng": 77.0890 }`. Polygons as GeoJSON. |
 | Language | `Accept-Language: en` or `hi` selects localised strings in responses (reference data labels, error messages). |
 | Client info | Required headers: `X-App-Platform: android|ios|web`, `X-App-Version: 1.0.0`. Optional: `X-Request-Id` (echoed back). |
+| CORS | Browsers may call the API only from origins listed in `CORS_ALLOWED_ORIGINS` (the web app, the admin app; locally also the Expo web preview). With the list empty, no cross-origin browser call is allowed. The Android app is not a browser and is unaffected. |
 | Empty values | Omit unknown optional fields rather than sending `null`, except where `null` has meaning (e.g., clearing a field in PATCH). |
 | PATCH | JSON Merge Patch semantics: fields present are updated; `null` clears nullable fields. |
 | Successful status codes | `200` read/update, `201` create (with `Location` header), `202` accepted async, `204` no content. |

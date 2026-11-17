@@ -6,6 +6,7 @@
  * Usage: pnpm dev:secrets
  */
 import { randomBytes } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,6 +52,30 @@ const b = upsert(apiEnv, {
   DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
   SUPABASE_JWT_ISSUER: 'http://127.0.0.1:54321/auth/v1',
   SUPABASE_JWKS_URL: 'http://127.0.0.1:54321/auth/v1/.well-known/jwks.json',
+  // Browser origins: the mobile web preview (Expo, 8081) and the web app (3000).
+  CORS_ALLOWED_ORIGINS: 'http://localhost:8081,http://localhost:3000',
+});
+
+// Mobile app public config for local runs (Expo loads apps/mobile/.env.local). The anon key is
+// public by design; it is read from the running local stack when available.
+let anonKey = '';
+try {
+  const status = execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  anonKey = /^ANON_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
+} catch {
+  // Supabase not running: the mobile file is written without the key; re-run after `supabase start`.
+}
+const mobileEnv = join(root, 'apps/mobile/.env.local');
+const c = upsert(mobileEnv, {
+  EXPO_PUBLIC_API_URL: 'http://localhost:8080',
+  EXPO_PUBLIC_WEB_URL: 'http://localhost:3000',
+  EXPO_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
+  ...(anonKey ? { EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey } : {}),
 });
 console.log(`supabase/.env: ${a.length ? `added ${a.join(', ')}` : 'unchanged'}`);
 console.log(`apps/api/.env.local: ${b.length ? `added ${b.join(', ')}` : 'unchanged'}`);
+console.log(`apps/mobile/.env.local: ${c.length ? `added ${c.join(', ')}` : 'unchanged'}`);

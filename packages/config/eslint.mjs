@@ -3,6 +3,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export const base = [
   { ignores: ['**/dist/**', '**/.next/**', '**/.expo/**', '**/coverage/**', '**/node_modules/**'] },
@@ -51,21 +52,31 @@ export const packageBoundaries = [
   },
 ];
 
+/** Import patterns apps may not use (exported so an app can extend `no-restricted-imports`). */
+export const appBoundaryPatterns = [
+  {
+    group: ['@flatrimony/*/src/*', '**/packages/**'],
+    message: 'Import packages through their public entry point.',
+  },
+];
+
 /** For code under apps/*: only public package entry points. */
 export const appBoundaries = [
   {
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@flatrimony/*/src/*', '**/packages/**'],
-              message: 'Import packages through their public entry point.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { patterns: appBoundaryPatterns }],
+    },
+  },
+];
+
+/** React apps (mobile, web, admin): rules of hooks and effect dependencies. */
+export const react = [
+  {
+    files: ['**/*.{tsx,jsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ];
