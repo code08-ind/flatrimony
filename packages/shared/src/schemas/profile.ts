@@ -53,8 +53,12 @@ export const Preferences = z
     moveInTo: IsoDate,
     leaseMonths: z.number().int().min(LIMITS.leaseMonths.min).max(LIMITS.leaseMonths.max),
     flatmateGenderPref: GenderPreference,
-    areaIds: z.array(z.number().int().positive()).max(LIMITS.preferredAreasMax),
+    // ref.areas.id is a smallint: larger ids cannot exist (and would make Postgres fail).
+    areaIds: z
+      .array(z.number().int().positive().max(LIMITS.smallintMax))
+      .max(LIMITS.preferredAreasMax),
   })
+  .strict()
   .refine((p) => p.budgetMinInr <= p.budgetMaxInr, {
     path: ['budgetMaxInr'],
     message: 'Maximum budget must be at least the minimum',
@@ -69,34 +73,42 @@ export const Preferences = z
   });
 export type Preferences = z.infer<typeof Preferences>;
 
-export const Anchor = z.object({
-  kind: AnchorKind,
-  label: humanText(LIMITS.anchorLabelMaxChars),
-  location: LatLng,
-  travelMode: TravelMode,
-  maxCommuteMin: z
-    .number()
-    .int()
-    .min(LIMITS.commuteMinutes.min)
-    .max(LIMITS.commuteMinutes.max)
-    .default(LIMITS.commuteMinutes.default),
-});
+export const Anchor = z
+  .object({
+    kind: AnchorKind,
+    label: humanText(LIMITS.anchorLabelMaxChars),
+    location: LatLng,
+    travelMode: TravelMode,
+    maxCommuteMin: z
+      .number()
+      .int()
+      .min(LIMITS.commuteMinutes.min)
+      .max(LIMITS.commuteMinutes.max)
+      .default(LIMITS.commuteMinutes.default),
+  })
+  .strict();
 export type Anchor = z.infer<typeof Anchor>;
 
-/** First five attributes are P0 (FR-BIO-04); the rest are optional. */
-export const Lifestyle = z.object({
-  bedtime: TimeOfDay,
-  wakeTime: TimeOfDay,
-  cleaning: CleaningLevel,
-  smoking: SmokingHabit,
-  pets: PetAttitude,
-  food: FoodHabit,
-  cooksAtHome: z.boolean().optional(),
-  drinking: FrequencyLevel.optional(),
-  guests: FrequencyLevel.optional(),
-  parties: FrequencyLevel.optional(),
-  workMode: WorkMode.optional(),
-});
+/**
+ * bedtime, wake time, cleaning, smoking, pets (the P0 five of FR-BIO-04) and food are required
+ * (the database requires food too, and discovery filters on it; FR-BIO-04 wording to be aligned
+ * by the founder). The rest are optional.
+ */
+export const Lifestyle = z
+  .object({
+    bedtime: TimeOfDay,
+    wakeTime: TimeOfDay,
+    cleaning: CleaningLevel,
+    smoking: SmokingHabit,
+    pets: PetAttitude,
+    food: FoodHabit,
+    cooksAtHome: z.boolean().optional(),
+    drinking: FrequencyLevel.optional(),
+    guests: FrequencyLevel.optional(),
+    parties: FrequencyLevel.optional(),
+    workMode: WorkMode.optional(),
+  })
+  .strict();
 export type Lifestyle = z.infer<typeof Lifestyle>;
 
 /** Per-attribute importance; missing attributes default to `matters` (FR-BIO-05). */

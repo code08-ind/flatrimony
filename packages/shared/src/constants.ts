@@ -39,6 +39,15 @@ export const LIMITS = {
   /** FR-DISC-02, FR-DISC-09 */
   moveInWindowDays: 30,
   passCooldownDays: 30,
+  /**
+   * Anchors must be in Delhi NCR (FR-BIO-03): an approximate bounding box used only as a sanity
+   * check. Initial value for the founder to confirm (official NCR, or a box around the six launch
+   * cities); keep it aligned with the routing extent (T2.9).
+   */
+  ncrBounds: { minLat: 27.5, maxLat: 29.5, minLng: 76.0, maxLng: 78.5 },
+  /** Technical caps (not product numbers): Postgres smallint, answers per request. */
+  smallintMax: 32_767,
+  scenarioAnswersPerRequest: 50,
   /** docs/05 §5 */
   page: { defaultLimit: 20, maxLimit: 50, messagesMaxLimit: 100 },
 } as const;

@@ -8,10 +8,12 @@ export const IsoDate = z.iso.date();
 /** "HH:mm", 24 h. */
 export const TimeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:mm (24 h)');
 
-export const LatLng = z.object({
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
-});
+export const LatLng = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  })
+  .strict();
 export type LatLng = z.infer<typeof LatLng>;
 
 /** Indian mobile number in E.164: +91 followed by 10 digits starting 6–9. */

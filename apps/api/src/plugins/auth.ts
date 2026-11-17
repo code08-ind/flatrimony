@@ -3,7 +3,8 @@
  *
  * Every request may carry `Authorization: Bearer <access_token>`. The token is verified for
  * signature (JWKS for asymmetric signing keys, or the legacy HS256 secret), issuer, audience
- * `authenticated`, expiry and a UUID `sub`. Routes opt in with `preHandler: app.requireUser`
+ * `authenticated`, expiry and a UUID `sub`. Routes opt in with `onRequest: app.requireUser` (before
+ * body validation, so a request without a session is 401, not 422) or `preHandler`
  * (or `app.requireRole('moderator', 'admin')`). Anything unverifiable fails closed with 401.
  *
  * Not yet here (needs a Supabase project): the 60 s cached session-revocation check. Deleted and
