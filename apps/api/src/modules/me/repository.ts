@@ -15,8 +15,13 @@ import {
   type Category,
   type ConsentGrant,
   type ConsentRecord,
+  type Anchor,
+  type ImportanceMap,
   type Intent,
+  type Lifestyle,
   type Me,
+  type Preferences,
+  type ScenarioAnswersRequest,
   type Platform,
 } from '@flatrimony/shared';
 import type { VerifiedGender } from '@flatrimony/db-types';
@@ -90,6 +95,32 @@ export interface MeRepository {
   loadMe(userId: string, today: string): Promise<Me | null>;
   /** False when `ifVersion` is given and the profile changed since (412). */
   updateProfile(userId: string, update: ProfileUpdate, ifVersion?: string): Promise<boolean>;
+  /** The given area ids that exist and are active (ref.areas). */
+  activeAreaIds(ids: number[]): Promise<number[]>;
+  /** The given scenario question ids that exist and are active. */
+  activeScenarioQuestionIds(ids: string[]): Promise<string[]>;
+  /**
+   * Biodata writes (T2.7). Each replaces its part in one transaction that first locks and touches
+   * the profile row (so concurrent writes for one user run one after the other and the ETag always
+   * changes), then recomputes completion. False when `ifVersion` is given and is stale (412).
+   */
+  replacePreferences(
+    userId: string,
+    preferences: Preferences,
+    ifVersion?: string,
+  ): Promise<boolean>;
+  setAnchor(userId: string, anchor: Anchor, ifVersion?: string): Promise<boolean>;
+  replaceLifestyle(userId: string, lifestyle: Lifestyle, ifVersion?: string): Promise<boolean>;
+  replaceImportance(
+    userId: string,
+    importance: ImportanceMap,
+    ifVersion?: string,
+  ): Promise<boolean>;
+  upsertScenarioAnswers(
+    userId: string,
+    answers: ScenarioAnswersRequest,
+    ifVersion?: string,
+  ): Promise<boolean>;
   listConsents(userId: string): Promise<ConsentRecord[]>;
   /** Records a grant; `created` is false when an identical grant was already active. */
   grantConsent(
@@ -165,6 +196,37 @@ async function recomputeCompletion(db: Database, userId: string): Promise<void> 
     .where('id', '=', userId)
     .where('biodata_completion', '<>', value)
     .execute();
+}
+
+const VERSION_SQL = sql<string>`(extract(epoch from updated_at) * 1000000)::bigint::text`;
+
+/**
+ * Locks the profile row for the rest of the transaction and bumps updated_at (the ETag). With
+ * `ifVersion`, only when the profile is still at that version. False when nothing matched.
+ */
+async function lockAndTouch(tx: Database, userId: string, ifVersion?: string): Promise<boolean> {
+  const res = await tx
+    .updateTable('profiles')
+    .set({ updated_at: sql`now()` })
+    .where('id', '=', userId)
+    .$if(ifVersion !== undefined, (q) => q.where(VERSION_SQL, '=', ifVersion!))
+    .executeTakeFirst();
+  return Number(res.numUpdatedRows) > 0;
+}
+
+/** Runs a biodata write after lockAndTouch; recomputes completion; false on a stale version. */
+async function biodataTx(
+  db: Database,
+  userId: string,
+  ifVersion: string | undefined,
+  write: (tx: Database) => Promise<void>,
+): Promise<boolean> {
+  return db.transaction().execute(async (tx) => {
+    if (!(await lockAndTouch(tx, userId, ifVersion))) return false;
+    await write(tx);
+    await recomputeCompletion(tx, userId);
+    return true;
+  });
 }
 
 export function pgMeRepository(db: Database): MeRepository {
@@ -450,6 +512,153 @@ export function pgMeRepository(db: Database): MeRepository {
         if (Number(res.numUpdatedRows) === 0) return false;
         await recomputeCompletion(tx, userId);
         return true;
+      });
+    },
+
+    async activeAreaIds(ids) {
+      if (ids.length === 0) return [];
+      const rows = await db
+        .selectFrom('ref.areas')
+        .select('id')
+        .where('id', 'in', ids)
+        .where('is_active', '=', true)
+        .execute();
+      return rows.map((r) => r.id);
+    },
+
+    async activeScenarioQuestionIds(ids) {
+      if (ids.length === 0) return [];
+      const rows = await db
+        .selectFrom('ref.scenario_questions')
+        .select('id')
+        .where('id', 'in', ids)
+        .where('is_active', '=', true)
+        .execute();
+      return rows.map((r) => r.id);
+    },
+
+    async replacePreferences(userId, p, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        const row = {
+          budget_min_inr: p.budgetMinInr,
+          budget_max_inr: p.budgetMaxInr,
+          move_in_from: p.moveInFrom,
+          move_in_to: p.moveInTo,
+          lease_months: p.leaseMonths,
+          flatmate_gender_pref: p.flatmateGenderPref,
+        };
+        await tx
+          .insertInto('preferences')
+          .values({ user_id: userId, ...row })
+          .onConflict((oc) => oc.column('user_id').doUpdateSet(row))
+          .execute();
+        // Replace the area set (at most 3; the enforce_max_rows trigger backs this up).
+        await tx.deleteFrom('preference_areas').where('user_id', '=', userId).execute();
+        if (p.areaIds.length > 0)
+          await tx
+            .insertInto('preference_areas')
+            .values(p.areaIds.map((areaId) => ({ user_id: userId, area_id: areaId })))
+            .execute();
+      });
+    },
+
+    async setAnchor(userId, a, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        const row = {
+          kind: a.kind,
+          label: a.label,
+          location: sql<string>`extensions.st_setsrid(extensions.st_makepoint(${a.location.lng}, ${a.location.lat}), 4326)::extensions.geography`,
+          travel_mode: a.travelMode,
+          max_commute_min: a.maxCommuteMin,
+        };
+        const before = await tx
+          .selectFrom('anchors')
+          .select([
+            sql<number>`extensions.st_y(location::extensions.geometry)`.as('lat'),
+            sql<number>`extensions.st_x(location::extensions.geometry)`.as('lng'),
+          ])
+          .where('user_id', '=', userId)
+          .executeTakeFirst();
+        await tx
+          .insertInto('anchors')
+          .values({ user_id: userId, ...row })
+          .onConflict((oc) => oc.column('user_id').doUpdateSet(row))
+          .execute();
+        // The commute zone depends on the point, travel mode and minutes (not on the label or
+        // kind). When any of those changed it no longer matches; commute.compute redraws it (T2.9).
+        const moved =
+          !before || Number(before.lat) !== a.location.lat || Number(before.lng) !== a.location.lng;
+        await tx
+          .deleteFrom('commute_zones')
+          .where('user_id', '=', userId)
+          .$if(!moved, (q) =>
+            q.where((eb) =>
+              eb.or([
+                eb('travel_mode', '<>', a.travelMode),
+                eb('max_minutes', '<>', a.maxCommuteMin),
+              ]),
+            ),
+          )
+          .execute();
+      });
+    },
+
+    async replaceLifestyle(userId, l, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        const row = {
+          bedtime: l.bedtime,
+          wake_time: l.wakeTime,
+          cleaning: l.cleaning,
+          smoking: l.smoking,
+          pets: l.pets,
+          food: l.food,
+          // PUT replaces: optional answers not sent are cleared.
+          cooks_at_home: l.cooksAtHome ?? null,
+          drinking: l.drinking ?? null,
+          guests: l.guests ?? null,
+          parties: l.parties ?? null,
+          work_mode: l.workMode ?? null,
+        };
+        await tx
+          .insertInto('lifestyle')
+          .values({ user_id: userId, ...row })
+          .onConflict((oc) => oc.column('user_id').doUpdateSet(row))
+          .execute();
+      });
+    },
+
+    async replaceImportance(userId, importance, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        await tx.deleteFrom('lifestyle_importance').where('user_id', '=', userId).execute();
+        // Object.entries widens keys to string and values to possibly-undefined; the request
+        // schema (partialRecord over LifestyleAttribute) guarantees both.
+        const rows = Object.entries(importance).map(([attribute, level]) => ({
+          user_id: userId,
+          attribute: attribute as keyof ImportanceMap,
+          importance: level!,
+        }));
+        if (rows.length > 0) await tx.insertInto('lifestyle_importance').values(rows).execute();
+      });
+    },
+
+    async upsertScenarioAnswers(userId, answers, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        await tx
+          .insertInto('scenario_answers')
+          .values(
+            answers.map((a) => ({
+              user_id: userId,
+              question_id: a.questionId,
+              option_id: a.optionId,
+            })),
+          )
+          .onConflict((oc) =>
+            oc.columns(['user_id', 'question_id']).doUpdateSet({
+              option_id: (eb) => eb.ref('excluded.option_id'),
+              answered_at: sql`now()`,
+            }),
+          )
+          .execute();
       });
     },
 

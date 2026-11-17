@@ -5,6 +5,8 @@
  *   GET    /me                    the caller's Me object
  *   PATCH  /me                    display name, bio, languages, locale, intent, category,
  *                                 college fields, isPaused
+ *   PUT    /me/preferences, /me/anchor, /me/lifestyle, /me/importance, /me/scenario-answers
+ *                                 replace one part of the Flat Biodata (T2.7)
  *   GET    /me/consents           grants (history) + the versions current now
  *   POST   /me/consents           grant { purpose, version } (must be the current version)
  *   DELETE /me/consents/:purpose  withdraw an optional consent (Terms/Privacy: account deletion)
@@ -15,7 +17,12 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   ageOn,
+  Anchor,
   BootstrapRequest,
+  ImportanceMap,
+  Lifestyle,
+  Preferences,
+  ScenarioAnswersRequest,
   ConsentGrant,
   ConsentPurpose,
   ConsentRecord,
@@ -64,6 +71,19 @@ function fromDbError(err: unknown): ApiError | null {
     return new ApiError('profile.category_not_allowed', {
       title: 'Women-only needs a verified female identity',
     });
+  if (e?.code === '23514' && (err as Error).message === 'invalid_scenario_option')
+    // The trigger's detail is the question id; the scenario route turns it into a field path.
+    return Object.assign(
+      new ApiError('validation.failed', {
+        title: 'Validation failed',
+        errors: [
+          { path: 'body', code: 'invalid_option', message: 'Not an option of this question' },
+        ],
+      }),
+      { question: (err as { detail?: unknown }).detail },
+    );
+  if (e?.code === 'P0001' && (err as Error).message === 'limit_exceeded')
+    return new ApiError('limit_exceeded', { title: 'Too many items' });
   if (e?.code === '23505' && e.constraint === 'user_contact_phone_hash_key')
     return new ApiError('conflict', {
       title: 'This number belongs to another account',
@@ -174,7 +194,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
   app.post(
     '/me/bootstrap',
     {
-      preHandler: app.requireUser,
+      onRequest: app.requireUser,
       schema: { body: BootstrapRequest, response: { 200: Me, 201: Me } },
     },
     async (req, reply) => {
@@ -263,7 +283,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
 
   app.get(
     '/me',
-    { preHandler: app.requireUser, schema: { response: { 200: Me } } },
+    { onRequest: app.requireUser, schema: { response: { 200: Me } } },
     async (req, reply) => {
       const state = await liveProfile(req.user!.id);
       reply.header('etag', etagFor(state.version));
@@ -273,7 +293,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
 
   app.patch(
     '/me',
-    { preHandler: app.requireUser, schema: { body: MePatch, response: { 200: Me } } },
+    { onRequest: app.requireUser, schema: { body: MePatch, response: { 200: Me } } },
     async (req, reply) => {
       const userId = req.user!.id;
       const state = await liveProfile(userId);
@@ -330,9 +350,141 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
     },
   );
 
+  // ------------------------------------------------------------------ biodata (T2.7)
+  // Each PUT replaces its part of the Flat Biodata, recomputes completion and returns the new Me
+  // with its ETag, so the app can update the completion ring at once. Order of checks: session,
+  // profile (409), suspension (403), then the request (422).
+  async function writableProfile(req: { user: { id: string } | null }) {
+    const userId = req.user!.id;
+    assertNotSuspended(await liveProfile(userId));
+    return userId;
+  }
+
+  /** Runs the write with the optional If-Match and answers with the new Me + ETag. */
+  async function biodataWrite(
+    req: { user: { id: string } | null; headers: Record<string, string | string[] | undefined> },
+    reply: { header(name: string, value: string): unknown },
+    userId: string,
+    write: (ifVersion: string | undefined) => Promise<boolean>,
+  ) {
+    const header = req.headers['if-match'];
+    const ifVersion = parseIfMatch(typeof header === 'string' ? header : undefined);
+    if (ifVersion === null)
+      throw invalid([
+        { path: 'headers.if-match', code: 'invalid', message: 'Use the ETag from GET /v1/me' },
+      ]);
+    if (!(await rethrowDb(write(ifVersion))))
+      throw new ApiError('precondition.failed', {
+        title: 'Profile changed',
+        detail: 'Your profile was changed elsewhere. Reload it and try again.',
+      });
+    const after = await repo.profileState(userId);
+    if (after) reply.header('etag', etagFor(after.version));
+    return me(userId);
+  }
+
+  app.put(
+    '/me/preferences',
+    { onRequest: app.requireUser, schema: { body: Preferences, response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      const p = req.body;
+      const errors: FieldError[] = [];
+      const known = new Set(await repo.activeAreaIds(p.areaIds));
+      p.areaIds.forEach((id, i) => {
+        if (!known.has(id))
+          errors.push({ path: `body.areaIds.${i}`, code: 'unknown_area', message: 'Unknown area' });
+      });
+      if (p.moveInTo < istToday(now()))
+        errors.push({
+          path: 'body.moveInTo',
+          code: 'in_the_past',
+          message: 'The move-in window has already ended',
+        });
+      if (errors.length > 0) throw invalid(errors);
+      return biodataWrite(req, reply, userId, (v) => repo.replacePreferences(userId, p, v));
+    },
+  );
+
+  app.put(
+    '/me/anchor',
+    { onRequest: app.requireUser, schema: { body: Anchor, response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      const { lat, lng } = req.body.location;
+      const b = LIMITS.ncrBounds;
+      if (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng)
+        throw invalid([
+          { path: 'body.location', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
+        ]);
+      // commute.compute is enqueued here once the job runner exists (T1.14/T2.9); until then the
+      // zone is simply absent and discovery falls back to areas.
+      return biodataWrite(req, reply, userId, (v) => repo.setAnchor(userId, req.body, v));
+    },
+  );
+
+  app.put(
+    '/me/lifestyle',
+    { onRequest: app.requireUser, schema: { body: Lifestyle, response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      return biodataWrite(req, reply, userId, (v) => repo.replaceLifestyle(userId, req.body, v));
+    },
+  );
+
+  app.put(
+    '/me/importance',
+    { onRequest: app.requireUser, schema: { body: ImportanceMap, response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      return biodataWrite(req, reply, userId, (v) => repo.replaceImportance(userId, req.body, v));
+    },
+  );
+
+  app.put(
+    '/me/scenario-answers',
+    {
+      onRequest: app.requireUser,
+      schema: { body: ScenarioAnswersRequest, response: { 200: Me } },
+    },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      const ids = req.body.map((a) => a.questionId);
+      const known = new Set(await repo.activeScenarioQuestionIds(ids));
+      const errors: FieldError[] = [];
+      ids.forEach((id, i) => {
+        if (!known.has(id))
+          errors.push({
+            path: `body.${i}.questionId`,
+            code: 'unknown_question',
+            message: 'Unknown question',
+          });
+      });
+      if (errors.length > 0) throw invalid(errors);
+      try {
+        return await biodataWrite(req, reply, userId, (v) =>
+          repo.upsertScenarioAnswers(userId, req.body, v),
+        );
+      } catch (err) {
+        // The trigger names the question whose option is wrong: point at that answer.
+        const question = (err as { question?: unknown }).question;
+        const i = typeof question === 'string' ? ids.indexOf(question) : -1;
+        if (err instanceof ApiError && i >= 0 && err.extra.errors?.[0]?.code === 'invalid_option')
+          throw invalid([
+            {
+              path: `body.${i}.optionId`,
+              code: 'invalid_option',
+              message: 'Not an option of this question',
+            },
+          ]);
+        throw err;
+      }
+    },
+  );
+
   app.get(
     '/me/consents',
-    { preHandler: app.requireUser, schema: { response: { 200: ConsentsResponse } } },
+    { onRequest: app.requireUser, schema: { response: { 200: ConsentsResponse } } },
     async (req) => {
       await liveProfile(req.user!.id);
       return {
@@ -345,7 +497,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
   app.post(
     '/me/consents',
     {
-      preHandler: app.requireUser,
+      onRequest: app.requireUser,
       schema: { body: ConsentGrant, response: { 200: ConsentRecord, 201: ConsentRecord } },
     },
     async (req, reply) => {
@@ -360,7 +512,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
   app.delete(
     '/me/consents/:purpose',
     {
-      preHandler: app.requireUser,
+      onRequest: app.requireUser,
       schema: { params: z.object({ purpose: ConsentPurpose }) },
     },
     async (req, reply) => {

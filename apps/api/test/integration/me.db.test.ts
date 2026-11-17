@@ -15,6 +15,9 @@ import { pgBansRepository } from '../../src/modules/auth/bans.js';
 import { pgMeRepository } from '../../src/modules/me/repository.js';
 
 const url = process.env.DATABASE_URL;
+/** A date `n` days from today (India), so the tests never age into the past. */
+const inDays = (n: number) =>
+  new Date(Date.now() + (5.5 * 60 + n * 24 * 60) * 60_000).toISOString().slice(0, 10);
 const PEPPER = randomBytes(32).toString('base64');
 const hasher = createIdentifierHasher(PEPPER);
 
@@ -35,7 +38,7 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
   }
   const call = (
     user: { token: string },
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     path: string,
     payload?: object,
   ) =>
@@ -336,5 +339,236 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
       .execute();
     expect(rows.find((r) => r.user_id === a.id)!.push_token).toBeNull();
     expect(rows.find((r) => r.user_id === b.id)!.push_token).toBe('ExponentPushToken[it]');
+  });
+
+  it('biodata PUTs (T2.7): onboarding through the API alone reaches 40 %', async () => {
+    const user = await newUser();
+    await call(user, 'POST', '/v1/me/bootstrap', body(`install-${randomUUID()}`));
+    const areas = await db
+      .selectFrom('ref.areas')
+      .select('id')
+      .where('is_active', '=', true)
+      .orderBy('id')
+      .limit(2)
+      .execute();
+    const areaIds = areas.map((a) => a.id);
+
+    let res = await call(user, 'PUT', '/v1/me/preferences', {
+      budgetMinInr: 10000,
+      budgetMaxInr: 20000,
+      moveInFrom: inDays(30),
+      moveInTo: inDays(50),
+      leaseMonths: 11,
+      flatmateGenderPref: 'any',
+      areaIds,
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().preferences.areaIds).toEqual(areaIds);
+    expect(res.json().biodataCompletion).toBe(30); // basics + preferences + areas
+
+    // Replace semantics: the area set is replaced, not merged.
+    res = await call(user, 'PUT', '/v1/me/preferences', {
+      ...res.json().preferences,
+      areaIds: [areaIds[1]],
+    });
+    expect(res.json().preferences.areaIds).toEqual([areaIds[1]]);
+
+    res = await call(user, 'PUT', '/v1/me/lifestyle', {
+      bedtime: '23:00',
+      wakeTime: '07:30',
+      cleaning: 'weekly',
+      smoking: 'outside_only',
+      pets: 'ok',
+      food: 'eggetarian',
+      drinking: 'sometimes',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().biodataCompletion).toBe(40); // FR-AUTH-06 AC
+    // PUT replaces: optional answers not sent are cleared.
+    res = await call(user, 'PUT', '/v1/me/lifestyle', {
+      bedtime: '23:00',
+      wakeTime: '07:30',
+      cleaning: 'weekly',
+      smoking: 'outside_only',
+      pets: 'ok',
+      food: 'eggetarian',
+    });
+    expect(res.json().lifestyle.drinking).toBeUndefined();
+  });
+
+  it('anchor, importance and scenario answers round-trip through Postgres', async () => {
+    const user = await newUser();
+    await call(user, 'POST', '/v1/me/bootstrap', body(`install-${randomUUID()}`));
+    let res = await call(user, 'PUT', '/v1/me/anchor', {
+      kind: 'college',
+      label: 'North Campus',
+      location: { lat: 28.6889, lng: 77.2106 },
+      travelMode: 'two_wheeler',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().anchor).toEqual({
+      kind: 'college',
+      label: 'North Campus',
+      location: { lat: 28.6889, lng: 77.2106 },
+      travelMode: 'two_wheeler',
+      maxCommuteMin: 45,
+    });
+    expect(res.json().biodataCompletion).toBe(20); // basics + anchor
+
+    res = await call(user, 'PUT', '/v1/me/importance', {
+      smoking: 'dealbreaker',
+      pets: 'dont_care',
+    });
+    expect(res.json().importance).toEqual({ smoking: 'dealbreaker', pets: 'dont_care' });
+    res = await call(user, 'PUT', '/v1/me/importance', { food: 'matters' });
+    expect(res.json().importance).toEqual({ food: 'matters' }); // replaced
+
+    const q = await db
+      .selectFrom('ref.scenario_questions')
+      .select(['id', 'options'])
+      .where('is_active', '=', true)
+      .orderBy('sort_order')
+      .executeTakeFirstOrThrow();
+    const options = q.options as { id: string }[];
+    res = await call(user, 'PUT', '/v1/me/scenario-answers', [
+      { questionId: q.id, optionId: options[0]!.id },
+    ]);
+    expect(res.statusCode, res.body).toBe(200);
+    // Answering again replaces the earlier answer.
+    res = await call(user, 'PUT', '/v1/me/scenario-answers', [
+      { questionId: q.id, optionId: options[1]!.id },
+    ]);
+    const stored = await db
+      .selectFrom('scenario_answers')
+      .select('option_id')
+      .where('user_id', '=', user.id)
+      .execute();
+    expect(stored).toEqual([{ option_id: options[1]!.id }]);
+
+    // The database trigger refuses an option the question does not have.
+    const bad = await call(user, 'PUT', '/v1/me/scenario-answers', [
+      { questionId: q.id, optionId: 'not_an_option' },
+    ]);
+    expect(bad.statusCode).toBe(422);
+    expect(bad.json().errors[0].code).toBe('invalid_option');
+  });
+
+  it('review fixes (T2.7): inactive refs, commute zone, ETag, concurrency', async () => {
+    const user = await newUser();
+    await call(user, 'POST', '/v1/me/bootstrap', body(`install-${randomUUID()}`));
+    // Fixtures of our own (inactive area and question), removed at the end.
+    const area = await sql<{ id: number }>`
+      insert into ref.areas (slug, name_en, name_hi, city, centroid, is_active)
+      values (${`it-inactive-${randomInt(1e9)}`}, 'Closed', 'Closed', 'delhi', extensions.st_point(77.2, 28.6)::extensions.geography, false)
+      returning id`.execute(db);
+    const qid = `it_inactive_${randomInt(1e9)}`;
+    await sql`insert into ref.scenario_questions (id, attribute, prompt_en, prompt_hi, options, is_active)
+      values (${qid}, 'cleaning', 'Q', 'Q', '[{"id":"a","label_en":"A","label_hi":"A","value":0},{"id":"b","label_en":"B","label_hi":"B","value":1}]'::jsonb, false)`.execute(
+      db,
+    );
+    try {
+      const prefs = {
+        budgetMinInr: 10000,
+        budgetMaxInr: 20000,
+        moveInFrom: inDays(10),
+        moveInTo: inDays(20),
+        leaseMonths: 11,
+        flatmateGenderPref: 'any',
+        areaIds: [area.rows[0]!.id],
+      };
+      const inactive = await call(user, 'PUT', '/v1/me/preferences', prefs);
+      expect(inactive.statusCode).toBe(422);
+      expect(inactive.json().errors[0].code).toBe('unknown_area');
+      const q = await call(user, 'PUT', '/v1/me/scenario-answers', [
+        { questionId: qid, optionId: 'a' },
+      ]);
+      expect(q.statusCode).toBe(422);
+      expect(q.json().errors[0].code).toBe('unknown_question');
+
+      // The ETag changes on every write, even when completion stays the same.
+      const first = await call(user, 'PUT', '/v1/me/preferences', { ...prefs, areaIds: [] });
+      const second = await call(user, 'PUT', '/v1/me/preferences', {
+        ...prefs,
+        areaIds: [],
+        budgetMaxInr: 25000,
+      });
+      expect(first.json().biodataCompletion).toBe(second.json().biodataCompletion);
+      expect(second.headers.etag).not.toBe(first.headers.etag);
+      // A stale If-Match is refused and changes nothing.
+      const stale = await app.inject({
+        method: 'PUT',
+        url: '/v1/me/preferences',
+        headers: {
+          authorization: `Bearer ${user.token}`,
+          'if-match': first.headers.etag as string,
+        },
+        payload: { ...prefs, areaIds: [], budgetMaxInr: 30000 },
+      });
+      expect(stale.statusCode).toBe(412);
+      expect((await call(user, 'GET', '/v1/me')).json().preferences.budgetMaxInr).toBe(25000);
+
+      // A new anchor drops the old commute zone (recomputed by commute.compute, T2.9).
+      await call(user, 'PUT', '/v1/me/anchor', {
+        kind: 'office',
+        label: 'Office',
+        location: { lat: 28.495, lng: 77.089 },
+        travelMode: 'car',
+      });
+      await sql`insert into public.commute_zones (user_id, travel_mode, max_minutes, zone)
+        values (${user.id}, 'car', 45, extensions.st_multi(extensions.st_buffer(extensions.st_point(77.089, 28.495)::extensions.geography, 1000)::extensions.geometry)::extensions.geography)`.execute(
+        db,
+      );
+      await call(user, 'PUT', '/v1/me/anchor', {
+        kind: 'office',
+        label: 'New office',
+        location: { lat: 28.627, lng: 77.365 },
+        travelMode: 'car',
+      });
+      const zones = await db
+        .selectFrom('commute_zones')
+        .select('user_id')
+        .where('user_id', '=', user.id)
+        .execute();
+      expect(zones).toEqual([]);
+
+      // Renaming the anchor keeps a matching zone; a new travel mode drops it.
+      const zone = sql`insert into public.commute_zones (user_id, travel_mode, max_minutes, zone)
+        values (${user.id}, 'car', 45, extensions.st_multi(extensions.st_buffer(extensions.st_point(77.365, 28.627)::extensions.geography, 1000)::extensions.geometry)::extensions.geography)`;
+      await zone.execute(db);
+      const anchorBody = {
+        kind: 'office',
+        label: 'Renamed office',
+        location: { lat: 28.627, lng: 77.365 },
+        travelMode: 'car',
+      };
+      await call(user, 'PUT', '/v1/me/anchor', anchorBody);
+      const kept = await db
+        .selectFrom('commute_zones')
+        .select('user_id')
+        .where('user_id', '=', user.id)
+        .execute();
+      expect(kept).toHaveLength(1);
+      await call(user, 'PUT', '/v1/me/anchor', { ...anchorBody, travelMode: 'metro_transit' });
+      const dropped = await db
+        .selectFrom('commute_zones')
+        .select('user_id')
+        .where('user_id', '=', user.id)
+        .execute();
+      expect(dropped).toEqual([]);
+
+      // Concurrent importance replacements for one user: serialised, never a 500.
+      const results = await Promise.all(
+        [
+          { smoking: 'dealbreaker' },
+          { pets: 'dont_care' },
+          { food: 'matters' },
+          { smoking: 'matters', pets: 'matters' },
+        ].map((m) => call(user, 'PUT', '/v1/me/importance', m)),
+      );
+      expect(results.map((r) => r.statusCode)).toEqual([200, 200, 200, 200]);
+    } finally {
+      await sql`delete from ref.areas where id = ${area.rows[0]!.id}`.execute(db);
+      await sql`delete from ref.scenario_questions where id = ${qid}`.execute(db);
+    }
   });
 });

@@ -442,6 +442,16 @@ Rules:
 }
 ```
 
+**Biodata writes (`PUT /me/preferences`, `/me/anchor`, `/me/lifestyle`, `/me/importance`, `/me/scenario-answers`)** — T2.7:
+
+- Each answers `200` with the updated `Me` and its new `ETag` (every write changes it), and recomputes `biodataCompletion`. Optional `If-Match` as for `PATCH /me` (`412 precondition.failed` when stale; without it the last write wins). Writes for one user run one after another.
+- Order of checks: body schema, then `409 profile.incomplete` (before bootstrap) and `403 account.suspended`, then the checks below. The codes below are `errors[].code` values inside `422 validation.failed`.
+- Bodies are strict. `PUT` replaces the part: the area set, the optional lifestyle answers and the importance map are replaced, not merged. Scenario answers are upserted per question.
+- `preferences`: every `areaIds` entry must be an active area (`unknown_area`); the window may not have ended already on today's date in India (`in_the_past`); budget, lease and window rules as in §7.
+- `anchor`: the point must lie in Delhi NCR (`outside_ncr`; an approximate bounding box, `LIMITS.ncrBounds`, to be confirmed by the founder); `maxCommuteMin` defaults to 45. A new anchor drops the old commute zone; `commute.compute` is enqueued once the job runner exists (T1.14/T2.9).
+- `lifestyle`: the six core answers (bedtime, wake time, cleaning, smoking, pets, food) are required; times are `HH:mm`.
+- `scenario-answers`: `[{ questionId, optionId }]` (up to 50), each question once; unknown or inactive questions `unknown_question` (at `body.<i>.questionId`), options a question does not have `invalid_option` (at `body.<i>.optionId`).
+
 ### 8.3 Photos
 
 | Method | Path | Auth | Description | FR |

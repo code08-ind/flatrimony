@@ -139,3 +139,20 @@ export function biodataCompletion(parts: BiodataParts): number {
   }
   return Math.min(100, total);
 }
+
+/** PUT /me/scenario-answers: upsert answers (FR-BIO-06). Unknown questions or options are 422. */
+export const ScenarioAnswersRequest = z
+  .array(
+    z
+      .object({
+        questionId: z.string().min(1).max(64),
+        optionId: z.string().min(1).max(64),
+      })
+      .strict(),
+  )
+  .min(1)
+  .max(LIMITS.scenarioAnswersPerRequest)
+  .refine((list) => new Set(list.map((a) => a.questionId)).size === list.length, {
+    message: 'Each question once',
+  });
+export type ScenarioAnswersRequest = z.infer<typeof ScenarioAnswersRequest>;

@@ -43,11 +43,21 @@ interface FakeState {
   /** Another account already holding the caller's phone hash. */
   holder: { userId: string; phone: string | null; hash: Buffer } | null;
   repointed: { userId: string; hash: Buffer | null }[];
+  /** Biodata writes the routes made: [part, body]. */
+  biodata: [string, unknown][];
   /** Thrown by bootstrap (Postgres constraint errors). */
   dbError?: unknown;
 }
 
 function fakeRepo(state: FakeState): MeRepository {
+  // Like lockAndTouch: refuses a stale version, otherwise records the write and bumps the version.
+  const biodata = async (part: string, body: unknown, ifVersion?: string) => {
+    if (!state.profile) return false;
+    if (ifVersion !== undefined && ifVersion !== state.profile.version) return false;
+    state.biodata.push([part, body]);
+    state.profile.version = String(Number(state.profile.version) + 1);
+    return true;
+  };
   return {
     async legalVersions() {
       return state.versions;
@@ -132,6 +142,27 @@ function fakeRepo(state: FakeState): MeRepository {
     async withdrawConsent() {
       return true;
     },
+    async activeAreaIds(ids) {
+      return ids.filter((id) => id <= 10);
+    },
+    async activeScenarioQuestionIds(ids) {
+      return ids.filter((id) => id.startsWith('q_'));
+    },
+    async replacePreferences(_id, p, v) {
+      return biodata('preferences', p, v);
+    },
+    async setAnchor(_id, a, v) {
+      return biodata('anchor', a, v);
+    },
+    async replaceLifestyle(_id, l, v) {
+      return biodata('lifestyle', l, v);
+    },
+    async replaceImportance(_id, m, v) {
+      return biodata('importance', m, v);
+    },
+    async upsertScenarioAnswers(_id, a, v) {
+      return biodata('scenarios', a, v);
+    },
   };
 }
 
@@ -144,6 +175,7 @@ afterEach(async () => {
 async function setup(
   overrides: Partial<FakeState> = {},
   banned: { phone?: Buffer[]; device?: Buffer[] } = {},
+  nowMs = NOW,
 ) {
   const state: FakeState = {
     versions: VERSIONS,
@@ -154,6 +186,7 @@ async function setup(
     updates: [],
     holder: null,
     repointed: [],
+    biodata: [],
     ...overrides,
   };
   const logs: string[] = [];
@@ -165,10 +198,14 @@ async function setup(
     },
     meRepo: fakeRepo(state),
     bansRepo: memoryBansRepository(banned),
-    now: () => NOW,
+    now: () => nowMs,
     logStream: { write: (line) => void logs.push(line) },
   });
-  const call = (method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: unknown) =>
+  const call = (
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    url: string,
+    payload?: unknown,
+  ) =>
     app!.inject({
       method,
       url,
@@ -762,5 +799,249 @@ describe('review fixes (T2.5)', () => {
     expect((await moved.call('POST', '/v1/me/bootstrap', bootstrapBody())).statusCode).toBe(201);
     expect(moved.state.repointed).toHaveLength(1);
     expect(moved.state.repointed[0]!.hash!.equals(hasher('phone', '+919876543210'))).toBe(true);
+  });
+});
+
+describe('biodata writes (T2.7)', () => {
+  const profile = (over: Partial<ProfileState> = {}) => ({
+    category: 'professional' as const,
+    isIdentityVerified: false,
+    verifiedGender: null,
+    deleted: false,
+    suspendedUntil: null,
+    version: '3',
+    ...over,
+    row: {
+      displayName: 'K',
+      dateOfBirth: '2000-01-01',
+      intent: 'need_room' as const,
+      category: 'professional' as const,
+      locale: 'en' as const,
+    },
+  });
+  const prefs = (over: object = {}) => ({
+    budgetMinInr: 10000,
+    budgetMaxInr: 20000,
+    moveInFrom: '2026-12-01',
+    moveInTo: '2026-12-20',
+    leaseMonths: 11,
+    flatmateGenderPref: 'any',
+    areaIds: [1, 2],
+    ...over,
+  });
+  const anchor = (over: object = {}) => ({
+    kind: 'office',
+    label: 'Cyber City office',
+    location: { lat: 28.495, lng: 77.089 },
+    travelMode: 'metro_transit',
+    maxCommuteMin: 45,
+    ...over,
+  });
+  const lifestyle = {
+    bedtime: '23:00',
+    wakeTime: '07:00',
+    cleaning: 'daily',
+    smoking: 'no',
+    pets: 'love',
+    food: 'veg',
+  };
+
+  const routes = () =>
+    [
+      ['/v1/me/preferences', prefs()],
+      ['/v1/me/anchor', anchor()],
+      ['/v1/me/lifestyle', lifestyle],
+      ['/v1/me/importance', { smoking: 'dealbreaker' }],
+      ['/v1/me/scenario-answers', [{ questionId: 'q_sink', optionId: 'now' }]],
+    ] as const;
+
+  it('every route: 409 before bootstrap, 403 when suspended — even with an invalid body', async () => {
+    const none = await setup();
+    for (const [url, body] of routes()) {
+      expect((await none.call('PUT', url, body)).statusCode, url).toBe(409);
+    }
+    // Profile checks come before request checks: an unknown area is still 409 here.
+    expect(
+      (await none.call('PUT', '/v1/me/preferences', prefs({ areaIds: [99] }))).statusCode,
+    ).toBe(409);
+    await app!.close();
+    app = undefined;
+    const suspended = await setup({
+      profile: profile({ suspendedUntil: '2026-12-01T00:00:00.000Z' }),
+    });
+    for (const [url, body] of routes()) {
+      const res = await suspended.call('PUT', url, body);
+      expect(res.statusCode, url).toBe(403);
+      expect(res.json().code).toBe('account.suspended');
+    }
+    expect(suspended.state.biodata).toEqual([]);
+  });
+
+  it('every route: new ETag after the write; a stale If-Match is 412 and writes nothing', async () => {
+    const { state } = await setup({ profile: profile() });
+    let version = 3;
+    for (const [url, body] of routes()) {
+      const ok = await app!.inject({
+        method: 'PUT',
+        url,
+        headers: { authorization: 'Bearer a.b.c', 'if-match': `W/"${version}"` },
+        payload: body as object,
+      });
+      expect(ok.statusCode, url).toBe(200);
+      version += 1;
+      expect(ok.headers.etag, url).toBe(`W/"${version}"`);
+      const stale = await app!.inject({
+        method: 'PUT',
+        url,
+        headers: { authorization: 'Bearer a.b.c', 'if-match': 'W/"1"' },
+        payload: body as object,
+      });
+      expect(stale.statusCode, url).toBe(412);
+    }
+    expect(state.biodata).toHaveLength(5);
+  });
+
+  it('PUT /me/preferences validates areas, the window and the budget', async () => {
+    const { call, state } = await setup({ profile: profile() });
+    const ok = await call('PUT', '/v1/me/preferences', prefs());
+    expect(ok.statusCode, ok.body).toBe(200);
+    expect(ok.headers.etag).toBe('W/"4"'); // bumped by the write
+    expect(state.biodata[0]).toEqual(['preferences', prefs()]);
+    for (const [bad, code] of [
+      [prefs({ areaIds: [1, 99] }), 'unknown_area'],
+      [prefs({ moveInFrom: '2026-10-01', moveInTo: '2026-11-16' }), 'in_the_past'], // today is 17 Nov
+      [prefs({ budgetMinInr: 30000, budgetMaxInr: 20000 }), undefined],
+      [prefs({ areaIds: [1, 2, 3, 4] }), undefined],
+      [prefs({ areaIds: [1, 1] }), undefined],
+      [prefs({ moveInFrom: '2026-12-21' }), undefined],
+      [prefs({ budgetMinInr: 999 }), undefined],
+      [prefs({ leaseMonths: 37 }), undefined],
+      [prefs({ extra: true }), undefined],
+      [prefs({ areaIds: [40000] }), undefined], // beyond smallint: schema 422, not a DB 500
+    ] as const) {
+      const res = await call('PUT', '/v1/me/preferences', bad);
+      expect(res.statusCode, JSON.stringify(bad)).toBe(422);
+      if (code) expect(res.json().errors.map((e: { code: string }) => e.code)).toContain(code);
+    }
+    // A window that ends today is still fine.
+    expect(
+      (
+        await call(
+          'PUT',
+          '/v1/me/preferences',
+          prefs({ moveInFrom: '2026-11-01', moveInTo: '2026-11-17' }),
+        )
+      ).statusCode,
+    ).toBe(200);
+  });
+
+  it('PUT /me/anchor needs a place in Delhi NCR', async () => {
+    const { call, state } = await setup({ profile: profile() });
+    expect((await call('PUT', '/v1/me/anchor', anchor())).statusCode).toBe(200);
+    const mumbai = await call(
+      'PUT',
+      '/v1/me/anchor',
+      anchor({ location: { lat: 19.07, lng: 72.88 } }),
+    );
+    expect(mumbai.statusCode).toBe(422);
+    expect(mumbai.json().errors[0]).toMatchObject({ path: 'body.location', code: 'outside_ncr' });
+    for (const bad of [
+      anchor({ maxCommuteMin: 10 }),
+      anchor({ maxCommuteMin: 95 }),
+      anchor({ travelMode: 'helicopter' }),
+      anchor({ label: '\u200b' }),
+      anchor({ location: { lat: 91, lng: 77 } }),
+    ])
+      expect((await call('PUT', '/v1/me/anchor', bad)).statusCode, JSON.stringify(bad)).toBe(422);
+    // maxCommuteMin defaults to 45 (FR-BIO-03).
+    const noMax: Record<string, unknown> = anchor();
+    delete noMax.maxCommuteMin;
+    expect((await call('PUT', '/v1/me/anchor', noMax)).statusCode).toBe(200);
+    expect((state.biodata.at(-1)![1] as { maxCommuteMin: number }).maxCommuteMin).toBe(45);
+  });
+
+  it('PUT /me/lifestyle needs the six core answers; times are HH:mm', async () => {
+    const { call } = await setup({ profile: profile() });
+    expect(
+      (await call('PUT', '/v1/me/lifestyle', { ...lifestyle, drinking: 'rarely' })).statusCode,
+    ).toBe(200);
+    for (const bad of [
+      { ...lifestyle, wakeTime: undefined },
+      { ...lifestyle, bedtime: '24:00' },
+      { ...lifestyle, bedtime: '11 PM' },
+      { ...lifestyle, smoking: 'sometimes' },
+      { ...lifestyle, mood: 'happy' },
+    ])
+      expect((await call('PUT', '/v1/me/lifestyle', bad)).statusCode, JSON.stringify(bad)).toBe(
+        422,
+      );
+  });
+
+  it('PUT /me/importance takes known attributes and levels only', async () => {
+    const { call } = await setup({ profile: profile() });
+    expect(
+      (await call('PUT', '/v1/me/importance', { smoking: 'dealbreaker', pets: 'dont_care' }))
+        .statusCode,
+    ).toBe(200);
+    expect((await call('PUT', '/v1/me/importance', {})).statusCode).toBe(200);
+    expect((await call('PUT', '/v1/me/importance', { smoking: 'very' })).statusCode).toBe(422);
+    expect((await call('PUT', '/v1/me/importance', { astrology: 'matters' })).statusCode).toBe(422);
+  });
+
+  it('PUT /me/scenario-answers: known questions, each once', async () => {
+    const { call } = await setup({ profile: profile() });
+    expect(
+      (await call('PUT', '/v1/me/scenario-answers', [{ questionId: 'q_sink', optionId: 'now' }]))
+        .statusCode,
+    ).toBe(200);
+    const unknown = await call('PUT', '/v1/me/scenario-answers', [
+      { questionId: 'nope', optionId: 'x' },
+    ]);
+    expect(unknown.json().errors[0]).toMatchObject({
+      path: 'body.0.questionId',
+      code: 'unknown_question',
+    });
+    for (const bad of [
+      [],
+      [
+        { questionId: 'q_a', optionId: 'x' },
+        { questionId: 'q_a', optionId: 'y' },
+      ],
+      [{ questionId: 'q_a' }],
+    ])
+      expect(
+        (await call('PUT', '/v1/me/scenario-answers', bad)).statusCode,
+        JSON.stringify(bad),
+      ).toBe(422);
+  });
+
+  it('the move-in window uses the date in India (20:00 UTC is already tomorrow)', async () => {
+    // 2026-11-17 20:00 UTC = 18 Nov 01:30 IST: a window ending 17 Nov is over in India.
+    const { call } = await setup({ profile: profile() }, {}, Date.parse('2026-11-17T20:00:00Z'));
+    const res = await call(
+      'PUT',
+      '/v1/me/preferences',
+      prefs({ moveInFrom: '2026-11-01', moveInTo: '2026-11-17' }),
+    );
+    expect(res.statusCode).toBe(422);
+    expect(res.json().errors[0].code).toBe('in_the_past');
+  });
+
+  it('QA fixes: no session is 401 even with a bad body; location objects are strict', async () => {
+    const { call } = await setup({ profile: profile() });
+    for (const [method, url] of [
+      ['PUT', '/v1/me/preferences'],
+      ['PATCH', '/v1/me'],
+      ['POST', '/v1/me/bootstrap'],
+    ] as const) {
+      const res = await app!.inject({ method, url, payload: { nonsense: true } });
+      expect(res.statusCode, url).toBe(401);
+    }
+    const alt = await call(
+      'PUT',
+      '/v1/me/anchor',
+      anchor({ location: { lat: 28.495, lng: 77.089, alt: 3 } }),
+    );
+    expect(alt.statusCode).toBe(422);
   });
 });
