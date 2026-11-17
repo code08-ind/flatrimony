@@ -143,6 +143,10 @@ describe('human text (mirrors public.is_human_text)', () => {
     ['zero-width only', '\u200B'],
     ['bidi override', 'Admin\u202E'],
     ['control character', 'Ka\u0007ran'],
+    ['Hangul filler (renders blank)', '\u3164'],
+    ['Braille blank', 'A\u2800'],
+    ['halfwidth Hangul filler', '\uFFA0'],
+    ['lone surrogate', 'a\uD800b'],
     ['41 characters', 'x'.repeat(41)],
   ])('rejects %s', (_label, value) => {
     expect(name.safeParse(value).success).toBe(false);
@@ -296,6 +300,7 @@ describe('system contracts', () => {
         dailyLikeLimit: 50,
         features: { videoTours: false, houseAgreement: false },
         minSupportedAppVersion: '1.0.0',
+        legalVersions: { terms: '2026-11-01', privacy: '2026-11-01' },
       }),
     ).toBeTruthy();
     expect(
@@ -303,6 +308,7 @@ describe('system contracts', () => {
         dailyLikeLimit: 50,
         features: { videoTours: false, houseAgreement: false },
         minSupportedAppVersion: 'v1',
+        legalVersions: {},
       }).success,
     ).toBe(false);
     expect(

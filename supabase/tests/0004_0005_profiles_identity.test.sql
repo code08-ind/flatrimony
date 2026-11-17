@@ -58,9 +58,10 @@ select is(
   (select array_agg(format('%s:%s.%s:%s', grantee, table_schema, table_name, privilege_type) order by grantee, table_schema, table_name, privilege_type)
    from information_schema.role_table_grants
    where grantee in ('anon', 'authenticated') and table_schema in ('public', 'private')),
-  array['authenticated:public.anchors:SELECT', 'authenticated:public.lifestyle:SELECT',
-        'authenticated:public.preferences:SELECT', 'authenticated:public.profiles:SELECT'],
-  'clients hold exactly four grants in public/private: SELECT on their own-row tables');
+  array['authenticated:public.anchors:SELECT', 'authenticated:public.consents:SELECT',
+        'authenticated:public.lifestyle:SELECT', 'authenticated:public.preferences:SELECT',
+        'authenticated:public.profiles:SELECT'],
+  'clients hold exactly these grants in public/private: SELECT on their own-row tables (consents from 0008)');
 
 select schema_privs_are('private', 'anon', '{}', 'anon has no privileges on schema private');
 select schema_privs_are('private', 'authenticated', '{}', 'authenticated has no privileges on schema private');
@@ -77,10 +78,10 @@ drop table public.t_future;
 
 -- ================================================================== profiles constraints
 select throws_ok($$insert into public.profiles (id, display_name, intent, date_of_birth)
-  values ('00000000-0000-4000-8000-00000000000c', 'Teen', 'need_room', current_date - interval '18 years' + interval '1 day')$$,
-  '23514', pg_temp.chk('profiles', 'profiles_adult_chk'), 'one day short of 18 is rejected');
+  values ('00000000-0000-4000-8000-00000000000c', 'Teen', 'need_room', (now() at time zone 'Asia/Kolkata')::date - interval '18 years' + interval '1 day')$$,
+  '23514', pg_temp.chk('profiles', 'profiles_adult_chk'), 'one day short of 18 (date in India) is rejected');
 select ok(pg_temp.accepts($$insert into public.profiles (id, display_name, intent, date_of_birth)
-  values ('00000000-0000-4000-8000-00000000000c', 'Adult', 'need_room', current_date - interval '18 years')$$), 'exactly 18 today is accepted');
+  values ('00000000-0000-4000-8000-00000000000c', 'Adult', 'need_room', (now() at time zone 'Asia/Kolkata')::date - interval '18 years')$$), 'exactly 18 today in India is accepted (0008)');
 select throws_ok($$insert into public.profiles (id, display_name, intent, date_of_birth) values ('00000000-0000-4000-8000-00000000000c', 'Old', 'need_room', '1899-12-31')$$,
   '23514', pg_temp.chk('profiles', 'profiles_adult_chk'), 'implausible dates of birth are rejected');
 select throws_ok($$insert into public.profiles (id, display_name, intent) values ('00000000-0000-4000-8000-0000000000ff', 'Ghost', 'need_room')$$,

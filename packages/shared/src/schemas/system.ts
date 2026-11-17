@@ -1,7 +1,8 @@
 /** Health, public config, reference data and the OTP guard (docs/05 §2, §8.1). */
 import { z } from 'zod';
-import { LifestyleAttribute, ProductCode } from '../enums.js';
+import { ConsentPurpose, LifestyleAttribute, ProductCode } from '../enums.js';
 import { IndianPhone, LatLng, Paise, SemVer } from '../primitives.js';
+import { PolicyVersion } from './me.js';
 
 export const HealthResponse = z.object({ status: z.literal('ok') });
 
@@ -16,6 +17,11 @@ export const PublicConfig = z.object({
   dailyLikeLimit: z.number().int().positive(),
   features: z.object({ videoTours: z.boolean(), houseAgreement: z.boolean() }),
   minSupportedAppVersion: SemVer,
+  /**
+   * Policy version a user must accept now, per consent purpose (FR-AUTH-09). Empty until the
+   * legal documents are published (founder task T0.15); bootstrap is refused meanwhile.
+   */
+  legalVersions: z.partialRecord(ConsentPurpose, PolicyVersion),
 });
 export type PublicConfig = z.infer<typeof PublicConfig>;
 

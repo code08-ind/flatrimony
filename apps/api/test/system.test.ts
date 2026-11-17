@@ -63,6 +63,7 @@ describe('GET /v1/config', () => {
       dailyLikeLimit: 50,
       features: { videoTours: false, houseAgreement: false },
       minSupportedAppVersion: '1.0.0',
+      legalVersions: {},
     });
   });
 });

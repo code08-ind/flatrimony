@@ -13,6 +13,8 @@ export const LIMITS = {
   leaseMonths: { min: 1, max: 36, default: 11 },
   /** anchors.label (docs/04 §6.2) */
   anchorLabelMaxChars: 80,
+  /** profiles.college_name (docs/04 §6.2): student category only */
+  collegeNameMaxChars: 120,
   /** profiles.languages: ISO 639-1 codes */
   languagesMax: 10,
   /** FR-BIO-02 */

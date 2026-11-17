@@ -11,6 +11,9 @@ export type AppLocale = 'en' | 'hi';
 
 export type CleaningLevel = 'daily' | 'few_times_week' | 'rarely' | 'weekly';
 
+export type ConsentPurpose =
+  'analytics' | 'identity_verification' | 'location_safety' | 'marketing' | 'privacy' | 'terms';
+
 export type FoodHabit = 'eggetarian' | 'non_veg' | 'veg' | 'vegan';
 
 export type FrequencyLevel = 'never' | 'often' | 'rarely' | 'sometimes';
@@ -55,6 +58,8 @@ export type ModerationStatus = 'approved' | 'pending' | 'rejected';
 
 export type PetAttitude = 'have' | 'love' | 'no' | 'ok';
 
+export type Platform = 'android' | 'ios' | 'web';
+
 export type ProductCode = 'listing_boost_7d' | 'move_pass_30d';
 
 export type SmokingHabit = 'no' | 'outside_only' | 'yes';
@@ -93,6 +98,27 @@ export interface CommuteZones {
   travel_mode: TravelMode;
   user_id: string;
   zone: string;
+}
+
+export interface Consents {
+  granted_at: Generated<Timestamp>;
+  id: Generated<string>;
+  purpose: ConsentPurpose;
+  user_id: string;
+  version: string;
+  withdrawn_at: Timestamp | null;
+}
+
+export interface Devices {
+  app_version: string | null;
+  created_at: Generated<Timestamp>;
+  device_hash: Buffer;
+  id: Generated<string>;
+  integrity_verdict: string | null;
+  last_seen_at: Generated<Timestamp>;
+  platform: Platform;
+  push_token: string | null;
+  user_id: string;
 }
 
 export interface Lifestyle {
@@ -291,6 +317,8 @@ export interface Verifications {
 export interface DB {
   anchors: Anchors;
   commute_zones: CommuteZones;
+  consents: Consents;
+  devices: Devices;
   lifestyle: Lifestyle;
   lifestyle_importance: LifestyleImportance;
   preference_areas: PreferenceAreas;

@@ -123,6 +123,9 @@ export const Me = z.object({
   bio: z.string().max(LIMITS.bioMaxChars).optional(),
   languages: z.array(LanguageCode).max(LIMITS.languagesMax),
   locale: AppLocale,
+  /** Student category only (FR-BIO-01). */
+  collegeName: z.string().max(LIMITS.collegeNameMaxChars).optional(),
+  courseEndDate: IsoDate.optional(),
   isIdentityVerified: z.boolean(),
   badges: z.array(Badge),
   isPaused: z.boolean(),

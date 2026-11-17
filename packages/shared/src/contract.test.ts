@@ -53,6 +53,7 @@ function tableBlock(name: string): string {
   return sql.slice(start, end).replace(/\s+/g, ' ');
 }
 const norm = (s: string) => s.replace(/\s+/g, ' ');
+const statements = () => lowerSql.split(';').map((stmt) => stmt.replace(/\s+/g, ' ').trim());
 
 describe('limits contract with supabase/migrations', () => {
   // [table, expected fragment of its own CREATE TABLE block, whitespace-insensitive]
@@ -61,6 +62,7 @@ describe('limits contract with supabase/migrations', () => {
     ['public.profiles', `char_length(bio) <= ${LIMITS.bioMaxChars}`],
     ['public.profiles', `cardinality(languages) <= ${LIMITS.languagesMax}`],
     ['public.profiles', `(current_date - interval '${LIMITS.minAge} years')`],
+    ['public.profiles', `char_length(college_name) between 1 and ${LIMITS.collegeNameMaxChars}`],
     ['public.preferences', `budget_min_inr >= ${LIMITS.budgetInr.min}`],
     ['public.preferences', `budget_max_inr <= ${LIMITS.budgetInr.max}`],
     [
@@ -94,13 +96,28 @@ describe('limits contract with supabase/migrations', () => {
     );
   });
 
+  // Constraint changes made on purpose after the CREATE TABLE, each re-checked against LIMITS.
+  // 0008: 18+ is counted on the date in India instead of UTC (code review T2.5).
+  const knownAlterations: [string, string][] = [
+    ['add constraint profiles_adult_chk', `::date - interval '${LIMITS.minAge} years'`],
+  ];
+
   it('no later migration alters these constraints behind the contract', () => {
     for (const table of new Set(expectations.map(([t]) => t))) {
-      const alters = lowerSql
-        .split(';')
-        .map((stmt) => stmt.replace(/\s+/g, ' ').trim())
-        .some((stmt) => stmt.includes(`alter table ${table} `) && stmt.includes('constraint'));
-      expect(alters, `${table} has an ALTER ... CONSTRAINT; update this contract test`).toBe(false);
+      const alters = statements().filter(
+        (stmt) =>
+          stmt.includes(`alter table ${table} `) &&
+          stmt.includes('constraint') &&
+          !knownAlterations.some(([marker]) => stmt.includes(marker)) &&
+          !stmt.includes('drop constraint profiles_adult_chk'),
+      );
+      expect(alters, `${table} has an ALTER ... CONSTRAINT; update this contract test`).toEqual([]);
     }
+  });
+
+  it.each(knownAlterations)('the redefined %s still enforces %s', (marker, fragment) => {
+    const stmt = statements().find((s) => s.includes(marker));
+    expect(stmt, `${marker} not found`).toBeDefined();
+    expect(stmt).toContain(norm(fragment));
   });
 });

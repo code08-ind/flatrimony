@@ -50,6 +50,7 @@ export function pgSystemRepository(db: Database): SystemRepository {
           houseAgreement: v.get('feature.house_agreement') ?? false,
         },
         minSupportedAppVersion: v.get('min_supported_app_version'),
+        legalVersions: v.get('legal.versions') ?? {},
       });
     },
 

@@ -16,6 +16,7 @@ export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
   dailyLikeLimit: 50,
   features: { videoTours: false, houseAgreement: false },
   minSupportedAppVersion: '1.0.0',
+  legalVersions: {}, // set by the founder with the published legal documents (T0.15)
 };
 
 export function inMemorySystemRepository(
