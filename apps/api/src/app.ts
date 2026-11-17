@@ -27,6 +27,8 @@ import { memoryBansRepository, type BansRepository } from './modules/auth/bans.j
 import { createSendSmsGate, otpGuardRoutes } from './modules/auth/otp-guard.js';
 import { memorySlidingWindowStore, type SlidingWindowStore } from './lib/sliding-window.js';
 import { inMemorySystemRepository, type SystemRepository } from './modules/system/repository.js';
+import { meRoutes } from './modules/me/routes.js';
+import type { MeRepository } from './modules/me/repository.js';
 
 export interface BuildOptions {
   env: Env;
@@ -42,6 +44,8 @@ export interface BuildOptions {
   bansRepo?: BansRepository;
   /** OTP counters (sliding windows; in-memory default). */
   otpStore?: SlidingWindowStore;
+  /** Profiles and consents (Postgres in server.ts). Without it the /v1/me routes are not served. */
+  meRepo?: MeRepository;
   /** Capture logs (tests assert that no personal data is logged). */
   logStream?: { write(line: string): void };
 }
@@ -65,6 +69,9 @@ const REDACT = [
   'body.phone',
   'body.otp',
   'body.token',
+  'body.device.deviceId',
+  'body.device.pushToken',
+  'body.device.integrityToken',
 ];
 
 export async function buildApp({
@@ -77,6 +84,7 @@ export async function buildApp({
   smsProvider,
   bansRepo,
   otpStore,
+  meRepo,
   logStream,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
@@ -123,6 +131,7 @@ export async function buildApp({
       'ratelimit-remaining',
       'ratelimit-reset',
       'idempotent-replayed',
+      'location',
     ],
     maxAge: 600,
   });
@@ -154,6 +163,17 @@ export async function buildApp({
     store: otpCounters,
     ...(now ? { now } : {}),
   });
+
+  // Account and consents (T2.5). Needs Postgres: the rules live in database constraints.
+  if (meRepo) {
+    await app.register(meRoutes, {
+      prefix: '/v1',
+      repo: meRepo,
+      bans,
+      hasher,
+      ...(now ? { now } : {}),
+    });
+  }
 
   // Supabase Auth Send SMS hook (only when its secret is configured; required outside local).
   const sms = smsProvider ?? createSmsProvider(env.SMS_PROVIDER);

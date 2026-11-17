@@ -26,9 +26,15 @@ export const Paise = z.number().int().nonnegative();
 
 // Control, soft-hyphen, zero-width and bidirectional-override characters (invisible or spoofing).
 // Mirrors public.is_human_text() in supabase/migrations/*_profiles_and_biodata.sql.
+// Also characters that render as blank (Hangul fillers, Braille blank, Mongolian vowel separator,
+// combining grapheme joiner, Khmer invisible vowels; QA T2.5 D2).
 const INVISIBLE =
   // eslint-disable-next-line no-control-regex -- matching control characters is the point
-  /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028-\u202E\u2060-\u2064\uFEFF]/u;
+  /[\u0000-\u001F\u007F-\u009F\u00AD\u115F\u1160\u180E\u200B-\u200F\u2028-\u202E\u2060-\u2064\u2800\u3164\uFEFF\uFFA0]|\u034F|\u17B4|\u17B5/u;
+
+/** A UTF-16 surrogate without its pair: not a character (stored as U+FFFD by Postgres). */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+export const isWellFormedText = (s: string) => !LONE_SURROGATE.test(s);
 
 /**
  * Text people will read (names, labels): trimmed, 1..max characters counted in code points like
@@ -42,7 +48,10 @@ export function humanText(max: number) {
       const length = [...s].length;
       return length >= 1 && length <= max;
     }, `Must be 1 to ${max} characters`)
-    .refine((s) => !INVISIBLE.test(s) && /\S/u.test(s), 'Must contain only visible characters');
+    .refine(
+      (s) => !INVISIBLE.test(s) && /\S/u.test(s) && isWellFormedText(s),
+      'Must contain only visible characters',
+    );
 }
 
 /** ISO 639-1 language code, e.g. 'hi', 'en'. */

@@ -3,6 +3,7 @@ export * from './enums.js';
 export * from './errors.js';
 export * from './primitives.js';
 export * from './schemas/profile.js';
+export * from './schemas/me.js';
 export * from './schemas/listing.js';
 export * from './schemas/rishta.js';
 export * from './schemas/system.js';

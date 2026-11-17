@@ -5,6 +5,8 @@
 --   * Hindi labels marked DRAFT need the fluent-Hindi review (founder task T0.12).
 --   * Scenario option values are illustrative; the founder signs off the real scenario set (FR-BIO-06).
 --   * No products are seeded: prices are set by the founder (docs/02 OQ-05).
+--   * Legal policy versions are 'dev-draft': the real Terms/Privacy text and versions come with
+--     the lawyer-reviewed documents (founder task T0.15). Bootstrap refuses without this row.
 -- Never put real people's data here (docs/03 §8.3).
 
 insert into ref.areas (slug, name_en, name_hi, city, centroid) values
@@ -41,3 +43,10 @@ insert into ref.scenario_questions (id, attribute, prompt_en, prompt_hi, options
       {"id":"someone_else",   "label_en":"Someone else usually does it", "label_hi":"आमतौर पर कोई और धो देता है",      "value":0.0}
     ]'::jsonb,
    1);
+
+-- Current policy version per consent purpose (docs/05 §8.15). Clients must accept exactly these.
+insert into ref.app_config (key, value, is_public, description) values
+  ('legal.versions',
+   '{"terms":"dev-draft","privacy":"dev-draft","analytics":"dev-draft","marketing":"dev-draft","identity_verification":"dev-draft","location_safety":"dev-draft"}'::jsonb,
+   true,
+   'Current policy version per consent purpose (FR-AUTH-09). DEV ONLY: set by the founder with T0.15.');

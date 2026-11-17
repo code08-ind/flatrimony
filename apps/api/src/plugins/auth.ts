@@ -6,8 +6,9 @@
  * `authenticated`, expiry and a UUID `sub`. Routes opt in with `preHandler: app.requireUser`
  * (or `app.requireRole('moderator', 'admin')`). Anything unverifiable fails closed with 401.
  *
- * Not yet here (needs a Supabase project): the 60 s cached session-revocation check and the
- * suspended/deleted account checks, which arrive with T2.2/T2.5.
+ * Not yet here (needs a Supabase project): the 60 s cached session-revocation check. Deleted and
+ * suspended accounts are refused per route from the profile (modules/me, T2.5: reads allowed,
+ * writes `403 account.suspended`); later write routes reuse that check.
  */
 import type {
   FastifyInstance,

@@ -220,6 +220,8 @@ interface Me {
   bio?: string;
   languages: string[];
   locale: 'en' | 'hi';
+  collegeName?: string;              // student category only
+  courseEndDate?: ISODate;           // student category only
   isIdentityVerified: boolean;
   badges: Badge[];
   isPaused: boolean;
@@ -370,10 +372,10 @@ Notation: **Auth** column — `public`, `user`, `verified`, `moderator`, `admin`
 | --- | --- | --- | --- | --- |
 | GET | `/healthz` (no `/v1`) | public | Liveness | — |
 | GET | `/readyz` (no `/v1`) | public | Readiness (DB reachable, migration version) | — |
-| GET | `/config` | public | Public remote config: `{ dailyLikeLimit, features: { videoTours: false, houseAgreement: false }, minSupportedAppVersion: "1.0.0" }` | FR-ADM-07 |
+| GET | `/config` | public | Public remote config: `{ dailyLikeLimit, features: { videoTours: false, houseAgreement: false }, minSupportedAppVersion: "1.0.0", legalVersions: { terms, privacy, … } }` | FR-ADM-07, FR-AUTH-09 |
 | GET | `/reference` | public | Areas, habit tags, scenario questions, products (localised), with `ETag` for caching | FR-BIO-06 |
 
-Clients compare `minSupportedAppVersion` and show a forced-update screen if needed.
+Clients compare `minSupportedAppVersion` and show a forced-update screen if needed. `legalVersions` gives the policy version a user must accept now for each consent purpose; it is empty until the legal documents are published (T0.15).
 
 ### 8.2 Me (account and Flat Biodata)
 
@@ -408,10 +410,24 @@ Clients compare `minSupportedAppVersion` and show a forced-update screen if need
 }
 ```
 
-Response `201` → `Me`. Errors: `422` (age under 18 → `profile.underage`), `403 auth.banned`.
+Response `201` → `Me` (with `Location: /v1/me`) when the profile is created, `200` → `Me` when it already existed (the profile fields are not changed; active consents keep their original time; the device is recorded again). Errors:
+
+- `422 profile.underage`: under 18 on today's date in India.
+- `422 validation.failed`: missing Terms/Privacy consent (`consent_required`), a version other than the current one (`consent_version_outdated`), a purpose not offered (`consent_not_offered`).
+- `403 auth.banned`: banned phone or device hash (FR-AUTH-08). `403 account.suspended` (with `suspendedUntil`) for an existing, suspended profile.
+- `401 auth.account_deleted`.
+- `409 conflict`: the auth user has no verified phone, or the number is still on another account.
+- `503 upstream.unavailable`: the legal documents are not published yet. Clients show "sign-up is not open yet" and must not retry automatically.
 
 Rules:
 
+- The phone hash comes from the number Supabase verified (`auth.users.phone`), never from the request. The device id is HMAC'd; the push token is stored; the Play Integrity token is not stored, and until Play Integrity is set up the device is recorded as `unverified`.
+- `GET`/`PATCH /me` and the consent routes answer `409 profile.incomplete` before bootstrap.
+- `PATCH /me` is strict (unknown fields are `422`). Date of birth and verified fields are not editable. `collegeName`/`courseEndDate` are for the `student` category only; leaving it clears them. Choosing `women_only` after verifying as non-female is `403 profile.category_not_allowed`.
+- `GET /me` returns `ETag: W/"<version>"`; `PATCH /me` with `If-Match` answers `412 precondition.failed` when the profile changed since (without `If-Match` the last write wins).
+- A suspended account (`account.suspended`, docs/05 §3) can still read its profile and withdraw consents; profile edits and new grants are refused.
+- If the number is still on another account but that account has since moved to a new number, the stored hash is moved to its new number and this bootstrap continues.
+- Biodata completion weights (initial, founder-adjustable; `BIODATA_WEIGHTS` in `packages/shared`): basics 10, preferences 10, anchor or areas 10, lifestyle 10 (the six onboarding steps give 40 %, FR-AUTH-06 AC), photos 20, bio 10, languages 5, importance 10, scenario answers 10, DigiLocker verified 5.
 - `category: "women_only"` is accepted before verification (profile stays invisible to all until verified female). If verification later returns a non-female gender, the API switches the category to `professional` and notifies the user.
 - `biodataCompletion` is recomputed on every write.
 
@@ -683,9 +699,9 @@ Safety endpoints are never rate limited in a way that blocks SOS; failures to no
 
 | Method | Path | Auth | Description | FR |
 | --- | --- | --- | --- | --- |
-| GET | `/me/consents` | user | Current consents and versions | FR-AUTH-09 |
-| POST | `/me/consents` | user | Grant `{ purpose, version }` | FR-AUTH-09 |
-| DELETE | `/me/consents/{purpose}` | user | Withdraw (some purposes are required; withdrawing `terms`/`privacy` = account deletion flow) | FR-PRIV-03 |
+| GET | `/me/consents` | user | `{ consents: [{ purpose, version, grantedAt, withdrawnAt? }], currentVersions }`, newest first (history kept) | FR-AUTH-09 |
+| POST | `/me/consents` | user | Grant `{ purpose, version }` → `201` (`200` when the same grant is already active); the version must be the current one (`422 consent_version_outdated`). Consents are append-only: granting after a withdrawal adds a record | FR-AUTH-09 |
+| DELETE | `/me/consents/{purpose}` | user | Withdraw (`204`). `terms`/`privacy` cannot be withdrawn here: `409 conflict`, use the account deletion flow | FR-PRIV-03 |
 | POST | `/me/data-export` | user | `202 { requestId }`; email/notification with a download link when ready (≤ 7 days, link valid 24 h) | FR-PRIV-01 |
 | POST | `/me/deletion` | user | `202`; requires re-OTP within the last 5 minutes (`auth.recent_login_required`) | FR-PRIV-02 |
 
@@ -884,3 +900,8 @@ Every endpoint implementation must satisfy:
 | `not_found` | 404 | Not found or not visible |
 | `conflict` | 409 | Generic state conflict |
 | `internal` | 500 | Unexpected error |
+| `bad_request` | 400 | Body is not valid JSON |
+| `precondition.failed` | 412 | `If-Match` does not match the current version (§6.2) |
+| `payload_too_large` | 413 | Body over 100 KB |
+| `unsupported_media_type` | 415 | Not `application/json` |
+| `upstream.unavailable` | 503 | A dependency or a founder-published input (e.g. the legal versions) is missing |

@@ -36,14 +36,16 @@ describe.skipIf(!url)('system endpoints on Postgres', () => {
     expect(res.json().migrationVersion).toMatch(/^\d{14}$/);
   });
 
-  it('/v1/config serves the values seeded by migration 0003', async () => {
+  it('/v1/config serves the values seeded by migration 0003 (+ the dev legal versions)', async () => {
     const res = await app.inject({ method: 'GET', url: '/v1/config' });
     expect(res.statusCode).toBe(200);
-    expect(PublicConfig.parse(res.json())).toEqual({
+    expect(PublicConfig.parse(res.json())).toMatchObject({
       dailyLikeLimit: 50,
       features: { videoTours: false, houseAgreement: false },
       minSupportedAppVersion: '1.0.0',
     });
+    // supabase/seed.sql (local and CI only; production waits for T0.15).
+    expect(res.json().legalVersions).toMatchObject({ terms: 'dev-draft', privacy: 'dev-draft' });
   });
 
   it('/v1/config never exposes non-public keys', async () => {

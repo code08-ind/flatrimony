@@ -85,3 +85,24 @@ describe('error handler', () => {
     expect(res.json().code).toBe('rate_limited');
   });
 });
+
+describe('loggableError', () => {
+  it('drops the failing row and query values from Postgres errors', async () => {
+    const { loggableError } = await import('../src/plugins/errors.js');
+    const pgErr = Object.assign(new Error('new row violates check constraint'), {
+      severity: 'ERROR',
+      code: '23514',
+      constraint: 'profiles_bio_chk',
+      table: 'profiles',
+      detail: 'Failing row contains (Karan, 2002-04-18, secret bio).',
+      where: 'SQL statement',
+    });
+    const out = JSON.stringify(loggableError(pgErr));
+    expect(out).toContain('profiles_bio_chk');
+    expect(out).not.toContain('Karan');
+    expect(out).not.toContain('Failing row');
+    expect(out).not.toContain('new row violates'); // the message can quote values too
+    const plain = new Error('x');
+    expect(loggableError(plain)).toBe(plain);
+  });
+});
