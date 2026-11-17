@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +16,8 @@ import {
   NotoSansDevanagari_600SemiBold,
   NotoSansDevanagari_700Bold,
 } from '@expo-google-fonts/noto-sans-devanagari';
-import { initI18n } from '../src/i18n';
+import { initI18n, restoreAppLocale } from '../src/i18n';
+import { SessionProvider } from '../src/auth/session';
 import { theme } from '../src/theme';
 
 initI18n();
@@ -35,14 +36,23 @@ export default function RootLayout() {
     NotoSansDevanagari_700Bold,
   });
 
+  // Restore the user's language choice (FR-AUTH-05) before the first screen renders.
+  const [localeReady, setLocaleReady] = useState(false);
   useEffect(() => {
-    if (loaded || error) void SplashScreen.hideAsync();
-  }, [loaded, error]);
+    void restoreAppLocale()
+      .catch(() => false)
+      .finally(() => setLocaleReady(true));
+  }, []);
 
-  if (!loaded && !error) return null;
+  const ready = (loaded || !!error) && localeReady;
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
 
   return (
-    <>
+    <SessionProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -50,6 +60,6 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: theme.color.bg.app },
         }}
       />
-    </>
+    </SessionProvider>
   );
 }

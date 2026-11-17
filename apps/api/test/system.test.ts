@@ -119,4 +119,59 @@ describe('env', () => {
       loadEnv({ CORS_ALLOWED_ORIGINS: 'https://a.test, https://b.test' }).CORS_ALLOWED_ORIGINS,
     ).toEqual(['https://a.test', 'https://b.test']);
   });
+
+  it('accepts only bare origins in CORS_ALLOWED_ORIGINS, and no local or http ones in production', () => {
+    for (const bad of ['https://a.test/', 'https://a.test/app', 'a.test', 'ftp://a.test', '*']) {
+      expect(() => loadEnv({ CORS_ALLOWED_ORIGINS: bad }), bad).toThrow(/CORS_ALLOWED_ORIGINS/);
+    }
+    expect(loadEnv({ CORS_ALLOWED_ORIGINS: 'http://localhost:8081' }).CORS_ALLOWED_ORIGINS).toEqual(
+      ['http://localhost:8081'],
+    );
+    // Only the CORS rule is under test: production config fails on it before anything else.
+    for (const bad of ['http://app.test', 'https://localhost:3000']) {
+      expect(() => loadEnv({ APP_ENV: 'production', CORS_ALLOWED_ORIGINS: bad }), bad).toThrow(
+        /CORS_ALLOWED_ORIGINS must be https/,
+      );
+    }
+  });
+});
+
+describe('CORS', () => {
+  it('allows only configured browser origins and exposes Retry-After', async () => {
+    const corsApp = await buildApp({
+      env: loadEnv({ NODE_ENV: 'test', CORS_ALLOWED_ORIGINS: 'http://localhost:8081' }),
+    });
+    const ok = await corsApp.inject({
+      method: 'OPTIONS',
+      url: '/v1/auth/otp-guard',
+      headers: {
+        origin: 'http://localhost:8081',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type,x-app-platform',
+      },
+    });
+    expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:8081');
+    const get = await corsApp.inject({
+      method: 'GET',
+      url: '/v1/config',
+      headers: { origin: 'http://localhost:8081' },
+    });
+    expect(String(get.headers['access-control-expose-headers'])).toContain('retry-after');
+    const evil = await corsApp.inject({
+      method: 'GET',
+      url: '/v1/config',
+      headers: { origin: 'https://evil.example' },
+    });
+    expect(evil.headers['access-control-allow-origin']).toBeUndefined();
+    await corsApp.close();
+  });
+
+  it('sends no CORS headers when no origins are configured', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/config',
+      headers: { origin: 'http://localhost:8081' },
+    });
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
 });

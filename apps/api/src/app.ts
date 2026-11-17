@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import {
   serializerCompiler,
   validatorCompiler,
@@ -100,6 +101,31 @@ export async function buildApp({
   });
 
   await app.register(errorsPlugin);
+  // Browsers may call the API only from listed origins (web app, admin, local previews). Native apps
+  // send no Origin and are unaffected. No credentials: tokens travel in the Authorization header.
+  await app.register(cors, {
+    origin: env.CORS_ALLOWED_ORIGINS.length > 0 ? env.CORS_ALLOWED_ORIGINS : false,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeaders: [
+      'authorization',
+      'content-type',
+      'idempotency-key',
+      'if-match',
+      'x-app-platform',
+      'x-app-version',
+      'x-request-id',
+    ],
+    exposedHeaders: [
+      'retry-after',
+      'x-request-id',
+      'etag',
+      'ratelimit-limit',
+      'ratelimit-remaining',
+      'ratelimit-reset',
+      'idempotent-replayed',
+    ],
+    maxAge: 600,
+  });
   const verifier = jwtVerifier ?? verifierFromEnv(env);
   await app.register(authPlugin, verifier ? { verifier } : {});
   const limiter = rateLimitStore ?? memoryRateLimitStore();

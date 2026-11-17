@@ -17,16 +17,19 @@ const config: ExpoConfig = {
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
-  platforms: ['android'],
+  // 'web' is ONLY the local design-preview target for QA in a browser (there is no Android SDK on
+  // the dev machine yet); the product web app is apps/web (Next.js).
+  platforms: ['android', 'web'],
   android: {
     package: APP_ENV === 'production' ? 'in.flatrimony.app' : `in.flatrimony.app.${APP_ENV}`,
   },
   runtimeVersion: { policy: 'fingerprint' },
-  plugins: ['expo-router', 'expo-font', 'expo-localization'],
+  plugins: ['expo-router', 'expo-font', 'expo-localization', 'expo-secure-store'],
   experiments: { typedRoutes: true },
   extra: {
     appEnv: APP_ENV,
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080',
+    webUrl: process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3000',
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
     sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',

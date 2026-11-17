@@ -16,6 +16,7 @@
     "test:e2e": "vitest run test/e2e"
   },
   "dependencies": {
+    "@fastify/cors": "^11.4.1",
     "@flatrimony/db-types": "workspace:*",
     "@flatrimony/shared": "workspace:*",
     "fastify": "^5.12.8",

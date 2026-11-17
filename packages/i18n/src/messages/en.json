@@ -13,7 +13,8 @@
   "legal": {
     "agreePrefix": "By continuing you agree to our",
     "terms": "Terms",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "consent": "By continuing you agree to our <terms>Terms</terms> and <privacy>Privacy Policy</privacy>."
   },
   "glossary": {
     "flatBiodata": "Flat Biodata",
@@ -47,5 +48,54 @@
     "myFlat": "My Flat",
     "saved": "Saved",
     "profile": "Profile"
+  },
+  "common": {
+    "back": "Back",
+    "delete": "Delete"
+  },
+  "welcome": {
+    "verifiedPeople": "Verified people",
+    "profilesChecked": "Profiles checked",
+    "realRooms": "Real rooms",
+    "equalSplit": "Equal split, peace of mind",
+    "chipDigilocker": "DigiLocker-verified members",
+    "chipMatch": "High Compatibility Match",
+    "chipAreas": "Gurgaon • Noida • South Delhi",
+    "chooseLanguage": "Choose language to continue / भाषा चुनें"
+  },
+  "auth": {
+    "phone": {
+      "title": "What's your phone number?",
+      "subtitle": "We'll send a 6-digit verification code. Your direct number remains hidden and is never shared publicly.",
+      "label": "Mobile number",
+      "clear": "Clear number",
+      "digilockerNote": "DigiLocker verified flatmates only",
+      "sendCode": "Send code",
+      "securedKeypad": "Secured keypad",
+      "invalid": "Enter a 10-digit Indian mobile number.",
+      "startDigit": "Indian mobile numbers start with 6, 7, 8 or 9."
+    },
+    "otp": {
+      "overline": "Mobile authentication",
+      "title": "Enter the code",
+      "sentTo": "Sent to {phone}",
+      "wrongNumber": "Wrong number?",
+      "codeLabel": "One-time code",
+      "wrongCode": "That code didn’t match or has expired.",
+      "tooManyAttempts": "Too many tries. Wait a few minutes, then ask for a new code.",
+      "resendIn": "Resend in {time}",
+      "resend": "Resend code",
+      "resent": "New code sent.",
+      "verify": "Verify & Continue"
+    },
+    "errors": {
+      "rateLimited": "Too many attempts. Try again in {minutes} min.",
+      "resendTooSoon": "Please wait a few seconds before asking for another code.",
+      "tooManyRequests": "Too many requests right now. Try again in a few minutes.",
+      "banned": "We can’t send a code to this number. If you think this is a mistake, contact support.",
+      "network": "No internet connection. Check your connection and try again.",
+      "unavailable": "Something went wrong on our side. Please try again.",
+      "notConfigured": "Sign-in isn’t set up in this build yet."
+    }
   }
 }

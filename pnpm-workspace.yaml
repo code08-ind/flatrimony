@@ -30,6 +30,9 @@ trustPolicy: no-downgrade
 # earlier versions had it. Add only after checking the version's age and maintainers.
 trustPolicyExclude:
   - undici-types@6.21.0
+  # 1.x maintenance release (Aug 2025, no provenance; the 2.x line has it). Needed only by
+  # react-native-web → fbjs for the mobile app's local web preview.
+  - ua-parser-js@1.0.41
 blockExoticSubdeps: true
 
 # One React for every app: React Native's renderer requires the exact version Expo SDK 58
