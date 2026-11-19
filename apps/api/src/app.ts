@@ -29,6 +29,7 @@ import { memorySlidingWindowStore, type SlidingWindowStore } from './lib/sliding
 import { inMemorySystemRepository, type SystemRepository } from './modules/system/repository.js';
 import { meRoutes } from './modules/me/routes.js';
 import type { MeRepository } from './modules/me/repository.js';
+import type { PhotoStorage } from './lib/photo-storage.js';
 
 export interface BuildOptions {
   env: Env;
@@ -46,6 +47,8 @@ export interface BuildOptions {
   otpStore?: SlidingWindowStore;
   /** Profiles and consents (Postgres in server.ts). Without it the /v1/me routes are not served. */
   meRepo?: MeRepository;
+  /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
+  photoStorage?: PhotoStorage;
   /** Capture logs (tests assert that no personal data is logged). */
   logStream?: { write(line: string): void };
 }
@@ -85,6 +88,7 @@ export async function buildApp({
   bansRepo,
   otpStore,
   meRepo,
+  photoStorage,
   logStream,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
@@ -169,6 +173,7 @@ export async function buildApp({
     await app.register(meRoutes, {
       prefix: '/v1',
       repo: meRepo,
+      ...(photoStorage ? { photos: photoStorage } : {}),
       bans,
       hasher,
       ...(now ? { now } : {}),

@@ -157,6 +157,8 @@ describe('verifier configuration', () => {
         SUPABASE_JWT_SECRET: SECRET,
         SEND_SMS_HOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
         HASH_PEPPER: randomBytes(32).toString('base64'),
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
       }).APP_ENV,
     ).toBe('staging');
   });

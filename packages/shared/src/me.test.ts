@@ -111,3 +111,33 @@ describe('biodataCompletion', () => {
     ).toBe(40);
   });
 });
+
+describe('photo contracts (T2.10)', () => {
+  it('upload-url: JPEG or WebP up to 8 MB', async () => {
+    const { PhotoUploadUrlRequest, PHOTO_MAX_BYTES } = await import('./index.js');
+    expect(
+      PhotoUploadUrlRequest.safeParse({ contentType: 'image/webp', sizeBytes: 1 }).success,
+    ).toBe(true);
+    expect(
+      PhotoUploadUrlRequest.safeParse({ contentType: 'image/jpeg', sizeBytes: PHOTO_MAX_BYTES })
+        .success,
+    ).toBe(true);
+    for (const bad of [
+      { contentType: 'image/png', sizeBytes: 1 },
+      { contentType: 'image/jpeg', sizeBytes: PHOTO_MAX_BYTES + 1 },
+      { contentType: 'image/jpeg', sizeBytes: 1, extra: 1 },
+    ])
+      expect(PhotoUploadUrlRequest.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+  });
+
+  it('confirm and order', async () => {
+    const { PhotoConfirmRequest, PhotoOrderRequest } = await import('./index.js');
+    expect(PhotoConfirmRequest.safeParse({ storageKey: 'a/b', position: 5 }).success).toBe(true);
+    expect(PhotoConfirmRequest.safeParse({ storageKey: 'a/b', position: 6 }).success).toBe(false);
+    const id = '2b7e4c1a-9d3f-4e5a-8b6c-0d1e2f3a4b5c';
+    const id2 = '3b7e4c1a-9d3f-4e5a-8b6c-0d1e2f3a4b5c';
+    expect(PhotoOrderRequest.safeParse({ photoIds: [id, id2] }).success).toBe(true);
+    expect(PhotoOrderRequest.safeParse({ photoIds: [id, id] }).success).toBe(false);
+    expect(PhotoOrderRequest.safeParse({ photoIds: [] }).success).toBe(false);
+  });
+});

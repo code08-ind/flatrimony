@@ -24,7 +24,8 @@ import {
   type ScenarioAnswersRequest,
   type Platform,
 } from '@flatrimony/shared';
-import type { VerifiedGender } from '@flatrimony/db-types';
+import type { ProfilePhotos, VerifiedGender } from '@flatrimony/db-types';
+import type { Selectable } from 'kysely';
 import type { Database } from '../../lib/db.js';
 
 type ConsentPurpose = ConsentGrant['purpose'];
@@ -80,6 +81,22 @@ export interface ProfileUpdate {
   isPaused?: boolean;
 }
 
+export interface StoredPhoto {
+  id: string;
+  storagePath: string;
+  position: number;
+  moderationStatus: 'pending' | 'approved' | 'rejected';
+}
+
+export interface NewPhoto {
+  storagePath: string;
+  position: number;
+  width: number;
+  height: number;
+  /** 64 chars of 0/1 */
+  phash: string;
+}
+
 export interface MeRepository {
   /** ref.app_config 'legal.versions'; null when not published yet (T0.15). */
   legalVersions(): Promise<LegalVersions | null>;
@@ -121,6 +138,29 @@ export interface MeRepository {
     answers: ScenarioAnswersRequest,
     ifVersion?: string,
   ): Promise<boolean>;
+  /** Photos (T2.10), in position order. */
+  listPhotos(userId: string): Promise<StoredPhoto[]>;
+  /**
+   * Adds a processed photo at `position`, replacing the one there (its storage path is returned so
+   * the object can be removed after commit). null when `ifVersion` is stale.
+   */
+  addPhoto(
+    userId: string,
+    photo: NewPhoto,
+    ifVersion?: string,
+  ): Promise<{ id: string; replacedPath: string | null } | null>;
+  /** Puts the user's photos in the given order (positions 0..n-1); the ids must be exactly theirs. */
+  reorderPhotos(
+    userId: string,
+    ids: string[],
+    ifVersion?: string,
+  ): Promise<'ok' | 'mismatch' | 'stale'>;
+  /** Removes one photo and closes the gap; refuses to remove the last one (docs/05 §8.3). */
+  deletePhoto(
+    userId: string,
+    photoId: string,
+    ifVersion?: string,
+  ): Promise<{ storagePath: string } | 'not_found' | 'last' | 'stale'>;
   listConsents(userId: string): Promise<ConsentRecord[]>;
   /** Records a grant; `created` is false when an identical grant was already active. */
   grantConsent(
@@ -198,6 +238,27 @@ async function recomputeCompletion(db: Database, userId: string): Promise<void> 
     .execute();
 }
 
+/**
+ * A refused write must not change anything, not even the profile version (ETag) that lockAndTouch
+ * bumped (QA T2.10 F1): the outcome is thrown to roll the transaction back, then returned.
+ */
+class Rollback<T> extends Error {
+  constructor(readonly outcome: T) {
+    super('rollback');
+  }
+}
+async function withRollbackOn<T, R>(
+  db: Database,
+  work: (tx: Database) => Promise<T>,
+): Promise<T | R> {
+  try {
+    return await db.transaction().execute(work);
+  } catch (err) {
+    if (err instanceof Rollback) return err.outcome as R;
+    throw err;
+  }
+}
+
 const VERSION_SQL = sql<string>`(extract(epoch from updated_at) * 1000000)::bigint::text`;
 
 /**
@@ -227,6 +288,25 @@ async function biodataTx(
     await recomputeCompletion(tx, userId);
     return true;
   });
+}
+
+/**
+ * Gives the photos positions 0..n-1 in the given order. (user_id, position) is unique and not
+ * deferrable (docs/04 §6.2), so rows cannot be swapped in place: they are removed and inserted
+ * again, keeping ids and every other column.
+ */
+async function rewritePositions(
+  tx: Database,
+  userId: string,
+  ordered: Selectable<ProfilePhotos>[],
+) {
+  await tx.deleteFrom('profile_photos').where('user_id', '=', userId).execute();
+  if (ordered.length === 0) return;
+  // Every column is carried over (a later moderation column must not be wiped by a reorder).
+  await tx
+    .insertInto('profile_photos')
+    .values(ordered.map((r, position) => ({ ...r, position })))
+    .execute();
 }
 
 export function pgMeRepository(db: Database): MeRepository {
@@ -660,6 +740,95 @@ export function pgMeRepository(db: Database): MeRepository {
           )
           .execute();
       });
+    },
+
+    async listPhotos(userId) {
+      const rows = await db
+        .selectFrom('profile_photos')
+        .select(['id', 'storage_path', 'position', 'moderation_status'])
+        .where('user_id', '=', userId)
+        .orderBy('position')
+        .execute();
+      return rows.map((r) => ({
+        id: r.id,
+        storagePath: r.storage_path,
+        position: r.position,
+        moderationStatus: r.moderation_status,
+      }));
+    },
+
+    async addPhoto(userId, photo, ifVersion) {
+      return db.transaction().execute(async (tx) => {
+        if (!(await lockAndTouch(tx, userId, ifVersion))) return null;
+        const replaced = await tx
+          .deleteFrom('profile_photos')
+          .where('user_id', '=', userId)
+          .where('position', '=', photo.position)
+          .returning('storage_path')
+          .executeTakeFirst();
+        const inserted = await tx
+          .insertInto('profile_photos')
+          .values({
+            user_id: userId,
+            storage_path: photo.storagePath,
+            position: photo.position,
+            width: photo.width,
+            height: photo.height,
+            phash: photo.phash,
+            // Face and explicit-content checks need a vendor (Blocked): human moderation decides.
+            has_face: null,
+            moderation_status: 'pending',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await recomputeCompletion(tx, userId);
+        return { id: inserted.id, replacedPath: replaced?.storage_path ?? null };
+      });
+    },
+
+    async reorderPhotos(userId, ids, ifVersion) {
+      return withRollbackOn<'ok' | 'stale', 'mismatch'>(db, async (tx) => {
+        if (!(await lockAndTouch(tx, userId, ifVersion))) return 'stale' as const;
+        const rows = await tx
+          .selectFrom('profile_photos')
+          .selectAll()
+          .where('user_id', '=', userId)
+          .execute();
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        if (ids.length !== rows.length || !ids.every((id) => byId.has(id)))
+          throw new Rollback('mismatch' as const);
+        await rewritePositions(
+          tx,
+          userId,
+          ids.map((id) => byId.get(id)!),
+        );
+        return 'ok' as const;
+      });
+    },
+
+    async deletePhoto(userId, photoId, ifVersion) {
+      return withRollbackOn<{ storagePath: string } | 'stale', 'not_found' | 'last'>(
+        db,
+        async (tx) => {
+          if (!(await lockAndTouch(tx, userId, ifVersion))) return 'stale' as const;
+          const rows = await tx
+            .selectFrom('profile_photos')
+            .selectAll()
+            .where('user_id', '=', userId)
+            .orderBy('position')
+            .execute();
+          const target = rows.find((r) => r.id === photoId);
+          if (!target) throw new Rollback('not_found' as const);
+          if (rows.length <= 1) throw new Rollback('last' as const);
+          await rewritePositions(
+            tx,
+            userId,
+            rows.filter((r) => r.id !== photoId),
+          );
+          await recomputeCompletion(tx, userId);
+          return { storagePath: target.storage_path };
+        },
+      );
     },
 
     async listConsents(userId) {

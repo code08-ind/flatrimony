@@ -13,6 +13,8 @@ import { createDatabase, type Database } from '../../src/lib/db.js';
 import { createIdentifierHasher } from '../../src/lib/hashing.js';
 import { pgBansRepository } from '../../src/modules/auth/bans.js';
 import { pgMeRepository } from '../../src/modules/me/repository.js';
+import { memoryPhotoStorage } from '../../src/lib/photo-storage.js';
+import sharp from 'sharp';
 
 const url = process.env.DATABASE_URL;
 /** A date `n` days from today (India), so the tests never age into the past. */
@@ -22,6 +24,7 @@ const PEPPER = randomBytes(32).toString('base64');
 const hasher = createIdentifierHasher(PEPPER);
 
 describe.skipIf(!url)('/v1/me on Postgres', () => {
+  const storage = memoryPhotoStorage();
   let db: Database;
   let app: FastifyInstance;
   const users: { id: string; phone: string; token: string }[] = [];
@@ -79,6 +82,7 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
       },
       meRepo: pgMeRepository(db),
       bansRepo: pgBansRepository(db),
+      photoStorage: storage,
     });
   });
   afterAll(async () => {
@@ -570,5 +574,87 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
       await sql`delete from ref.areas where id = ${area.rows[0]!.id}`.execute(db);
       await sql`delete from ref.scenario_questions where id = ${qid}`.execute(db);
     }
+  });
+
+  it('photos (T2.10): stored rows match the database rules; order, replace, delete; +20 %', async () => {
+    const user = await newUser();
+    await call(user, 'POST', '/v1/me/bootstrap', body(`install-${randomUUID()}`));
+    const jpeg = (bg: string) =>
+      sharp({ create: { width: 900, height: 600, channels: 3, background: bg } })
+        .jpeg()
+        .toBuffer();
+    const add = async (position: number, bg: string) => {
+      const url = await call(user, 'POST', '/v1/me/photos/upload-url', {
+        contentType: 'image/jpeg',
+        sizeBytes: 1000,
+      });
+      const key = url.json().storageKey as string;
+      storage.objects.set(key, await jpeg(bg));
+      const res = await call(user, 'POST', '/v1/me/photos', { storageKey: key, position });
+      expect(res.statusCode, res.body).toBe(201);
+      return res.json().id as string;
+    };
+    const a = await add(0, '#335');
+    const b = await add(1, '#a53');
+    const c = await add(2, '#3a5');
+
+    const rows = await db
+      .selectFrom('profile_photos')
+      .select([
+        'id',
+        'position',
+        'storage_path',
+        'width',
+        'height',
+        'phash',
+        'moderation_status',
+        'has_face',
+      ])
+      .where('user_id', '=', user.id)
+      .orderBy('position')
+      .execute();
+    expect(rows.map((r) => r.id)).toEqual([a, b, c]);
+    for (const r of rows) {
+      // The CHECK constraint (docs/04 §6.2) accepted the path; dimensions and hash are stored.
+      expect(r.storage_path).toMatch(new RegExp(`^${user.id}/[0-9a-f-]{36}\\.webp$`));
+      expect({ w: r.width, h: r.height }).toEqual({ w: 900, h: 600 });
+      expect(r.phash).toMatch(/^[01]{64}$/);
+      expect(r.moderation_status).toBe('pending');
+      expect(r.has_face).toBeNull(); // face check Blocked (vendor)
+    }
+    let me = (await call(user, 'GET', '/v1/me')).json();
+    expect(me.biodataCompletion).toBe(30); // basics 10 + photos 20
+    expect(me.photos.map((p: { id: string }) => p.id)).toEqual([a, b, c]);
+
+    // Reorder through the unique (user, position) constraint.
+    const res = await call(user, 'PATCH', '/v1/me/photos/order', { photoIds: [c, b, a] });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().photos.map((p: { id: string }) => p.id)).toEqual([c, b, a]);
+
+    // Replace position 0 (c): the old object is removed.
+    const oldPath = rows.find((r) => r.id === c)!.storage_path;
+    const d = await add(0, '#999');
+    expect(storage.objects.has(oldPath)).toBe(false);
+    me = (await call(user, 'GET', '/v1/me')).json();
+    expect(me.photos.map((p: { id: string }) => p.id)).toEqual([d, b, a]);
+
+    // Delete closes the gap; the last photo stays.
+    expect((await call(user, 'DELETE', `/v1/me/photos/${b}`)).statusCode).toBe(204);
+    me = (await call(user, 'GET', '/v1/me')).json();
+    expect(me.photos.map((p: { id: string; position: number }) => [p.id, p.position])).toEqual([
+      [d, 0],
+      [a, 1],
+    ]);
+    await call(user, 'DELETE', `/v1/me/photos/${a}`);
+    expect((await call(user, 'DELETE', `/v1/me/photos/${d}`)).statusCode).toBe(409);
+
+    // A refused reorder or delete changes nothing, not even the ETag (QA T2.10 F1).
+    const etag = (await call(user, 'GET', '/v1/me')).headers.etag;
+    expect(
+      (await call(user, 'PATCH', '/v1/me/photos/order', { photoIds: [randomUUID()] })).statusCode,
+    ).toBe(422);
+    expect((await call(user, 'DELETE', `/v1/me/photos/${randomUUID()}`)).statusCode).toBe(404);
+    expect((await call(user, 'DELETE', `/v1/me/photos/${d}`)).statusCode).toBe(409);
+    expect((await call(user, 'GET', '/v1/me')).headers.etag).toBe(etag);
   });
 });
