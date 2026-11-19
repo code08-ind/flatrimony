@@ -3,7 +3,9 @@
  * women-only, student fields, idempotency and what is logged. The SQL itself is covered by
  * test/integration/me.db.test.ts.
  */
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import sharp from 'sharp';
+import { memoryPhotoStorage } from '../src/lib/photo-storage.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { Me, type ConsentGrant, type ConsentRecord } from '@flatrimony/shared';
@@ -17,6 +19,7 @@ import type {
   MeRepository,
   ProfileState,
   ProfileUpdate,
+  StoredPhoto,
 } from '../src/modules/me/repository.js';
 import { consentErrors, istToday } from '../src/modules/me/routes.js';
 
@@ -47,9 +50,16 @@ interface FakeState {
   biodata: [string, unknown][];
   /** Thrown by bootstrap (Postgres constraint errors). */
   dbError?: unknown;
+  photos: StoredPhoto[];
 }
 
 function fakeRepo(state: FakeState): MeRepository {
+  const touch = (ifVersion?: string) => {
+    if (!state.profile) return false;
+    if (ifVersion !== undefined && ifVersion !== state.profile.version) return false;
+    state.profile.version = String(Number(state.profile.version) + 1);
+    return true;
+  };
   // Like lockAndTouch: refuses a stale version, otherwise records the write and bumps the version.
   const biodata = async (part: string, body: unknown, ifVersion?: string) => {
     if (!state.profile) return false;
@@ -160,6 +170,48 @@ function fakeRepo(state: FakeState): MeRepository {
     async replaceImportance(_id, m, v) {
       return biodata('importance', m, v);
     },
+    async listPhotos() {
+      return [...state.photos].sort((a, b) => a.position - b.position);
+    },
+    async addPhoto(_id, photo, v) {
+      if (!touch(v)) return null;
+      const old = state.photos.find((p) => p.position === photo.position);
+      state.photos = state.photos.filter((p) => p !== old);
+      const id = randomUUID();
+      state.photos.push({
+        id,
+        storagePath: photo.storagePath,
+        position: photo.position,
+        moderationStatus: 'pending',
+      });
+      return { id, replacedPath: old?.storagePath ?? null };
+    },
+    async reorderPhotos(_id, ids, v) {
+      if (v !== undefined && v !== state.profile?.version) return 'stale';
+      if (
+        ids.length !== state.photos.length ||
+        !ids.every((id) => state.photos.some((p) => p.id === id))
+      )
+        return 'mismatch'; // rolled back: no version change
+      touch();
+      state.photos = ids.map((id, position) => ({
+        ...state.photos.find((p) => p.id === id)!,
+        position,
+      }));
+      return 'ok';
+    },
+    async deletePhoto(_id, photoId, v) {
+      if (v !== undefined && v !== state.profile?.version) return 'stale';
+      const target = state.photos.find((p) => p.id === photoId);
+      if (!target) return 'not_found';
+      if (state.photos.length <= 1) return 'last';
+      touch();
+      state.photos = state.photos
+        .filter((p) => p !== target)
+        .sort((a, b) => a.position - b.position)
+        .map((p, position) => ({ ...p, position }));
+      return { storagePath: target.storagePath };
+    },
     async upsertScenarioAnswers(_id, a, v) {
       return biodata('scenarios', a, v);
     },
@@ -187,9 +239,11 @@ async function setup(
     holder: null,
     repointed: [],
     biodata: [],
+    photos: [],
     ...overrides,
   };
   const logs: string[] = [];
+  const storage = memoryPhotoStorage();
   app = await buildApp({
     env: loadEnv({ NODE_ENV: 'test', HASH_PEPPER: PEPPER }),
     jwtVerifier: async (token) => {
@@ -197,6 +251,7 @@ async function setup(
       return { id: USER, appRole: 'user' };
     },
     meRepo: fakeRepo(state),
+    photoStorage: storage,
     bansRepo: memoryBansRepository(banned),
     now: () => nowMs,
     logStream: { write: (line) => void logs.push(line) },
@@ -212,7 +267,7 @@ async function setup(
       headers: { authorization: 'Bearer a.b.c' },
       ...(payload !== undefined ? { payload: payload as object } : {}),
     });
-  return { state, logs, call };
+  return { state, logs, call, storage };
 }
 
 const bootstrapBody = (over: Record<string, unknown> = {}) => ({
@@ -1043,5 +1098,278 @@ describe('biodata writes (T2.7)', () => {
       anchor({ location: { lat: 28.495, lng: 77.089, alt: 3 } }),
     );
     expect(alt.statusCode).toBe(422);
+  });
+});
+
+describe('photos (T2.10)', () => {
+  const profile = () => ({
+    category: 'professional' as const,
+    isIdentityVerified: false,
+    verifiedGender: null,
+    deleted: false,
+    suspendedUntil: null,
+    version: '1',
+    row: {
+      displayName: 'K',
+      dateOfBirth: '2000-01-01',
+      intent: 'need_room' as const,
+      category: 'professional' as const,
+      locale: 'en' as const,
+    },
+  });
+  const jpeg = () =>
+    sharp({ create: { width: 640, height: 480, channels: 3, background: '#7a5' } })
+      .withExif({ IFD0: { Make: 'TestCam' } })
+      .jpeg()
+      .toBuffer();
+
+  async function upload(
+    call: Awaited<ReturnType<typeof setup>>['call'],
+    storage: Awaited<ReturnType<typeof setup>>['storage'],
+    file: Buffer,
+  ) {
+    const res = await call('POST', '/v1/me/photos/upload-url', {
+      contentType: 'image/jpeg',
+      sizeBytes: file.length,
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const { storageKey } = res.json();
+    storage.objects.set(storageKey, file); // the client PUTs the file to uploadUrl
+    return storageKey as string;
+  }
+
+  it('upload URL: a per-user staging key, signed URL and expiry; size and type limits', async () => {
+    const { call } = await setup({ profile: profile() });
+    const res = await call('POST', '/v1/me/photos/upload-url', {
+      contentType: 'image/webp',
+      sizeBytes: 1000,
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().storageKey).toMatch(new RegExp(`^${USER}/uploads/[0-9a-f-]{36}$`));
+    expect(res.json().uploadUrl).toMatch(/^https:\/\//);
+    expect(Date.parse(res.json().expiresAt)).toBe(NOW + 2 * 60 * 60 * 1000);
+    for (const bad of [
+      { contentType: 'image/png', sizeBytes: 1000 },
+      { contentType: 'image/jpeg', sizeBytes: 8 * 1024 * 1024 + 1 },
+      { contentType: 'image/jpeg', sizeBytes: 0 },
+    ])
+      expect(
+        (await call('POST', '/v1/me/photos/upload-url', bad)).statusCode,
+        JSON.stringify(bad),
+      ).toBe(422);
+  });
+
+  it('confirm: processed WebP without metadata, staging copy removed, Me lists it with a signed URL', async () => {
+    const { call, storage, state } = await setup({ profile: profile() });
+    const key = await upload(call, storage, await jpeg());
+    const res = await call('POST', '/v1/me/photos', { storageKey: key, position: 0 });
+    expect(res.statusCode, res.body).toBe(201);
+    expect(res.json()).toMatchObject({ position: 0, moderationStatus: 'pending' });
+    expect(storage.objects.has(key)).toBe(false);
+    const stored = state.photos[0]!.storagePath;
+    expect(stored).toMatch(new RegExp(`^${USER}/[0-9a-f-]{36}\\.webp$`));
+    const meta = await sharp(storage.objects.get(stored)!).metadata();
+    expect(meta.format).toBe('webp');
+    expect(meta.exif).toBeUndefined();
+    const me = (await call('GET', '/v1/me')).json();
+    expect(me.photos).toEqual([
+      {
+        id: state.photos[0]!.id,
+        url: expect.stringContaining(encodeURIComponent(stored)),
+        position: 0,
+        moderationStatus: 'pending',
+      },
+    ]);
+  });
+
+  it("confirm: refuses other users' keys, missing uploads and non-photos", async () => {
+    const { call, storage } = await setup({ profile: profile() });
+    const other = `${randomUUID()}/uploads/${randomUUID()}`;
+    storage.objects.set(other, await jpeg());
+    expect(
+      (await call('POST', '/v1/me/photos', { storageKey: other, position: 0 })).json().errors[0]
+        .code,
+    ).toBe('invalid_key');
+    expect(
+      (
+        await call('POST', '/v1/me/photos', {
+          storageKey: `${USER}/${randomUUID()}.webp`,
+          position: 0,
+        })
+      ).json().errors[0].code,
+    ).toBe('invalid_key');
+    const missing = await call('POST', '/v1/me/photos', {
+      storageKey: `${USER}/uploads/${randomUUID()}`,
+      position: 0,
+    });
+    expect(missing.json().errors[0].code).toBe('upload_missing');
+    const text = await upload(call, storage, Buffer.from('not a photo at all'));
+    const res = await call('POST', '/v1/me/photos', { storageKey: text, position: 0 });
+    expect(res.statusCode).toBe(422);
+    expect(res.json().errors[0].code).toBe('unsupported_format');
+    expect(storage.objects.has(text)).toBe(false); // the rejected upload is removed
+    expect(
+      (await call('POST', '/v1/me/photos', { storageKey: text, position: 6 })).statusCode,
+    ).toBe(422);
+  });
+
+  it('confirm on an occupied position replaces the photo and removes the old object', async () => {
+    const { call, storage, state } = await setup({ profile: profile() });
+    await call('POST', '/v1/me/photos', {
+      storageKey: await upload(call, storage, await jpeg()),
+      position: 0,
+    });
+    const first = state.photos[0]!.storagePath;
+    await call('POST', '/v1/me/photos', {
+      storageKey: await upload(call, storage, await jpeg()),
+      position: 0,
+    });
+    expect(state.photos).toHaveLength(1);
+    expect(state.photos[0]!.storagePath).not.toBe(first);
+    expect(storage.objects.has(first)).toBe(false);
+  });
+
+  it("order and delete: exactly the user's photos; never the last one", async () => {
+    const { call, storage, state } = await setup({ profile: profile() });
+    for (const position of [0, 1, 2])
+      await call('POST', '/v1/me/photos', {
+        storageKey: await upload(call, storage, await jpeg()),
+        position,
+      });
+    const [a, b, c] = [...state.photos].sort((x, y) => x.position - y.position).map((p) => p.id);
+    const ordered = await call('PATCH', '/v1/me/photos/order', { photoIds: [c, a, b] });
+    expect(ordered.statusCode, ordered.body).toBe(200);
+    expect(ordered.json().photos.map((p: { id: string }) => p.id)).toEqual([c, a, b]);
+    expect((await call('PATCH', '/v1/me/photos/order', { photoIds: [c, a] })).statusCode).toBe(422);
+    expect(
+      (await call('PATCH', '/v1/me/photos/order', { photoIds: [c, a, randomUUID()] })).statusCode,
+    ).toBe(422);
+    expect((await call('PATCH', '/v1/me/photos/order', { photoIds: [c, c, a] })).statusCode).toBe(
+      422,
+    );
+
+    const removedPath = state.photos.find((p) => p.id === a)!.storagePath;
+    expect((await call('DELETE', `/v1/me/photos/${a}`)).statusCode).toBe(204);
+    expect(storage.objects.has(removedPath)).toBe(false);
+    expect(
+      [...state.photos].sort((x, y) => x.position - y.position).map((p) => [p.id, p.position]),
+    ).toEqual([
+      [c, 0],
+      [b, 1],
+    ]);
+    expect((await call('DELETE', `/v1/me/photos/${randomUUID()}`)).statusCode).toBe(404);
+    await call('DELETE', `/v1/me/photos/${b}`);
+    const last = await call('DELETE', `/v1/me/photos/${c}`);
+    expect(last.statusCode).toBe(409);
+    expect(last.json().title).toMatch(/at least one/);
+  });
+
+  it('without storage the photo routes answer 503 and Me has no photos', async () => {
+    const state = {
+      versions: VERSIONS,
+      phone: null,
+      profile: profile(),
+      consents: [],
+      writes: [],
+      updates: [],
+      holder: null,
+      repointed: [],
+      biodata: [],
+      photos: [],
+    } satisfies FakeState;
+    app = await buildApp({
+      env: loadEnv({ NODE_ENV: 'test', HASH_PEPPER: PEPPER }),
+      jwtVerifier: async () => ({ id: USER, appRole: 'user' }),
+      meRepo: fakeRepo(state),
+      now: () => NOW,
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/me/photos/upload-url',
+      headers: { authorization: 'Bearer a.b.c' },
+      payload: { contentType: 'image/jpeg', sizeBytes: 10 },
+    });
+    expect(res.statusCode).toBe(503);
+    const me = await app.inject({
+      method: 'GET',
+      url: '/v1/me',
+      headers: { authorization: 'Bearer a.b.c' },
+    });
+    expect(me.json().photos).toEqual([]);
+  });
+
+  it('review fixes: early If-Match, position gaps, Location and ETag, stale-upload sweep', async () => {
+    const { call, storage, state } = await setup({ profile: profile() });
+    const key = await upload(call, storage, await jpeg());
+    // A stale or malformed If-Match is refused before any download or image work.
+    const stale = await app!.inject({
+      method: 'POST',
+      url: '/v1/me/photos',
+      headers: { authorization: 'Bearer a.b.c', 'if-match': 'W/"0"' },
+      payload: { storageKey: key, position: 0 },
+    });
+    expect(stale.statusCode).toBe(412);
+    expect(storage.objects.has(key)).toBe(true); // untouched: the app may retry
+    const bad = await app!.inject({
+      method: 'POST',
+      url: '/v1/me/photos',
+      headers: { authorization: 'Bearer a.b.c', 'if-match': 'nope' },
+      payload: { storageKey: key, position: 0 },
+    });
+    expect(bad.statusCode).toBe(422);
+    // Photos fill 0..n-1.
+    const gap = await call('POST', '/v1/me/photos', { storageKey: key, position: 1 });
+    expect(gap.json().errors[0].code).toBe('position_gap');
+    const ok = await call('POST', '/v1/me/photos', { storageKey: key, position: 0 });
+    expect(ok.statusCode).toBe(201);
+    expect(ok.headers.location).toBe('/v1/me');
+    expect(ok.headers.etag).toMatch(/^W\/"\d+"$/);
+    await call('POST', '/v1/me/photos', {
+      storageKey: await upload(call, storage, await jpeg()),
+      position: 1,
+    });
+    const del = await call('DELETE', `/v1/me/photos/${state.photos[1]!.id}`);
+    expect(del.statusCode).toBe(204);
+    expect(del.headers.etag).toBe(`W/"${state.profile!.version}"`);
+
+    // upload-url removes this user's unconfirmed uploads older than the 2 h URL lifetime.
+    const old = `${USER}/uploads/${randomUUID()}`;
+    const fresh = `${USER}/uploads/${randomUUID()}`;
+    storage.objects.set(old, Buffer.from('x'));
+    storage.created.set(old, NOW - 2 * 60 * 60 * 1000 - 1);
+    storage.objects.set(fresh, Buffer.from('y'));
+    storage.created.set(fresh, NOW - 60_000);
+    await call('POST', '/v1/me/photos/upload-url', { contentType: 'image/jpeg', sizeBytes: 10 });
+    expect(storage.objects.has(old)).toBe(false);
+    expect(storage.objects.has(fresh)).toBe(true);
+  });
+
+  it('a Storage outage leaves photos out of Me instead of failing', async () => {
+    const { call, storage, state } = await setup({ profile: profile() });
+    await call('POST', '/v1/me/photos', {
+      storageKey: await upload(call, storage, await jpeg()),
+      position: 0,
+    });
+    expect(state.photos).toHaveLength(1);
+    storage.signedUrls = async () => {
+      throw new Error('storage down');
+    };
+    const me = await call('GET', '/v1/me');
+    expect(me.statusCode).toBe(200);
+    expect(me.json().photos).toEqual([]);
+    expect((await call('PATCH', '/v1/me', { bio: 'still works' })).statusCode).toBe(200);
+  });
+
+  it('logs no storage paths or tokens while handling photos', async () => {
+    const { call, storage, logs } = await setup({ profile: profile() });
+    storage.remove = async () => {
+      throw new Error('cleanup failed for a/uploads/b');
+    };
+    const key = await upload(call, storage, await jpeg());
+    await call('POST', '/v1/me/photos', { storageKey: key, position: 0 });
+    const all = logs.join('\n');
+    expect(all).not.toContain(key);
+    expect(all).not.toContain('.webp');
+    expect(all).not.toContain('token=');
   });
 });

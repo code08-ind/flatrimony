@@ -37,6 +37,8 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
+  /** Server-only key for Storage (profile photos, T2.10). Secret Manager outside local; never in clients. */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   SUPABASE_JWT_ISSUER: z.string().url().optional(),
   SUPABASE_JWKS_URL: z.string().url().optional(),
   SUPABASE_JWT_SECRET: z.string().min(32).optional(),
@@ -99,6 +101,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       throw new Error('SEND_SMS_HOOK_SECRETS is required outside local development');
     }
     if (!env.HASH_PEPPER) throw new Error('HASH_PEPPER is required outside local development');
+    // Profile photos (T2.10): without Storage the photo routes answer 503 and nobody can finish
+    // their profile, so a deploy without it is a misconfiguration.
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required outside local development',
+      );
   }
   return env;
 }

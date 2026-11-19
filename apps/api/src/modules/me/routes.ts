@@ -13,6 +13,7 @@
  *
  * Every route needs an OTP session. Phone numbers and device ids are HMAC'd here and never logged.
  */
+import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
@@ -30,6 +31,12 @@ import {
   LIMITS,
   Me,
   MePatch,
+  Photo,
+  PhotoConfirmRequest,
+  PhotoOrderRequest,
+  PhotoUploadUrlRequest,
+  PhotoUploadUrlResponse,
+  RATE_LIMITS,
   REQUIRED_CONSENTS,
   type FieldError,
 } from '@flatrimony/shared';
@@ -37,12 +44,16 @@ import { ApiError } from '../../plugins/errors.js';
 import type { IdentifierHasher } from '../../lib/hashing.js';
 import type { BansRepository } from '../auth/bans.js';
 import { BANNED_MESSAGE } from '../auth/otp-guard.js';
+import { ImageError, processPhoto, withImageSlot } from '../../lib/image.js';
+import { UPLOAD_URL_TTL_SECONDS, type PhotoStorage } from '../../lib/photo-storage.js';
 import type { LegalVersions, MeRepository, ProfileState, ProfileUpdate } from './repository.js';
 
 export interface MeRoutesOptions {
   repo: MeRepository;
   bans: BansRepository;
   hasher: IdentifierHasher;
+  /** Profile photo storage (T2.10). Without it the photo routes answer 503 and Me has no photos. */
+  photos?: PhotoStorage;
   now?: () => number;
 }
 
@@ -57,6 +68,13 @@ const safeHash = (hasher: IdentifierHasher, phone: string): Buffer | null => {
   } catch {
     return null;
   }
+};
+
+const IMAGE_ERROR_MESSAGE: Record<ImageError['reason'], string> = {
+  unsupported_format: 'Use a JPEG or WebP photo',
+  not_an_image: 'This file is not a photo we can read',
+  animated: 'Use a still photo, not an animation',
+  too_large: 'Use a photo up to 8 MB and 50 megapixels',
 };
 
 const invalid = (errors: FieldError[]) =>
@@ -188,7 +206,29 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
   async function me(userId: string) {
     const result = await repo.loadMe(userId, istToday(now()));
     if (!result) throw new ApiError('not_found', { title: 'Not found' });
-    return result;
+    return { ...result, photos: await signedPhotos(userId) };
+  }
+
+  /**
+   * The user's photos with 1-hour signed URLs (none without storage). A Storage outage leaves the
+   * photos out instead of failing GET /me and every write that answers with Me (review T2.10).
+   */
+  async function signedPhotos(userId: string): Promise<Me['photos']> {
+    if (!opts.photos) return [];
+    const rows = await repo.listPhotos(userId);
+    let urls: Map<string, string>;
+    try {
+      urls = await opts.photos.signedUrls(rows.map((r) => r.storagePath));
+    } catch (err) {
+      app.log.warn({ err: (err as Error).name }, 'photo signing failed');
+      return [];
+    }
+    return rows.flatMap((r) => {
+      const url = urls.get(r.storagePath);
+      return url
+        ? [{ id: r.id, url, position: r.position, moderationStatus: r.moderationStatus }]
+        : [];
+    });
   }
 
   app.post(
@@ -479,6 +519,244 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
           ]);
         throw err;
       }
+    },
+  );
+
+  // ------------------------------------------------------------------ photos (T2.10)
+  // Upload straight to storage with a signed URL, then confirm: the API checks and re-encodes the
+  // image (EXIF/GPS removed), stores it as <user>/<uuid>.webp with its perceptual hash and deletes
+  // the original. This runs in the request until the job runner exists (media.process, T1.14).
+  function storage(): PhotoStorage {
+    if (!opts.photos)
+      throw new ApiError('upstream.unavailable', { title: 'Photo storage is not configured' });
+    return opts.photos;
+  }
+  const UPLOAD_KEY = /^([0-9a-f-]{36})\/uploads\/([0-9a-f-]{36})$/;
+
+  app.post(
+    '/me/photos/upload-url',
+    {
+      onRequest: app.requireUser,
+      config: {
+        rateLimit: {
+          bucket: 'photo_upload_urls',
+          limit: RATE_LIMITS.uploadUrls.limit,
+          windowMs: RATE_LIMITS.uploadUrls.windowMs,
+        },
+      },
+      schema: { body: PhotoUploadUrlRequest, response: { 200: PhotoUploadUrlResponse } },
+    },
+    async (req) => {
+      const userId = await writableProfile(req);
+      const store = storage();
+      // Originals still carry EXIF/GPS: remove this user's uploads that were never confirmed and
+      // whose upload URL has expired (until the sweeper job exists, T1.14). Best effort.
+      await sweepStaleUploads(store, userId).catch((err: unknown) =>
+        req.log.warn({ err: (err as Error).name }, 'upload sweep failed'),
+      );
+      // The original goes to a per-user staging key; only the processed copy is ever shown.
+      const storageKey = `${userId}/uploads/${randomUUID()}`;
+      const uploadUrl = await store.createUploadUrl(storageKey);
+      return {
+        uploadUrl,
+        storageKey,
+        expiresAt: new Date(now() + UPLOAD_URL_TTL_SECONDS * 1000).toISOString(),
+      };
+    },
+  );
+
+  async function sweepStaleUploads(store: PhotoStorage, userId: string) {
+    const cutoff = now() - UPLOAD_URL_TTL_SECONDS * 1000;
+    const stale = (await store.list(`${userId}/uploads`))
+      .filter((o) => o.createdAt < cutoff)
+      .map((o) => o.key);
+    await store.remove(stale);
+  }
+
+  app.post(
+    '/me/photos',
+    {
+      onRequest: app.requireUser,
+      // Each confirm decodes and re-encodes an image: limited like upload URLs (review T2.10).
+      config: {
+        rateLimit: {
+          bucket: 'photo_confirms',
+          limit: RATE_LIMITS.uploadUrls.limit,
+          windowMs: RATE_LIMITS.uploadUrls.windowMs,
+        },
+      },
+      schema: { body: PhotoConfirmRequest, response: { 201: Photo } },
+    },
+    async (req, reply) => {
+      const userId = req.user!.id;
+      const state = await liveProfile(userId);
+      assertNotSuspended(state);
+      const store = storage();
+      const { storageKey, position } = req.body;
+
+      // Every cheap check first, before any download or image work.
+      const header = req.headers['if-match'];
+      const ifVersion = parseIfMatch(typeof header === 'string' ? header : undefined);
+      if (ifVersion === null)
+        throw invalid([
+          { path: 'headers.if-match', code: 'invalid', message: 'Use the ETag from GET /v1/me' },
+        ]);
+      if (ifVersion !== undefined && ifVersion !== state.version)
+        throw new ApiError('precondition.failed', { title: 'Profile changed' });
+      const key = UPLOAD_KEY.exec(storageKey);
+      if (!key || key[1] !== userId)
+        throw invalid([
+          { path: 'body.storageKey', code: 'invalid_key', message: 'Use the key from upload-url' },
+        ]);
+      // Photos fill positions 0..n-1: replace one, or add at the next free position.
+      const count = (await repo.listPhotos(userId)).length;
+      if (position > count)
+        throw invalid([
+          {
+            path: 'body.position',
+            code: 'position_gap',
+            message: `Use a position from 0 to ${count}`,
+          },
+        ]);
+
+      const original = await store.download(storageKey);
+      if (!original)
+        throw invalid([
+          { path: 'body.storageKey', code: 'upload_missing', message: 'Upload the file first' },
+        ]);
+      // The original (with its EXIF/GPS) is not kept a moment longer than needed: whatever happens
+      // next, it is gone. On a failure the app uploads again.
+      await store
+        .remove([storageKey])
+        .catch((err: unknown) =>
+          req.log.warn({ err: (err as Error).name }, 'photo cleanup failed'),
+        );
+
+      let processed;
+      try {
+        processed = await withImageSlot(() => processPhoto(original));
+      } catch (err) {
+        if (err instanceof ImageError)
+          throw invalid([
+            { path: 'body.storageKey', code: err.reason, message: IMAGE_ERROR_MESSAGE[err.reason] },
+          ]);
+        throw err;
+      }
+      const finalKey = `${userId}/${randomUUID()}.webp`;
+      await store.upload(finalKey, processed.webp, 'image/webp');
+      let saved: Awaited<ReturnType<MeRepository['addPhoto']>>;
+      try {
+        saved = await rethrowDb(
+          repo.addPhoto(
+            userId,
+            {
+              storagePath: finalKey,
+              position,
+              width: processed.width,
+              height: processed.height,
+              phash: processed.phash,
+            },
+            ifVersion,
+          ),
+        );
+      } catch (err) {
+        await store.remove([finalKey]).catch(() => {});
+        throw err;
+      }
+      if (!saved) {
+        await store.remove([finalKey]).catch(() => {});
+        throw new ApiError('precondition.failed', { title: 'Profile changed' });
+      }
+      if (saved.replacedPath)
+        await store
+          .remove([saved.replacedPath])
+          .catch((err: unknown) =>
+            req.log.warn({ err: (err as Error).name }, 'photo cleanup failed'),
+          );
+      const after = await repo.profileState(userId);
+      if (after) reply.header('etag', etagFor(after.version));
+      let url: string | undefined;
+      try {
+        url = (await store.signedUrls([finalKey])).get(finalKey);
+      } catch {
+        url = undefined;
+      }
+      if (!url)
+        // Saved, but the link could not be made: the app reloads the profile (GET /v1/me).
+        throw new ApiError('upstream.unavailable', {
+          title: 'Photo saved',
+          detail: 'Your photo was saved. Reload your profile to see it.',
+        });
+      // The photo is part of the profile (there is no single-photo resource).
+      reply.header('location', '/v1/me');
+      return reply.status(201).send({
+        id: saved.id,
+        url,
+        position,
+        moderationStatus: 'pending' as const,
+      });
+    },
+  );
+
+  app.patch(
+    '/me/photos/order',
+    { onRequest: app.requireUser, schema: { body: PhotoOrderRequest, response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      storage();
+      const header = req.headers['if-match'];
+      const ifVersion = parseIfMatch(typeof header === 'string' ? header : undefined);
+      if (ifVersion === null)
+        throw invalid([
+          { path: 'headers.if-match', code: 'invalid', message: 'Use the ETag from GET /v1/me' },
+        ]);
+      const result = await repo.reorderPhotos(userId, req.body.photoIds, ifVersion);
+      if (result === 'stale')
+        throw new ApiError('precondition.failed', { title: 'Profile changed' });
+      if (result === 'mismatch')
+        throw invalid([
+          {
+            path: 'body.photoIds',
+            code: 'mismatch',
+            message: 'List each of your photos exactly once',
+          },
+        ]);
+      const after = await repo.profileState(userId);
+      if (after) reply.header('etag', etagFor(after.version));
+      return me(userId);
+    },
+  );
+
+  app.delete(
+    '/me/photos/:photoId',
+    { onRequest: app.requireUser, schema: { params: z.object({ photoId: z.uuid() }) } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      const store = storage();
+      const header = req.headers['if-match'];
+      const ifVersion = parseIfMatch(typeof header === 'string' ? header : undefined);
+      if (ifVersion === null)
+        throw invalid([
+          { path: 'headers.if-match', code: 'invalid', message: 'Use the ETag from GET /v1/me' },
+        ]);
+      const result = await repo.deletePhoto(userId, req.params.photoId, ifVersion);
+      if (result === 'stale')
+        throw new ApiError('precondition.failed', { title: 'Profile changed' });
+      if (result === 'not_found') throw new ApiError('not_found', { title: 'Photo not found' });
+      if (result === 'last')
+        throw new ApiError('conflict', {
+          title: 'Keep at least one photo',
+          detail: 'Add another photo before removing this one.',
+        });
+      await store
+        .remove([result.storagePath])
+        .catch((err: unknown) =>
+          req.log.warn({ err: (err as Error).name }, 'photo cleanup failed'),
+        );
+      // Every photo write changes the profile version (docs/05 §8.3): hand out the new ETag.
+      const after = await repo.profileState(userId);
+      if (after) reply.header('etag', etagFor(after.version));
+      return reply.status(204).send();
     },
   );
 

@@ -57,8 +57,10 @@ const b = upsert(apiEnv, {
 });
 
 // Mobile app public config for local runs (Expo loads apps/mobile/.env.local). The anon key is
-// public by design; it is read from the running local stack when available.
+// public by design; it is read from the running local stack when available. The local
+// service-role key (a well-known default of the Supabase CLI, local only) lets the API use Storage.
 let anonKey = '';
+let serviceRoleKey = '';
 try {
   const status = execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
     cwd: root,
@@ -66,9 +68,17 @@ try {
     stdio: ['ignore', 'pipe', 'ignore'],
   });
   anonKey = /^ANON_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
+  serviceRoleKey = /^SERVICE_ROLE_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
 } catch {
   // Supabase not running: the mobile file is written without the key; re-run after `supabase start`.
 }
+if (serviceRoleKey)
+  b.push(
+    ...upsert(apiEnv, {
+      SUPABASE_URL: 'http://127.0.0.1:54321',
+      SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    }),
+  );
 const mobileEnv = join(root, 'apps/mobile/.env.local');
 const c = upsert(mobileEnv, {
   EXPO_PUBLIC_API_URL: 'http://localhost:8080',

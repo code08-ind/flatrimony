@@ -34,6 +34,8 @@ async function setup(
           SUPABASE_JWT_ISSUER: 'https://x.supabase.co/auth/v1',
           SUPABASE_JWT_SECRET: randomBytes(32).toString('hex'),
           HASH_PEPPER: randomBytes(32).toString('base64'),
+          SUPABASE_URL: 'https://x.supabase.co',
+          SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
         }
       : {}),
   });

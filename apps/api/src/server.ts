@@ -4,8 +4,12 @@ import { createDatabase } from './lib/db.js';
 import { pgSystemRepository } from './modules/system/pg-repository.js';
 import { pgBansRepository } from './modules/auth/bans.js';
 import { pgMeRepository } from './modules/me/repository.js';
+import { supabasePhotoStorage } from './lib/photo-storage.js';
+import { restrictImageDecoders } from './lib/image.js';
 
 const env = loadEnv();
+// Only JPEG and WebP decoders may read uploaded bytes (review T2.10).
+restrictImageDecoders();
 // Without DATABASE_URL (local only, enforced by loadEnv) the API serves in-memory defaults
 // and /readyz reports the database as skipped.
 const db = env.DATABASE_URL ? createDatabase(env.DATABASE_URL) : undefined;
@@ -17,6 +21,9 @@ const app = await buildApp({
         bansRepo: pgBansRepository(db),
         meRepo: pgMeRepository(db),
       }
+    : {}),
+  ...(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
+    ? { photoStorage: supabasePhotoStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY) }
     : {}),
 });
 

@@ -461,6 +461,15 @@ Rules:
 | PATCH | `/me/photos/order` | user | `{ photoIds: [uuid, …] }` reorders | FR-BIO-01 |
 | DELETE | `/me/photos/{photoId}` | user | Delete photo (must keep ≥ 1) | FR-BIO-01 |
 
+Implementation notes (T2.10):
+
+- `upload-url` returns a staging key `<user_id>/uploads/<uuid>` and a Supabase signed upload URL (the client `PUT`s the file there). Supabase signed upload URLs are valid for **2 hours** (not configurable), so `expiresAt` is 2 h, not the 10 min of docs/04 §7.1. Limited to 30 per user per hour (`RATE_LIMITS.uploadUrls`). The bucket itself enforces 8 MB and JPEG/WebP.
+- `upload-url` also deletes the caller's unconfirmed uploads older than 2 h (originals still carry EXIF/GPS).
+- `POST /me/photos` (limited to 30 per user per hour) checks `If-Match` (`412`), the key and the position before any image work: the key must be the caller's staging key (`invalid_key`), the position the next free one or an existing one (photos always fill 0..n-1; `position_gap`), and the upload present (`upload_missing`). The original is deleted as soon as it has been read, whatever happens next (on a failure the app uploads again). It then processes the upload **in the request** until the job runner exists (`media.process`, T1.14), at most two at a time per instance, with only the JPEG and WebP decoders enabled: it must decode as a still JPEG or WebP (`unsupported_format`, `not_an_image`, `animated`, `too_large`); the EXIF orientation is applied and the image is re-encoded as WebP (longer side ≤ 1600 px), which removes all metadata including GPS; a 64-bit perceptual hash and the dimensions are stored; the result is saved as `<user_id>/<uuid>.webp` and the original is deleted. A photo already at that `position` is replaced (its object deleted). Answers `201 Photo` with a 1-hour signed URL and `Location: /v1/me`; `moderationStatus` is `pending`.
+- Face and explicit-content checks need an image-moderation vendor (**Blocked**): `has_face` stays empty and every photo waits for human moderation.
+- `PATCH /me/photos/order` must list each of the caller's photos exactly once (`mismatch`); positions become 0..n-1. `DELETE` closes the gap and returns the new `ETag`; removing the last photo is `409 conflict`. All photo writes accept `If-Match` and change the `ETag`; a refused write (`422`, `404`, `409`) changes nothing, not even the `ETag`; `Me.photos` carries 1-hour signed URLs in position order.
+- Without Storage configured (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`), the photo routes answer `503 upstream.unavailable` and `Me.photos` is empty.
+
 ### 8.4 Verification
 
 | Method | Path | Auth | Description | FR |

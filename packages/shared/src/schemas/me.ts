@@ -156,3 +156,48 @@ export const ScenarioAnswersRequest = z
     message: 'Each question once',
   });
 export type ScenarioAnswersRequest = z.infer<typeof ScenarioAnswersRequest>;
+
+// ------------------------------------------------------------------ photos (docs/05 §8.3; T2.10)
+
+/** Upload limit per photo (docs/05 §8.3). */
+export const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+
+export const PhotoUploadUrlRequest = z
+  .object({
+    contentType: z.enum(['image/jpeg', 'image/webp']),
+    sizeBytes: z.number().int().positive().max(PHOTO_MAX_BYTES),
+  })
+  .strict();
+export type PhotoUploadUrlRequest = z.infer<typeof PhotoUploadUrlRequest>;
+
+export const PhotoUploadUrlResponse = z.object({
+  /** PUT the file here (signed, single object). */
+  uploadUrl: z.url(),
+  /** Pass back to POST /me/photos. */
+  storageKey: z.string().min(1),
+  expiresAt: IsoDateTime,
+});
+export type PhotoUploadUrlResponse = z.infer<typeof PhotoUploadUrlResponse>;
+
+export const PhotoConfirmRequest = z
+  .object({
+    storageKey: z.string().min(1).max(200),
+    position: z
+      .number()
+      .int()
+      .min(0)
+      .max(LIMITS.profilePhotos.max - 1),
+  })
+  .strict();
+export type PhotoConfirmRequest = z.infer<typeof PhotoConfirmRequest>;
+
+export const PhotoOrderRequest = z
+  .object({
+    photoIds: z
+      .array(z.uuid())
+      .min(1)
+      .max(LIMITS.profilePhotos.max)
+      .refine((ids) => new Set(ids).size === ids.length, 'Each photo once'),
+  })
+  .strict();
+export type PhotoOrderRequest = z.infer<typeof PhotoOrderRequest>;
