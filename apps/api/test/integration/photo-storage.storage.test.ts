@@ -12,11 +12,16 @@ const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 describe.skipIf(!url || !key)('supabasePhotoStorage (local Storage)', () => {
-  const store = supabasePhotoStorage(url!, key!);
+  // Built lazily: a skipped describe body still runs while Vitest collects tests.
+  let cached: ReturnType<typeof supabasePhotoStorage> | undefined;
+  const store = new Proxy({} as ReturnType<typeof supabasePhotoStorage>, {
+    get: (_t, prop: keyof ReturnType<typeof supabasePhotoStorage>) =>
+      (cached ??= supabasePhotoStorage(url!, key!))[prop],
+  });
   const user = randomUUID();
   const created: string[] = [];
   afterAll(async () => {
-    await store.remove(created);
+    if (created.length) await store.remove(created);
   });
 
   it('signed upload, download, list, signed view URLs, remove; missing objects read as null', async () => {
