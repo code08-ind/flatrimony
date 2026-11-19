@@ -18,6 +18,7 @@ import {
 } from '@expo-google-fonts/noto-sans-devanagari';
 import { initI18n, restoreAppLocale } from '../src/i18n';
 import { SessionProvider } from '../src/auth/session';
+import { MeProvider } from '../src/me';
 import { theme } from '../src/theme';
 
 initI18n();
@@ -53,13 +54,15 @@ export default function RootLayout() {
 
   return (
     <SessionProvider>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.color.bg.app },
-        }}
-      />
+      <MeProvider>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.color.bg.app },
+          }}
+        />
+      </MeProvider>
     </SessionProvider>
   );
 }

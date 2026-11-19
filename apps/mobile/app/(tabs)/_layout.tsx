@@ -1,5 +1,8 @@
 import { Redirect, Tabs } from 'expo-router';
 import { useSession } from '../../src/auth/session';
+import { useMe } from '../../src/me';
+import { isComplete } from '../../src/onboarding/logic';
+import { ProfileLoadError } from '../../src/ui/ProfileLoadError';
 import { useTranslation } from 'react-i18next';
 import { theme } from '../../src/theme';
 
@@ -10,8 +13,13 @@ import { theme } from '../../src/theme';
 export default function TabsLayout() {
   const { t } = useTranslation();
   const { session, loading } = useSession();
+  const me = useMe();
   if (loading) return null;
   if (!session) return <Redirect href="/welcome" />;
+  // Until the profile is known the tabs stay hidden; an unfinished profile goes to onboarding.
+  if (me.status === 'idle' || (me.status === 'loading' && !me.me)) return null;
+  if (me.status === 'error') return <ProfileLoadError onRetry={() => void me.refresh()} />;
+  if (!isComplete(me.me)) return <Redirect href="/onboarding" />;
   return (
     <Tabs
       screenOptions={{
