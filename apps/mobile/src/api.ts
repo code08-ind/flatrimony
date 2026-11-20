@@ -7,6 +7,8 @@ import { supabase } from './supabase';
 export interface ApiResponse<T = unknown> {
   status: number;
   body: T;
+  /** The profile version after a /me read or write (docs/05 §6.2), for the next `ifMatch`. */
+  etag?: string;
 }
 
 /** No connection or a timeout (the request may not have reached the API). */
@@ -27,11 +29,17 @@ export async function api<T = unknown>(
     method = 'GET',
     body,
     locale,
+    ifMatch,
+    timeoutMs,
   }: {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     /** Localised reference data and messages (docs/05 §1 Accept-Language). */
     locale?: 'en' | 'hi';
+    /** Optimistic concurrency for profile writes: the ETag of the profile this edit started from. */
+    ifMatch?: string;
+    /** Longer than the default for requests that do heavy work (photo processing). */
+    timeoutMs?: number;
   } = {},
 ): Promise<ApiResponse<T>> {
   const session = supabase ? (await supabase.auth.getSession()).data.session : null;
@@ -42,13 +50,18 @@ export async function api<T = unknown>(
   if (session) headers.authorization = `Bearer ${session.access_token}`;
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (locale) headers['accept-language'] = locale;
+  if (ifMatch) headers['if-match'] = ifMatch;
   let res: Response;
   try {
-    res = await fetchWithTimeout(`${config.apiUrl}/v1${path}`, {
-      method,
-      headers,
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    });
+    res = await fetchWithTimeout(
+      `${config.apiUrl}/v1${path}`,
+      {
+        method,
+        headers,
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      },
+      timeoutMs,
+    );
   } catch {
     throw new NetworkError();
   }
@@ -59,7 +72,8 @@ export async function api<T = unknown>(
   } catch {
     parsed = null;
   }
-  return { status: res.status, body: parsed as T };
+  const etag = res.headers.get('etag') ?? undefined;
+  return { status: res.status, body: parsed as T, ...(etag ? { etag } : {}) };
 }
 
 /** The problem code of an error response (docs/05 §13), if any. */

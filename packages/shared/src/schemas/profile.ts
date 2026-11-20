@@ -147,6 +147,10 @@ export const Me = z.object({
   anchor: Anchor.optional(),
   lifestyle: Lifestyle.optional(),
   importance: ImportanceMap,
+  /** The user's scenario answers (FR-BIO-06), for the editor's "n of N answered". */
+  scenarioAnswers: z
+    .array(z.object({ questionId: z.string().min(1), optionId: z.string().min(1) }))
+    .optional(),
   entitlements: z.object({
     movePass: z.object({ active: z.boolean(), validUntil: IsoDateTime.optional() }),
   }),

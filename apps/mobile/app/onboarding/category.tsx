@@ -113,8 +113,8 @@ export default function CategoryScreen() {
     updateDraft({ category });
     void saving.run(
       () => saveIdentity(category, locale, me),
-      (saved) => {
-        set(saved);
+      (saved, etag) => {
+        set(saved, etag);
         router.push('/onboarding/budget');
       },
     );
