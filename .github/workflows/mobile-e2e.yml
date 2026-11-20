@@ -6,10 +6,18 @@
 # before it reaches the nightly run.
 name: mobile-e2e
 
-# Manual runs only until the flow passes on CI (docs/07 T2.12 follow-up); then restore the nightly
-# schedule and the pull_request trigger on the flows, screens, test IDs and English copy.
 on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST
   workflow_dispatch:
+  pull_request:
+    paths:
+      - apps/mobile/e2e/maestro/**
+      - apps/mobile/app/**
+      - apps/mobile/src/**
+      - apps/mobile/app.config.ts
+      - packages/i18n/src/messages/en.json
+      - .github/workflows/mobile-e2e.yml
 
 concurrency:
   group: mobile-e2e-${{ github.ref }}
