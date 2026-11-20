@@ -78,12 +78,19 @@ describe('processPhoto', () => {
   });
 
   it('reports images over the pixel limit as too large', async () => {
-    const huge = await sharp({
-      create: { width: 9000, height: 9000, channels: 3, background: '#123' },
+    // A decompression bomb: a tiny file whose header claims 9000×9000 (81 MP). Built by rewriting
+    // the frame header of a 16×16 JPEG, so the test does not spend seconds encoding 81 MP.
+    const bomb = await sharp({
+      create: { width: 16, height: 16, channels: 3, background: '#123' },
     })
       .jpeg()
       .toBuffer();
-    await expect(processPhoto(huge)).rejects.toMatchObject({ reason: 'too_large' });
+    const sof = bomb.indexOf(Buffer.from([0xff, 0xc0])); // baseline frame header
+    expect(sof).toBeGreaterThan(0);
+    bomb.writeUInt16BE(9000, sof + 5); // height
+    bomb.writeUInt16BE(9000, sof + 7); // width
+    expect((await sharp(bomb).metadata()).width).toBe(9000);
+    await expect(processPhoto(bomb)).rejects.toMatchObject({ reason: 'too_large' });
   });
 
   it('applies the EXIF orientation before stripping it', async () => {
