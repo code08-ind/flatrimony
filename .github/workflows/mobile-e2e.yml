@@ -110,6 +110,7 @@ jobs:
           working-directory: apps/mobile
           script: |
             mkdir -p "$RUNNER_TEMP/maestro"
+            adb shell settings put global hide_error_dialogs 1
             adb install -r "$RUNNER_TEMP/app.apk"
             maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report.xml" --debug-output "$RUNNER_TEMP/maestro/debug"
 

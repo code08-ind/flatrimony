@@ -13,6 +13,13 @@ env:
 - launchApp:
     clearState: true
 - runScript: new-phone.js
+# A slow CI emulator can show "<app> isn't responding" over the app (CI also hides these dialogs);
+# "Wait" dismisses it without killing anything.
+- runFlow:
+    when:
+      visible: ".*isn't responding"
+    commands:
+      - tapOn: Wait
 
 # Welcome → phone. The first launch of a release build loads fonts and the JS bundle, which takes
 # a while on a CI emulator without a GPU.
