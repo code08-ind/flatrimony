@@ -131,17 +131,11 @@ jobs:
       - name: API log
         if: failure()
         run: tail -n 200 "$RUNNER_TEMP/api.log" || true
-      - name: Keep the failure evidence (report, traces, screenshots, API log)
+      # Artifact storage is at its quota on this account, so the evidence goes to the job log:
+      # Playwright's error context holds the page's accessibility snapshot at the failure.
+      - name: Failure evidence (page snapshot at the failing step)
         if: failure()
-        run: cp "$RUNNER_TEMP/api.log" apps/mobile/test-results/ 2>/dev/null || true
-      - if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: web-e2e-evidence
-          path: |
-            apps/mobile/playwright-report
-            apps/mobile/test-results
-          retention-days: 7
+        run: find apps/mobile/test-results -name 'error-context.md' -exec cat {} \; || true
       - name: Stop Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
