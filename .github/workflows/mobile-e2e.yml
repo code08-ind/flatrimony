@@ -125,14 +125,23 @@ jobs:
         if: failure()
         run: tail -n 200 "$RUNNER_TEMP/api.log" || true
       # Artifact storage is at its quota on this account, so the evidence goes to the job log.
-      - name: Failure evidence (Maestro log and the failing step's screen hierarchy)
+      - name: Failure evidence (screen at the failing step, app logs)
         if: failure()
         run: |
-          find "$RUNNER_TEMP/maestro" -type f | head -50 || true
-          for f in $(find "$RUNNER_TEMP/maestro" -name 'maestro.log' | head -1); do tail -n 150 "$f"; done
-          for f in $(find "$RUNNER_TEMP/maestro" -name 'commands-*.json' | head -1); do
-            node -e "for (const c of require(process.argv[1])) if (c.metadata?.status !== 'COMPLETED') console.log(JSON.stringify(c).slice(0, 4000))" "$f"
+          dir=$(find "$RUNNER_TEMP/maestro" -type d -name 'journey-1' | head -1)
+          [ -n "$dir" ] || exit 0
+          echo '--- Steps that did not complete'
+          node -e "for (const c of require(process.argv[1])) if (c.metadata?.status !== 'COMPLETED') console.log(JSON.stringify(c).slice(0, 2000))" "$dir/commands.json" || true
+          echo '--- On screen at the failure (text / accessibility text / id)'
+          for f in "$dir"/screen-hierarchy/*.json; do
+            node -e "
+              const walk = (n) => { const a = n.attributes || {};
+                const t = [a.text, a['accessibilityText'], a['resource-id']].filter(Boolean).join(' | ');
+                if (t) console.log(t); (n.children || []).forEach(walk); };
+              walk(require(process.argv[1]));" "$f" | head -80
           done
+          echo '--- App log (React Native, crashes)'
+          grep -E 'ReactNativeJS|AndroidRuntime|FATAL|ReactNative|Hermes' "$dir/logs/device-logcat.txt" | tail -n 80 || true
       - name: Stop Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

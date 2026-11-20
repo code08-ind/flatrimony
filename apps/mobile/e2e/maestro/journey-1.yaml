@@ -14,7 +14,11 @@ env:
     clearState: true
 - runScript: new-phone.js
 
-# Welcome → phone
+# Welcome → phone. The first launch of a release build loads fonts and the JS bundle, which takes
+# a while on a CI emulator without a GPU.
+- extendedWaitUntil:
+    visible: { id: continue-en }
+    timeout: 90000
 - tapOn:
     id: continue-en
 - tapOn: { id: 'key-${output.p0}' }
