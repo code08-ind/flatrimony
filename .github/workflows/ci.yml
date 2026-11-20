@@ -88,6 +88,59 @@ jobs:
           CI: '1'
         run: pnpm exec expo export --platform android --output-dir dist
 
+  # Critical journey 1 (docs/03 §8.2) end to end on the app's web build: Supabase Auth with the
+  # Send SMS hook → the API (mock SMS provider, dev outbox) → onboarding → Discover (T2.12).
+  web-e2e-smoke:
+    name: web-e2e-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: setup-and-static
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Throwaway local secrets (hook secret, hash pepper)
+        run: pnpm dev:secrets
+      - name: Start Supabase (Postgres, Auth, REST, Storage)
+        run: >-
+          pnpm exec supabase start
+          -x studio,imgproxy,vector,logflare,edge-runtime,mailpit,supavisor,realtime,postgres-meta
+      - name: Local keys for the API and the app (from the running stack)
+        run: pnpm dev:secrets
+      - name: Build the API and the app's packages
+        run: pnpm turbo run build --filter=@flatrimony/api... --filter=@flatrimony/mobile^...
+      - name: Start the API
+        working-directory: apps/api
+        run: |
+          nohup node --env-file=.env.local dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8080/readyz > /dev/null && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/api.log"
+          exit 1
+      - name: Export the app for web
+        working-directory: apps/mobile
+        env:
+          CI: '1'
+        run: pnpm export:web
+      - name: Install Chromium
+        working-directory: apps/mobile
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Journey 1 (Playwright)
+        working-directory: apps/mobile
+        run: pnpm test:e2e:web
+      - name: API log
+        if: failure()
+        run: tail -n 200 "$RUNNER_TEMP/api.log" || true
+      - name: Stop Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
   security:
     name: security
     runs-on: ubuntu-latest

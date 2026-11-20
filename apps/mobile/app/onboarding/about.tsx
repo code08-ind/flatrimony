@@ -109,6 +109,7 @@ export default function AboutScreen() {
           placeholder={t('onboarding.about.namePlaceholder')}
           placeholderTextColor={theme.color.text.disabled}
           accessibilityLabel={t('onboarding.about.nameLabel')}
+          testID="about-name"
           autoComplete="given-name"
           textContentType="givenName"
           autoCapitalize="words"
@@ -140,6 +141,7 @@ export default function AboutScreen() {
                 placeholder={t('onboarding.about.day')}
                 placeholderTextColor={theme.color.text.disabled}
                 accessibilityLabel={t('onboarding.about.dayLabel')}
+                testID="about-day"
                 keyboardType="number-pad"
                 autoComplete="birthdate-day"
                 style={[textStyle('bodyLg', locale), styles.input, styles.dobPart]}
@@ -160,6 +162,7 @@ export default function AboutScreen() {
                 placeholder={t('onboarding.about.month')}
                 placeholderTextColor={theme.color.text.disabled}
                 accessibilityLabel={t('onboarding.about.monthLabel')}
+                testID="about-month"
                 keyboardType="number-pad"
                 autoComplete="birthdate-month"
                 style={[textStyle('bodyLg', locale), styles.input, styles.dobPart]}
@@ -172,6 +175,7 @@ export default function AboutScreen() {
                 placeholder={t('onboarding.about.year')}
                 placeholderTextColor={theme.color.text.disabled}
                 accessibilityLabel={t('onboarding.about.yearLabel')}
+                testID="about-year"
                 keyboardType="number-pad"
                 autoComplete="birthdate-year"
                 maxLength={4}
