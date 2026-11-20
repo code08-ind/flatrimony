@@ -1,8 +1,9 @@
 # Mobile E2E (docs/03 §8.1: Maestro flows on an Android emulator, nightly and before release).
 # Builds a release APK of the app for the local stack (APP_ENV=local, debug-signed, no EAS account
 # needed), starts Supabase and the API on the runner, and runs the Maestro flows in
-# apps/mobile/e2e/maestro on an emulator. Also runs on pull requests that change the flows or this
-# workflow, so a broken flow is caught before it reaches the nightly run.
+# apps/mobile/e2e/maestro on an emulator. Also runs on pull requests that change the flows, this
+# workflow, or what the flows select by (screens, test IDs, English copy), so a broken flow is caught
+# before it reaches the nightly run.
 name: mobile-e2e
 
 on:
@@ -12,6 +13,10 @@ on:
   pull_request:
     paths:
       - apps/mobile/e2e/maestro/**
+      - apps/mobile/app/**
+      - apps/mobile/src/**
+      - apps/mobile/app.config.ts
+      - packages/i18n/src/messages/en.json
       - .github/workflows/mobile-e2e.yml
 
 concurrency:
@@ -78,8 +83,9 @@ jobs:
           curl -fsSL -o "$RUNNER_TEMP/maestro.zip" \
             https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.12.1/maestro.zip
           echo "54dbb0716425626604973cbb374c585ca30272375d9ce15177a1152765ddd9d7  $RUNNER_TEMP/maestro.zip" | sha256sum -c -
-          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/maestro/bin" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/maestro-cli"
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP/maestro-cli"
+          echo "$RUNNER_TEMP/maestro-cli/maestro/bin" >> "$GITHUB_PATH"
 
       - name: Enable KVM for the emulator
         run: |
@@ -98,12 +104,24 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           working-directory: apps/mobile
           script: |
+            mkdir -p "$RUNNER_TEMP/maestro"
             adb install -r android/app/build/outputs/apk/release/app-release.apk
-            maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro.xml"
+            maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report.xml" --debug-output "$RUNNER_TEMP/maestro/debug"
 
       - name: API log
         if: failure()
         run: tail -n 200 "$RUNNER_TEMP/api.log" || true
+      - name: Keep the failure evidence (Maestro report, screenshots, view hierarchy, API log)
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/maestro"
+          cp "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/maestro/" 2>/dev/null || true
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maestro-evidence
+          path: ${{ runner.temp }}/maestro
+          retention-days: 7
       - name: Stop Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

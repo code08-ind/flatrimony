@@ -59,4 +59,6 @@ const config: ExpoConfig = {
   },
 };
 
-export default APP_ENV === 'local' ? withLocalCleartext(config) : config;
+// Only when APP_ENV=local is set explicitly (the E2E build does): a build that forgot APP_ENV never
+// allows plain HTTP. Debug builds allow it anyway for Metro.
+export default process.env.APP_ENV === 'local' ? withLocalCleartext(config) : config;

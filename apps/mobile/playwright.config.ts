@@ -4,10 +4,12 @@ import { defineConfig, devices } from '@playwright/test';
  * Web E2E for the critical journeys (docs/03 §8.1–8.2) on the app's web build, against the full
  * local stack: Supabase (Auth with the Send SMS hook, Postgres), the API and its dev SMS outbox.
  *
- * Locally: `pnpm db:start`, `pnpm dev:secrets`, start the API, then
+ * Locally, in the order CI uses:
+ *   pnpm dev:secrets && pnpm db:start && pnpm dev:secrets   (the hook secret first, then the keys)
+ *   start the API (apps/api: node --env-file=.env.local dist/server.js)
  *   pnpm --filter @flatrimony/mobile test:e2e:web
- * The app is served from E2E_BASE_URL when set (e.g. a running `expo start --web` on :8081);
- * otherwise a fresh web export is built and served on :8081 (what CI does).
+ * This exports the app for web and serves it on :8081 (the port the API's local CORS allows). Set
+ * E2E_BASE_URL (e.g. http://localhost:8081 with `expo start --web` running) to test that instead.
  */
 const external = process.env.E2E_BASE_URL;
 // The API's local CORS allow-list has the Expo web port (scripts/dev-secrets.mjs).
@@ -35,10 +37,11 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `node e2e/serve-web.mjs dist-web ${port}`,
+          // Always a fresh export, so a run never tests an old build.
+          command: `pnpm export:web && node e2e/serve-web.mjs dist-web ${port}`,
           url: `http://localhost:${port}`,
-          reuseExistingServer: !process.env.CI,
-          timeout: 60_000,
+          reuseExistingServer: false,
+          timeout: 300_000,
         },
       }),
 });

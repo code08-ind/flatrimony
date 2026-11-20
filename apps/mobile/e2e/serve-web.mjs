@@ -7,7 +7,7 @@
  */
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, resolve, sep } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist-web');
 const port = Number(process.argv[3] ?? 8081);
@@ -32,11 +32,26 @@ const TYPES = {
 };
 
 createServer((req, res) => {
-  const path = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname);
-  const file = normalize(join(root, path));
-  const inside = file.startsWith(root);
-  const target =
-    inside && existsSync(file) && statSync(file).isFile() ? file : join(root, 'index.html');
-  res.writeHead(200, { 'content-type': TYPES[extname(target)] ?? 'application/octet-stream' });
-  createReadStream(target).pipe(res);
+  let path;
+  try {
+    path = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname);
+  } catch {
+    res.writeHead(400).end();
+    return;
+  }
+  const file = resolve(root, `.${path}`);
+  const inside = file === root || file.startsWith(root + sep);
+  if (inside && existsSync(file) && statSync(file).isFile()) return send(res, file);
+  // A missing asset is a 404 (a broken script path must not come back as HTML); any other path is
+  // a screen of the app (SPA entry).
+  if (extname(path)) {
+    res.writeHead(404).end();
+    return;
+  }
+  send(res, join(root, 'index.html'));
 }).listen(port, '127.0.0.1', () => console.log(`Serving ${root} on http://localhost:${port}`));
+
+function send(res, file) {
+  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+  createReadStream(file).pipe(res);
+}

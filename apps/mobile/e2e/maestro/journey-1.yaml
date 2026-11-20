@@ -4,6 +4,8 @@
 # local stack (APP_ENV=local; the emulator reaches the host at 10.0.2.2).
 #
 #   maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080
+# Each run signs up a new +91 98… number. CI's database is thrown away afterwards; against a local
+# database, delete those users yourself (auth.users where phone like '9198%').
 appId: in.flatrimony.app.local
 env:
   API_URL: http://localhost:8080
@@ -66,7 +68,7 @@ env:
 
 # Budget (defaults)
 - extendedWaitUntil:
-    visible: What's your budget per month?
+    visible: What's your budget per month\?
     timeout: 10000
 - tapOn: { id: continue }
 
@@ -81,19 +83,31 @@ env:
 - tapOn: Next month
 - tapOn: { id: continue }
 
-# Habits → Discover
-- tapOn: By 11 PM
-- tapOn: By 7 AM
-- tapOn: Daily
-- tapOn: No
+# Habits → Discover (each answer scrolled into view first: the screen is taller than a phone)
 - scrollUntilVisible:
-    element: Love them
+    element: 'By 11 PM'
     direction: DOWN
-- tapOn: Love them
+- tapOn: 'By 11 PM'
 - scrollUntilVisible:
-    element: Veg
+    element: 'By 7 AM'
     direction: DOWN
-- tapOn: Veg
+- tapOn: 'By 7 AM'
+- scrollUntilVisible:
+    element: 'Daily'
+    direction: DOWN
+- tapOn: 'Daily'
+- scrollUntilVisible:
+    element: 'No'
+    direction: DOWN
+- tapOn: 'No'
+- scrollUntilVisible:
+    element: 'Love them'
+    direction: DOWN
+- tapOn: 'Love them'
+- scrollUntilVisible:
+    element: 'Veg'
+    direction: DOWN
+- tapOn: 'Veg'
 - tapOn: { id: finish }
 - extendedWaitUntil:
     visible: Discover
@@ -101,4 +115,5 @@ env:
 
 # Profile tab: onboarding earns 40 %
 - tapOn: Profile
+- assertVisible: 'Asha, \d+'
 - assertVisible: '.*40% complete.*'

@@ -48,7 +48,7 @@ async function latestOtp(page: Page): Promise<string> {
       { message: 'OTP reached the dev outbox', timeout: 15_000 },
     )
     .toMatch(/^\d{6}$/);
-  return otp!;
+  return otp!; // set: the poll above only passes once it matched six digits
 }
 
 /**
@@ -57,8 +57,17 @@ async function latestOtp(page: Page): Promise<string> {
  */
 const next = (page: Page) => page.getByTestId('continue').last().click();
 
-const option = (page: Page, title: string) =>
-  page.getByRole('radio', { name: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) });
+const DOB = '1998-08-15';
+/** Age in full years on today's date in India (the app and API count age on the IST date). */
+function ageOn(dob: string): number {
+  const today = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+  const [y, m, d] = dob.split('-').map(Number) as [number, number, number];
+  const [ty, tm, td] = today.split('-').map(Number) as [number, number, number];
+  return ty - y - (tm < m || (tm === m && td < d) ? 1 : 0);
+}
+
+/** An option card, by its title (the accessible name is "title. subtitle"; substring match). */
+const option = (page: Page, title: string) => page.getByRole('radio', { name: title });
 
 test('journey 1: sign up with OTP → onboarding → Discover', async ({ page }) => {
   await test.step('welcome: continue in English', async () => {
@@ -73,17 +82,23 @@ test('journey 1: sign up with OTP → onboarding → Discover', async ({ page })
     await expect(page.getByRole('heading', { name: en.auth.otp.title })).toBeVisible();
   });
 
-  await test.step('OTP → signed in', async () => {
-    // The sixth digit submits the code (no Verify tap needed).
-    await keypad(page, await latestOtp(page));
+  await test.step('wrong code → error; the real code → signed in', async () => {
+    const otp = await latestOtp(page);
+    // The sixth digit submits the code (no Verify tap needed). A code that differs from the real
+    // one in its first digit is refused by Supabase Auth and shown as "didn't match".
+    await keypad(page, `${(Number(otp[0]) + 1) % 10}${otp.slice(1)}`);
+    await expect(page.getByText(en.auth.otp.wrongCode)).toBeVisible();
+    // The next key starts a fresh code.
+    await keypad(page, otp);
     await expect(page.getByLabel(en.onboarding.about.nameLabel)).toBeVisible();
   });
 
   await test.step('about you: first name and date of birth', async () => {
     await page.getByLabel(en.onboarding.about.nameLabel).fill('Asha');
-    await page.getByLabel(en.onboarding.about.dayLabel).fill('15');
-    await page.getByLabel(en.onboarding.about.monthLabel).fill('08');
-    await page.getByLabel(en.onboarding.about.yearLabel).fill('1998');
+    const [year, month, day] = DOB.split('-');
+    await page.getByLabel(en.onboarding.about.dayLabel).fill(day!);
+    await page.getByLabel(en.onboarding.about.monthLabel).fill(month!);
+    await page.getByLabel(en.onboarding.about.yearLabel).fill(year!);
     await next(page);
   });
 
@@ -123,12 +138,21 @@ test('journey 1: sign up with OTP → onboarding → Discover', async ({ page })
     await expect(page.getByRole('heading', { name: en.tabs.discover })).toBeVisible();
   });
 
-  await test.step('Profile tab: onboarding earns 40 %', async () => {
+  await test.step('after a reload: still signed in, on the tabs', async () => {
+    await page.reload();
+    await expect(page.getByRole('heading', { name: en.tabs.discover })).toBeVisible();
+  });
+
+  await test.step('Profile tab: name, age and the 40 % onboarding earns', async () => {
     await page.getByRole('tab', { name: en.tabs.profile }).click();
-    await expect(page.getByText('Asha, ', { exact: false }).first()).toBeVisible();
+    await expect(
+      page.getByText(
+        en.profile.nameAge.replace('{name}', 'Asha').replace('{age}', String(ageOn(DOB))),
+      ),
+    ).toBeVisible();
     await expect(
       page.getByRole('progressbar', {
-        name: new RegExp(en.profile.complete.replace('{percent}', '40')),
+        name: en.profile.complete.replace('{percent}', '40'),
       }),
     ).toBeVisible();
   });
