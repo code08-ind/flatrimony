@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "export:web": "expo export --platform web --output-dir dist-web",
+    "test:e2e:web": "playwright test"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans-devanagari": "^0.4.2",
@@ -48,7 +50,10 @@
   },
   "devDependencies": {
     "@flatrimony/config": "workspace:*",
+    "@playwright/test": "^1.65.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
+    "pg": "^8.23.1",
     "typescript": "~6.0.3",
     "vitest": "^5.1.0"
   }

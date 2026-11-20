@@ -1,4 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
+import { withAndroidManifest, type ConfigPlugin } from 'expo/config-plugins';
 
 /**
  * Env-driven Expo config (docs/03 §3). Only public values reach the bundle (docs/03 §5.1):
@@ -9,6 +10,18 @@ import type { ExpoConfig } from 'expo/config';
  *  - EAS project id appears once the Expo account exists (Blocked, see docs/07 T1.12).
  */
 const APP_ENV = process.env.APP_ENV ?? 'local';
+
+/**
+ * Local builds only (the Android E2E run, docs/03 §8.1): the app talks to the local stack over
+ * plain HTTP (the emulator reaches the host at 10.0.2.2), which Android blocks by default in release
+ * builds. Staging and production builds never get this.
+ */
+const withLocalCleartext: ConfigPlugin = (cfg) =>
+  withAndroidManifest(cfg, (mod) => {
+    const app = mod.modResults.manifest.application?.[0];
+    if (app) app.$['android:usesCleartextTraffic'] = 'true';
+    return mod;
+  });
 
 const config: ExpoConfig = {
   name: APP_ENV === 'production' ? 'Flatrimony' : `Flatrimony (${APP_ENV})`,
@@ -46,4 +59,6 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+// Only when APP_ENV=local is set explicitly (the E2E build does): a build that forgot APP_ENV never
+// allows plain HTTP. Debug builds allow it anyway for Metro.
+export default process.env.APP_ENV === 'local' ? withLocalCleartext(config) : config;

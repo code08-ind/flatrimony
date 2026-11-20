@@ -21,5 +21,22 @@ export default [
     },
   },
   { files: ['src/ui/icons.ts'], rules: { 'no-restricted-imports': 'off' } },
-  { ignores: ['.expo/**', 'dist/**', 'expo-env.d.ts', 'app.config.ts'] },
+  {
+    // Maestro flow scripts run in Maestro's JS engine, which provides these globals.
+    files: ['e2e/maestro/**/*.js'],
+    languageOptions: {
+      globals: { output: 'writable', http: 'readonly', json: 'readonly', API_URL: 'readonly' },
+    },
+  },
+  {
+    ignores: [
+      '.expo/**',
+      'dist/**',
+      'dist-web/**',
+      'test-results/**',
+      'playwright-report/**',
+      'expo-env.d.ts',
+      'app.config.ts',
+    ],
+  },
 ];

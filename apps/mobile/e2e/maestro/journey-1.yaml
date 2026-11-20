@@ -1,0 +1,123 @@
+# Critical journey 1 on Android (docs/03 §8.1–8.2; PRD §6.1 steps 1–4):
+# sign up with phone OTP → onboarding → Discover → the Profile tab shows 40 %.
+# Same journey as e2e/web/journey-1.spec.ts (Playwright), on a release build of the app for the
+# local stack (APP_ENV=local; the emulator reaches the host at 10.0.2.2).
+#
+#   maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080
+# Each run signs up a new +91 98… number. CI's database is thrown away afterwards; against a local
+# database, delete those users yourself (auth.users where phone like '9198%').
+appId: in.flatrimony.app.local
+env:
+  API_URL: http://localhost:8080
+---
+- launchApp:
+    clearState: true
+- runScript: new-phone.js
+
+# Welcome → phone. The first launch of a release build loads fonts and the JS bundle, which takes
+# a while on a CI emulator without a GPU.
+- extendedWaitUntil:
+    visible: { id: continue-en }
+    timeout: 90000
+- tapOn:
+    id: continue-en
+- tapOn: { id: 'key-${output.p0}' }
+- tapOn: { id: 'key-${output.p1}' }
+- tapOn: { id: 'key-${output.p2}' }
+- tapOn: { id: 'key-${output.p3}' }
+- tapOn: { id: 'key-${output.p4}' }
+- tapOn: { id: 'key-${output.p5}' }
+- tapOn: { id: 'key-${output.p6}' }
+- tapOn: { id: 'key-${output.p7}' }
+- tapOn: { id: 'key-${output.p8}' }
+- tapOn: { id: 'key-${output.p9}' }
+- tapOn:
+    id: send-code
+
+# OTP (the sixth digit submits)
+- extendedWaitUntil:
+    visible: { id: verify }
+    timeout: 15000
+- runScript:
+    file: latest-otp.js
+    env:
+      API_URL: ${API_URL}
+- tapOn: { id: 'key-${output.o0}' }
+- tapOn: { id: 'key-${output.o1}' }
+- tapOn: { id: 'key-${output.o2}' }
+- tapOn: { id: 'key-${output.o3}' }
+- tapOn: { id: 'key-${output.o4}' }
+- tapOn: { id: 'key-${output.o5}' }
+
+# About you
+- extendedWaitUntil:
+    visible: { id: about-name }
+    timeout: 20000
+- tapOn: { id: about-name }
+- inputText: Asha
+- tapOn: { id: about-day }
+- inputText: '15'
+- tapOn: { id: about-month }
+- inputText: '08'
+- tapOn: { id: about-year }
+- inputText: '1998'
+- hideKeyboard
+- tapOn: { id: continue }
+
+# Intent and category
+- tapOn: I need a room
+- tapOn: { id: continue }
+- tapOn: Working professional
+- tapOn: { id: continue }
+
+# Budget (defaults)
+- extendedWaitUntil:
+    visible: What's your budget per month\?
+    timeout: 10000
+- tapOn: { id: continue }
+
+# Areas
+- extendedWaitUntil:
+    visible: Hauz Khas
+    timeout: 15000
+- tapOn: Hauz Khas
+- tapOn: { id: continue }
+
+# Move-in
+- tapOn: Next month
+- tapOn: { id: continue }
+
+# Habits → Discover (each answer scrolled into view first: the screen is taller than a phone)
+- scrollUntilVisible:
+    element: 'By 11 PM'
+    direction: DOWN
+- tapOn: 'By 11 PM'
+- scrollUntilVisible:
+    element: 'By 7 AM'
+    direction: DOWN
+- tapOn: 'By 7 AM'
+- scrollUntilVisible:
+    element: 'Daily'
+    direction: DOWN
+- tapOn: 'Daily'
+- scrollUntilVisible:
+    element: 'No'
+    direction: DOWN
+- tapOn: 'No'
+- scrollUntilVisible:
+    element: 'Love them'
+    direction: DOWN
+- tapOn: 'Love them'
+- scrollUntilVisible:
+    element: 'Veg'
+    direction: DOWN
+- tapOn: 'Veg'
+- tapOn: { id: finish }
+- extendedWaitUntil:
+    visible: Discover
+    timeout: 20000
+
+# Profile tab: onboarding earns 40 %
+- tapOn: Profile
+- assertVisible: 'Asha, \d+'
+- assertVisible: '.*40% complete.*'

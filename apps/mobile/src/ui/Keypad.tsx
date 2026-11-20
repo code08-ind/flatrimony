@@ -44,6 +44,7 @@ export function Keypad({ onKey, deleteLabel, leftSlot, disabled }: KeypadProps) 
           key={digit}
           onPress={() => press(digit)}
           label={digit}
+          testID={`key-${digit}`}
           disabled={disabled}
           compact={compact}
         >
@@ -52,13 +53,20 @@ export function Keypad({ onKey, deleteLabel, leftSlot, disabled }: KeypadProps) 
         </Key>
       ))}
       <View style={[styles.key, compact && styles.keyCompact, styles.slot]}>{leftSlot}</View>
-      <Key onPress={() => press('0')} label="0" disabled={disabled} compact={compact}>
+      <Key
+        onPress={() => press('0')}
+        label="0"
+        testID="key-0"
+        disabled={disabled}
+        compact={compact}
+      >
         <Text style={styles.digit}>0</Text>
         <Text style={styles.letters}>+</Text>
       </Key>
       <Key
         onPress={() => press('backspace')}
         label={deleteLabel}
+        testID="key-backspace"
         disabled={disabled}
         compact={compact}
       >
@@ -72,12 +80,15 @@ function Key({
   children,
   onPress,
   label,
+  testID,
   disabled,
   compact,
 }: {
   children: ReactNode;
   onPress: () => void;
   label: string;
+  /** Stable handle for E2E (Maestro, Playwright): `key-<digit>` / `key-backspace`. */
+  testID: string;
   disabled?: boolean;
   compact?: boolean;
 }) {
@@ -86,6 +97,7 @@ function Key({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: !!disabled }}
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => [
         styles.key,
