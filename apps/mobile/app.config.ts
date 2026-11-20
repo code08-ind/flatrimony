@@ -24,7 +24,15 @@ const config: ExpoConfig = {
     package: APP_ENV === 'production' ? 'in.flatrimony.app' : `in.flatrimony.app.${APP_ENV}`,
   },
   runtimeVersion: { policy: 'fingerprint' },
-  plugins: ['expo-router', 'expo-font', 'expo-localization', 'expo-secure-store'],
+  plugins: [
+    'expo-router',
+    'expo-font',
+    'expo-localization',
+    'expo-secure-store',
+    // Photos come from the system photo picker (no storage permission on Android 13+); the camera
+    // is not used (T2.11).
+    ['expo-image-picker', { cameraPermission: false, microphonePermission: false }],
+  ],
   experiments: { typedRoutes: true },
   extra: {
     appEnv: APP_ENV,

@@ -57,8 +57,8 @@ export default function AboutScreen() {
       if (displayName === me.displayName) return go('/onboarding/intent');
       void saving.run(
         () => saveMe('/me', 'PATCH', { displayName }),
-        (updated) => {
-          set(updated);
+        (updated, etag) => {
+          set(updated, etag);
           router.push('/onboarding/intent');
         },
       );

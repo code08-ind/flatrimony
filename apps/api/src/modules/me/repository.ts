@@ -445,7 +445,7 @@ export function pgMeRepository(db: Database): MeRepository {
         .executeTakeFirst();
       if (!p) return null;
 
-      const [prefs, areas, anchor, life, importance] = await Promise.all([
+      const [prefs, areas, anchor, life, importance, scenarios] = await Promise.all([
         db.selectFrom('preferences').selectAll().where('user_id', '=', userId).executeTakeFirst(),
         db
           .selectFrom('preference_areas')
@@ -470,6 +470,12 @@ export function pgMeRepository(db: Database): MeRepository {
           .selectFrom('lifestyle_importance')
           .select(['attribute', 'importance'])
           .where('user_id', '=', userId)
+          .execute(),
+        db
+          .selectFrom('scenario_answers')
+          .select(['question_id', 'option_id'])
+          .where('user_id', '=', userId)
+          .orderBy('question_id')
           .execute(),
       ]);
 
@@ -538,6 +544,10 @@ export function pgMeRepository(db: Database): MeRepository {
             }
           : {}),
         importance: Object.fromEntries(importance.map((i) => [i.attribute, i.importance])),
+        scenarioAnswers: scenarios.map((a) => ({
+          questionId: a.question_id,
+          optionId: a.option_id,
+        })),
         // Move Pass is v1.1 (purchases, migration 0014).
         entitlements: { movePass: { active: false } },
         createdAt: iso(p.created_at),

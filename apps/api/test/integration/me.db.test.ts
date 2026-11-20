@@ -448,6 +448,10 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
       .where('user_id', '=', user.id)
       .execute();
     expect(stored).toEqual([{ option_id: options[1]!.id }]);
+    // Me lists the answers (T2.11: the editor's "n of N answered").
+    expect((await call(user, 'GET', '/v1/me')).json().scenarioAnswers).toEqual([
+      { questionId: q.id, optionId: options[1]!.id },
+    ]);
 
     // The database trigger refuses an option the question does not have.
     const bad = await call(user, 'PUT', '/v1/me/scenario-answers', [

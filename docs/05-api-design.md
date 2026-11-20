@@ -231,6 +231,7 @@ interface Me {
   anchor?: Anchor;
   lifestyle?: Lifestyle;
   importance: Partial<Record<LifestyleAttribute, Importance>>;
+  scenarioAnswers?: { questionId: string; optionId: string }[];   // FR-BIO-06 (T2.11)
   entitlements: { movePass: { active: boolean; validUntil?: ISODateTime } };
   createdAt: ISODateTime;
 }

@@ -53,7 +53,8 @@
     "back": "Back",
     "delete": "Delete",
     "profileLoadFailed": "We couldn't load your profile.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "cancel": "Cancel"
   },
   "welcome": {
     "verifiedPeople": "Verified people",
@@ -249,6 +250,153 @@
       "generic": "Something went wrong. Please try again.",
       "windowOver": "Your move-in window has already ended. Pick new dates.",
       "categoryNotAllowed": "Women-only spaces are for women verified with DigiLocker. Choose another option."
+    }
+  },
+  "profile": {
+    "flatBiodataProfile": "Flat Biodata profile",
+    "nameAge": "{name}, {age}",
+    "complete": "{percent}% complete",
+    "settings": "Settings",
+    "editBiodata": "Edit Flat Biodata",
+    "accelerator": {
+      "overline": "Match accelerator",
+      "title": "Answer scenario questions to improve flatmate compatibility",
+      "start": "Start"
+    },
+    "tiles": {
+      "biodata": "Flat Biodata",
+      "biodataSub": "Your primary profile",
+      "verification": "Verification",
+      "verificationSub": "DigiLocker identity check",
+      "verified": "Verified",
+      "notVerified": "Not verified",
+      "verificationSoon": "DigiLocker verification is coming soon."
+    },
+    "pause": {
+      "title": "Pause my profile",
+      "sub": "Hide me from Discover. Chats stay active.",
+      "paused": "Your profile is paused. You are hidden from Discover."
+    },
+    "editor": {
+      "title": "My Flat Biodata",
+      "basics": "Basics",
+      "budgetDates": "Budget & dates",
+      "areas": "Areas",
+      "habits": "Habits",
+      "importanceTitle": "What matters most",
+      "importanceSub": "Set how much each habit matters when we match you",
+      "dealbreaker": "Deal-breaker",
+      "matters": "Matters",
+      "dont_care": "Don't care",
+      "scenarios": "Scenario questions",
+      "scenariosCount": "{answered} of {total} answered",
+      "photos": "Photos",
+      "edit": "Edit {section}",
+      "save": "Save",
+      "saveChanges": "Save changes",
+      "saved": "Saved.",
+      "noBio": "No bio yet",
+      "noLanguages": "No languages added",
+      "noAreas": "No areas yet",
+      "notSet": "Not set yet",
+      "lease": "Lease (months): {months}",
+      "areasMore": "Office and college search with commute times is coming soon.",
+      "editShort": "Edit",
+      "changedElsewhere": "Your profile changed on another device. We've loaded the latest version — check it and save again.",
+      "unavailable": "Profile changes aren't available right now. Please try again later.",
+      "discardTitle": "Discard your changes?",
+      "discardBody": "You haven't saved them yet.",
+      "discard": "Discard",
+      "keepEditing": "Keep editing",
+      "areasLoadFailed": "Couldn't load your areas.",
+      "windowOver": "Your move-in window has ended. Update your dates first.",
+      "updateDates": "Update dates"
+    },
+    "basics": {
+      "title": "Basics",
+      "nameLabel": "First name",
+      "bioLabel": "About you",
+      "bioPlaceholder": "A few lines about you and how you like to live",
+      "bioCount": "{count}/{max}",
+      "languages": "Languages you speak",
+      "dobNote": "Your date of birth is set. DigiLocker verification will confirm it once it opens.",
+      "nameRequired": "Enter your first name.",
+      "languagesMax": "You can add up to {max} languages."
+    },
+    "habitsMore": {
+      "title": "More about your habits",
+      "cooksAtHome": "Cook at home?",
+      "yes": "Yes",
+      "no": "No",
+      "drinking": "Drinking",
+      "guests": "Guests over",
+      "parties": "Parties at home",
+      "workMode": "Work mode",
+      "never": "Never",
+      "rarely": "Rarely",
+      "sometimes": "Sometimes",
+      "often": "Often",
+      "office": "Office",
+      "hybrid": "Hybrid",
+      "wfh": "Work from home",
+      "night_shift": "Night shift",
+      "student": "Student"
+    },
+    "attributes": {
+      "bedtime": "Bedtime",
+      "wake_time": "Wake time",
+      "cleaning": "Cleaning",
+      "smoking": "Smoking",
+      "pets": "Pets",
+      "food": "Food",
+      "cooks_at_home": "Cooking at home",
+      "drinking": "Drinking",
+      "guests": "Guests",
+      "parties": "Parties at home",
+      "work_mode": "Work mode"
+    },
+    "scenarios": {
+      "title": "Scenario questions",
+      "subtitle": "How you'd really handle everyday flat moments. There are no right answers.",
+      "loadFailed": "Couldn't load the questions. Check your connection.",
+      "retry": "Try again"
+    },
+    "photos": {
+      "title": "Photos",
+      "hint": "Add 1 to 6 photos. Your first photo is your main photo. New photos are checked before others see them.",
+      "add": "Add photo",
+      "remove": "Remove photo",
+      "removeConfirmTitle": "Remove this photo?",
+      "removeConfirmBody": "It is deleted from your profile. You can add another one later.",
+      "main": "Main photo",
+      "pending": "Under review",
+      "rejected": "Not approved",
+      "uploading": "Uploading…",
+      "errors": {
+        "tooLarge": "That photo is too large. Use one up to 8 MB.",
+        "format": "Use a JPEG or WebP photo.",
+        "keepOne": "Keep at least one photo.",
+        "failed": "Couldn't upload. Check your connection and try again.",
+        "notAvailable": "Photos aren't available right now.",
+        "removeFailed": "Couldn't remove the photo. Check your connection and try again.",
+        "reorderFailed": "Couldn't change your main photo. Check your connection and try again."
+      },
+      "makeMainN": "Make photo {n} your main photo",
+      "removeN": "Remove photo {n}"
+    },
+    "languages": {
+      "hi": "Hindi",
+      "en": "English",
+      "pa": "Punjabi",
+      "bn": "Bengali",
+      "ta": "Tamil",
+      "te": "Telugu",
+      "mr": "Marathi",
+      "gu": "Gujarati",
+      "kn": "Kannada",
+      "ml": "Malayalam",
+      "ur": "Urdu",
+      "or": "Odia"
     }
   }
 }

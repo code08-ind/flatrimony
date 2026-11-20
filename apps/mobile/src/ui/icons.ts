@@ -41,3 +41,5 @@ export { UserCircle } from 'phosphor-react-native/src/icons/UserCircle';
 export { UsersThree } from 'phosphor-react-native/src/icons/UsersThree';
 export { WarningCircle } from 'phosphor-react-native/src/icons/WarningCircle';
 export { X } from 'phosphor-react-native/src/icons/X';
+export { Star } from 'phosphor-react-native/src/icons/Star';
+export { Trash } from 'phosphor-react-native/src/icons/Trash';
