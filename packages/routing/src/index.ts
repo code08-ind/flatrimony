@@ -25,6 +25,13 @@ export const COSTING: Record<TravelMode, 'auto' | 'motorcycle' | 'pedestrian' | 
 };
 
 /**
+ * Top speed (km/h) for road modes. Valhalla has no traffic data, so uncapped zones assume free
+ * roads (45 min by car from Cyber City reached ~53 km, most of NCR). Founder decision 2026-11-22:
+ * 30 km/h for car and two-wheeler (45 min by car ≈ 700 km², about the fallback circle's size).
+ */
+export const ROAD_TOP_SPEED_KMH = 30;
+
+/**
  * Straight-line speeds (km/h) for the radius approximation. Assumptions for city traffic, not
  * measurements: to be reviewed by the founder (docs/07 T2.9). Only used when no routed zone exists.
  */
@@ -89,6 +96,10 @@ export function isochroneRequest(location: LatLng, mode: TravelMode, minutes: nu
   return {
     locations: [{ lat: location.lat, lon: location.lng }],
     costing,
+    // Road modes are capped for NCR traffic (ROAD_TOP_SPEED_KMH); walking is not.
+    ...(costing === 'pedestrian'
+      ? {}
+      : { costing_options: { [costing]: { top_speed: ROAD_TOP_SPEED_KMH } } }),
     contours: [{ time: minutes }],
     polygons: true,
     // Smooth small holes and simplify (metres): a 90-minute car zone stays under ~90 KB of JSON.
