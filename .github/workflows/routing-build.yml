@@ -1,0 +1,66 @@
+# Routing service image (docs/03 §10.5, ADR-0008): Valhalla with Delhi NCR tiles from a fresh
+# OpenStreetMap extract. Rebuilt monthly and on demand; pull requests that change apps/routing build
+# and smoke-test it without pushing. Deploying needs the staging GCP project (T1.10/T1.12): skipped
+# unless the repository variable STAGING_ENABLED is "true" (see deploy-staging.yml for the secrets).
+name: routing-build
+
+on:
+  schedule:
+    - cron: '0 21 1 * *' # 02:30 IST on the 2nd of each month
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - apps/routing/**
+      - .github/workflows/routing-build.yml
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation for the push and deploy
+
+concurrency:
+  group: routing-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGION: asia-south1
+  REGISTRY: asia-south1-docker.pkg.dev
+
+jobs:
+  build:
+    name: routing-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Free disk space (OpenStreetMap extracts and tiles)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/android
+          df -h /
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the image (download, extract NCR, build tiles)
+        run: docker build -t routing:ci apps/routing
+      - name: Smoke test (a real isochrone in Gurugram)
+        run: |
+          docker run -d --name routing -p 8002:8080 routing:ci
+          apps/routing/smoke.sh http://localhost:8002
+      - name: Routing log
+        if: failure()
+        run: docker logs routing 2>&1 | tail -n 100 || true
+
+      - name: Push and deploy
+        if: github.event_name != 'pull_request' && vars.STAGING_ENABLED == 'true'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+      - if: github.event_name != 'pull_request' && vars.STAGING_ENABLED == 'true'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - if: github.event_name != 'pull_request' && vars.STAGING_ENABLED == 'true'
+        env:
+          PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          image="$REGISTRY/$PROJECT/flatrimony/routing:$GITHUB_SHA-$(date -u +%Y%m%d)"
+          gcloud auth configure-docker "$REGISTRY" --quiet
+          docker tag routing:ci "$image"
+          docker push "$image"
+          gcloud run deploy routing --region "$REGION" --project "$PROJECT" --image "$image" --quiet

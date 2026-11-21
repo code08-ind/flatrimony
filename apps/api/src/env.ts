@@ -69,6 +69,11 @@ export const EnvSchema = z.object({
   CORS_ALLOWED_ORIGINS: csv.refine((origins) => origins.every(isBareOrigin), {
     message: 'each entry must be a bare origin such as https://app.example.com',
   }),
+  /**
+   * The routing service (apps/routing, Valhalla) for commute zone previews. Without it previews are
+   * the radius approximation (`approx: true`).
+   */
+  ROUTING_URL: z.url().optional(),
   APP_VERSION: z.string().default('0.0.0'),
 });
 

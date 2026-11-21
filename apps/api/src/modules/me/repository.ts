@@ -23,10 +23,12 @@ import {
   type Preferences,
   type ScenarioAnswersRequest,
   type Platform,
+  type TravelMode,
 } from '@flatrimony/shared';
 import type { ProfilePhotos, VerifiedGender } from '@flatrimony/db-types';
 import type { Selectable } from 'kysely';
 import type { Database } from '../../lib/db.js';
+import { COMMUTE_KIND, commuteDedupeKey } from '@flatrimony/routing';
 
 type ConsentPurpose = ConsentGrant['purpose'];
 export type LegalVersions = Partial<Record<ConsentPurpose, string>>;
@@ -97,6 +99,21 @@ export interface NewPhoto {
   phash: string;
 }
 
+/** GET /me/commute-zone (T2.9). */
+export interface CommuteZoneState {
+  anchor: { travelMode: TravelMode; maxCommuteMin: number } | null;
+  zone: {
+    /** GeoJSON MultiPolygon text (PostGIS). */
+    geojson: string;
+    approx: boolean;
+    travelMode: TravelMode;
+    maxMinutes: number;
+    computedAt: Date;
+  } | null;
+  /** A `commute.compute` job is waiting or running. */
+  pending: boolean;
+}
+
 export interface MeRepository {
   /** ref.app_config 'legal.versions'; null when not published yet (T0.15). */
   legalVersions(): Promise<LegalVersions | null>;
@@ -127,6 +144,8 @@ export interface MeRepository {
     ifVersion?: string,
   ): Promise<boolean>;
   setAnchor(userId: string, anchor: Anchor, ifVersion?: string): Promise<boolean>;
+  /** The anchor, its commute zone and whether one is being drawn (GET /me/commute-zone). */
+  commuteZone(userId: string): Promise<CommuteZoneState>;
   replaceLifestyle(userId: string, lifestyle: Lifestyle, ifVersion?: string): Promise<boolean>;
   replaceImportance(
     userId: string,
@@ -690,7 +709,66 @@ export function pgMeRepository(db: Database): MeRepository {
             ),
           )
           .execute();
+        // No zone that matches the anchor any more (or never one): draw it (T2.9). One pending job
+        // per user; a waiting or dead one is pulled forward with fresh attempts.
+        const zone = await tx
+          .selectFrom('commute_zones')
+          .select('user_id')
+          .where('user_id', '=', userId)
+          .executeTakeFirst();
+        // A running job (its zone just stored, or not yet) runs once more when it finishes
+        // (apps/worker queue `complete`): `clock_timestamp()` is after its claim even when this
+        // write waited for its lock. Same statement as the worker's `requestRun`.
+        if (!zone)
+          await sql`
+            insert into private.jobs (kind, payload, dedupe_key)
+            values (${COMMUTE_KIND}, ${JSON.stringify({ userId })}::jsonb, ${commuteDedupeKey(userId)})
+            on conflict (dedupe_key) do update
+              set run_after = clock_timestamp(),
+                  attempts = case when private.jobs.locked_at is null then 0 else private.jobs.attempts end,
+                  last_error = case when private.jobs.locked_at is null then null else private.jobs.last_error end
+              where private.jobs.done_at is null`.execute(tx);
       });
+    },
+
+    async commuteZone(userId) {
+      const { rows } = await sql<{
+        travel_mode: TravelMode | null;
+        max_commute_min: number | null;
+        zone_mode: TravelMode | null;
+        zone_minutes: number | null;
+        source: string | null;
+        computed_at: Date | null;
+        geojson: string | null;
+        pending: boolean;
+      }>`
+        select a.travel_mode, a.max_commute_min,
+               z.travel_mode as zone_mode, z.max_minutes as zone_minutes, z.source, z.computed_at,
+               extensions.st_asgeojson(z.zone, 5) as geojson,
+               exists (select 1 from private.jobs j
+                        where j.dedupe_key = ${commuteDedupeKey(userId)}
+                          and j.done_at is null and j.attempts < j.max_attempts) as pending
+          from (select ${userId}::uuid as id) u
+          left join public.anchors a on a.user_id = u.id
+          left join public.commute_zones z on z.user_id = u.id`.execute(db);
+      const r = rows[0]!;
+      return {
+        anchor:
+          r.travel_mode && r.max_commute_min
+            ? { travelMode: r.travel_mode, maxCommuteMin: r.max_commute_min }
+            : null,
+        zone:
+          r.geojson && r.zone_mode && r.zone_minutes && r.computed_at
+            ? {
+                geojson: r.geojson,
+                approx: r.source === 'fallback_radius',
+                travelMode: r.zone_mode,
+                maxMinutes: r.zone_minutes,
+                computedAt: new Date(r.computed_at),
+              }
+            : null,
+        pending: r.pending,
+      };
     },
 
     async replaceLifestyle(userId, l, ifVersion) {

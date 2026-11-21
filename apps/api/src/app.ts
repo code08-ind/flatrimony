@@ -30,6 +30,8 @@ import { inMemorySystemRepository, type SystemRepository } from './modules/syste
 import { meRoutes } from './modules/me/routes.js';
 import type { MeRepository } from './modules/me/repository.js';
 import type { PhotoStorage } from './lib/photo-storage.js';
+import { cachedIdToken } from '@flatrimony/routing';
+import { createCommutePreview, type CommutePreview } from './lib/commute-preview.js';
 
 export interface BuildOptions {
   env: Env;
@@ -49,6 +51,8 @@ export interface BuildOptions {
   meRepo?: MeRepository;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
   photoStorage?: PhotoStorage;
+  /** Commute zone previews (default: from ROUTING_URL, radius approximation without it). */
+  commutePreview?: CommutePreview;
   /** Capture logs (tests assert that no personal data is logged). */
   logStream?: { write(line: string): void };
 }
@@ -89,6 +93,7 @@ export async function buildApp({
   otpStore,
   meRepo,
   photoStorage,
+  commutePreview,
   logStream,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
@@ -174,6 +179,18 @@ export async function buildApp({
       prefix: '/v1',
       repo: meRepo,
       ...(photoStorage ? { photos: photoStorage } : {}),
+      commutePreview:
+        commutePreview ??
+        createCommutePreview({
+          routingUrl: env.ROUTING_URL,
+          // The routing service is private on Cloud Run: call it with a Google ID token.
+          ...(env.APP_ENV === 'local' ? {} : { token: cachedIdToken() }),
+          onRoutingError: (err) =>
+            app.log.warn(
+              { err: err.message, retryable: err.retryable },
+              'routing failed; approximating',
+            ),
+        }),
       bans,
       hasher,
       ...(now ? { now } : {}),

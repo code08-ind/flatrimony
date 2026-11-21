@@ -164,6 +164,9 @@ function fakeRepo(state: FakeState): MeRepository {
     async setAnchor(_id, a, v) {
       return biodata('anchor', a, v);
     },
+    async commuteZone() {
+      return { anchor: null, zone: null, pending: false };
+    },
     async replaceLifestyle(_id, l, v) {
       return biodata('lifestyle', l, v);
     },
@@ -988,6 +991,44 @@ describe('biodata writes (T2.7)', () => {
         )
       ).statusCode,
     ).toBe(200);
+  });
+
+  it('GET /me/commute-zone: none before an office or college is set (T2.9)', async () => {
+    const { call } = await setup({ profile: profile() });
+    const res = await call('GET', '/v1/me/commute-zone');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      status: 'none',
+      zone: null,
+      approx: false,
+      travelMode: null,
+      maxCommuteMin: null,
+      computedAt: null,
+    });
+  });
+
+  it('POST /commute/preview: a zone for a place in NCR (approximate without routing)', async () => {
+    const { call } = await setup({ profile: profile() });
+    const res = await call('POST', '/v1/commute/preview', {
+      location: { lat: 28.495, lng: 77.089 },
+      travelMode: 'car',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.approx).toBe(true);
+    expect(body.zone.type).toBe('MultiPolygon');
+    expect(body.zone.coordinates[0][0]).toHaveLength(49);
+    const mumbai = await call('POST', '/v1/commute/preview', {
+      location: { lat: 19.07, lng: 72.88 },
+      travelMode: 'car',
+    });
+    expect(mumbai.json().errors[0]).toMatchObject({ code: 'outside_ncr' });
+    for (const bad of [
+      { location: { lat: 28.5, lng: 77.1 }, travelMode: 'car', maxCommuteMin: 120 },
+      { location: { lat: 28.5, lng: 77.1 }, travelMode: 'boat' },
+      { location: { lat: 28.5, lng: 77.1 }, travelMode: 'car', extra: 1 },
+    ])
+      expect((await call('POST', '/v1/commute/preview', bad)).statusCode).toBe(422);
   });
 
   it('PUT /me/anchor needs a place in Delhi NCR', async () => {

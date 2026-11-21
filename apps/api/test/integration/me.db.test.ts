@@ -87,6 +87,11 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
   });
   afterAll(async () => {
     await app.close();
+    // Jobs have no foreign key to users: remove the commute jobs these tests enqueued.
+    if (users.length)
+      await sql`delete from private.jobs where dedupe_key = any(${users.map((u) => `commute:${u.id}`)}::text[])`.execute(
+        db,
+      );
     if (users.length)
       await sql`delete from auth.users where id = any(${users.map((u) => u.id)}::uuid[])`.execute(
         db,
@@ -398,6 +403,80 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
       food: 'eggetarian',
     });
     expect(res.json().lifestyle.drinking).toBeUndefined();
+  });
+
+  it('commute zone (T2.9): a new anchor enqueues commute.compute once; status follows the zone', async () => {
+    const user = await newUser();
+    await call(user, 'POST', '/v1/me/bootstrap', body(`install-${randomUUID()}`));
+    expect((await call(user, 'GET', '/v1/me/commute-zone')).json().status).toBe('none');
+    const jobs = () =>
+      db
+        .selectFrom('private.jobs')
+        .select(['kind', 'payload', 'attempts', 'run_after', 'done_at'])
+        .where('dedupe_key', '=', `commute:${user.id}`)
+        .execute();
+    const office = {
+      kind: 'office',
+      label: 'Office',
+      location: { lat: 28.495, lng: 77.089 },
+      travelMode: 'car',
+      maxCommuteMin: 30,
+    };
+    expect((await call(user, 'PUT', '/v1/me/anchor', office)).statusCode).toBe(200);
+    const [job] = await jobs();
+    expect(job).toMatchObject({
+      kind: 'commute.compute',
+      payload: { userId: user.id },
+      attempts: 0,
+    });
+    let zone = (await call(user, 'GET', '/v1/me/commute-zone')).json();
+    expect(zone).toMatchObject({
+      status: 'computing',
+      zone: null,
+      travelMode: 'car',
+      maxCommuteMin: 30,
+    });
+
+    // Moving it again while the job waits: still one job, pulled forward with fresh attempts.
+    await db
+      .updateTable('private.jobs')
+      .set({ attempts: 3, run_after: sql`now() + interval '1 hour'` })
+      .where('dedupe_key', '=', `commute:${user.id}`)
+      .execute();
+    await call(user, 'PUT', '/v1/me/anchor', { ...office, location: { lat: 28.5, lng: 77.1 } });
+    const again = await jobs();
+    expect(again).toHaveLength(1);
+    expect(again[0]!.attempts).toBe(0);
+    expect(new Date(again[0]!.run_after as Date).getTime()).toBeLessThanOrEqual(Date.now() + 1000);
+
+    // The worker stores the zone and finishes the job: ready.
+    await sql`insert into public.commute_zones (user_id, travel_mode, max_minutes, zone, source)
+      values (${user.id}, 'car', 30, extensions.st_multi(extensions.st_buffer(extensions.st_point(77.1, 28.5)::extensions.geography, 1000)::extensions.geometry)::extensions.geography, 'valhalla')`.execute(
+      db,
+    );
+    await db
+      .updateTable('private.jobs')
+      .set({ done_at: sql`now()`, dedupe_key: null })
+      .where('dedupe_key', '=', `commute:${user.id}`)
+      .execute();
+    zone = (await call(user, 'GET', '/v1/me/commute-zone')).json();
+    expect(zone).toMatchObject({
+      status: 'ready',
+      approx: false,
+      travelMode: 'car',
+      maxCommuteMin: 30,
+    });
+    expect(zone.zone.type).toBe('MultiPolygon');
+    expect(zone.zone.coordinates[0][0].length).toBeGreaterThan(4);
+
+    // Renaming keeps the zone: no new job.
+    await call(user, 'PUT', '/v1/me/anchor', {
+      ...office,
+      location: { lat: 28.5, lng: 77.1 },
+      label: 'HQ',
+    });
+    expect(await jobs()).toEqual([]);
+    expect((await call(user, 'GET', '/v1/me/commute-zone')).json().status).toBe('ready');
   });
 
   it('anchor, importance and scenario answers round-trip through Postgres', async () => {

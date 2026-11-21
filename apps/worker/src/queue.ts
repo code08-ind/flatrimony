@@ -109,16 +109,22 @@ export async function release(db: Database, jobs: Job[], workerId: string): Prom
   return Number(res.numUpdatedRows);
 }
 
-/** Marks a job done. False when this worker no longer holds its lock (released as stale). */
+/**
+ * Marks a job done. A job asked to run again while it ran (`requestRun` moved its `run_after`
+ * past the moment it was claimed) goes back to the queue instead, with fresh attempts and its
+ * dedupe key. False when this worker no longer holds its lock (released as stale).
+ */
 export async function complete(db: Database, job: Job, workerId: string): Promise<boolean> {
+  const rerun = sql<boolean>`run_after > locked_at`;
   const res = await db
     .updateTable('private.jobs')
     .set({
-      done_at: sql`now()`,
+      done_at: sql`case when ${rerun} then null else now() end`,
+      dedupe_key: sql`case when ${rerun} then dedupe_key else null end`,
+      attempts: sql`case when ${rerun} then 0 else attempts end`,
       locked_at: null,
       locked_by: null,
       last_error: null,
-      dedupe_key: null,
     })
     .where('id', '=', job.id)
     .where('locked_by', '=', workerId)
@@ -153,6 +159,29 @@ export async function fail(
     .executeTakeFirst();
   if (res.numUpdatedRows === 0n) return 'lost';
   return opts.permanent || job.attempts >= job.maxAttempts ? 'dead' : 'retry';
+}
+
+/**
+ * Asks for a job with this dedupe key to run (again), e.g. when the data it works on changed:
+ * a waiting or dead job is pulled forward with fresh attempts; a running one runs once more after
+ * it finishes (see `complete`); with none, a new one is added. `clock_timestamp()`: after waiting
+ * for a running job's lock it is later than that job's claim. The same statement as the API's
+ * (apps/api, PUT /me/anchor).
+ */
+export async function requestRun(
+  db: Database,
+  kind: string,
+  payload: Record<string, unknown>,
+  dedupeKey: string,
+): Promise<void> {
+  await sql`
+    insert into private.jobs (kind, payload, dedupe_key)
+    values (${kind}, ${JSON.stringify(payload)}::jsonb, ${dedupeKey})
+    on conflict (dedupe_key) do update
+      set run_after = clock_timestamp(),
+          attempts = case when private.jobs.locked_at is null then 0 else private.jobs.attempts end,
+          last_error = case when private.jobs.locked_at is null then null else private.jobs.last_error end
+      where private.jobs.done_at is null`.execute(db);
 }
 
 /** Frees jobs locked by runs that crashed or timed out; their attempt still counts. */
