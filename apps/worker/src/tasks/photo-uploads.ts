@@ -7,6 +7,7 @@
  */
 import { sql } from 'kysely';
 import type { Database } from '../db.js';
+import { errorFields } from '../log.js';
 import type { Task } from '../runner.js';
 
 export const PHOTO_BUCKET = 'profile-photos';
@@ -35,14 +36,25 @@ export async function staleUploads(db: Database, limit = SWEEP_LIMIT): Promise<s
 export function photoUploadSweep(storage: ObjectRemover): Task {
   return {
     name: 'photos.sweep-uploads',
-    async run({ db, signal }) {
+    async run({ db, log, signal }) {
       const keys = await staleUploads(db);
       let removed = 0;
+      let failedBatches = 0;
       for (let i = 0; i < keys.length && !signal.aborted; i += REMOVE_BATCH) {
         const batch = keys.slice(i, i + REMOVE_BATCH);
-        await storage.remove(PHOTO_BUCKET, batch);
-        removed += batch.length;
+        try {
+          await storage.remove(PHOTO_BUCKET, batch);
+          removed += batch.length;
+        } catch (err) {
+          // Keep going: the next batches may work; these keys are found again tomorrow.
+          failedBatches += 1;
+          log.warn('upload sweep batch failed', { size: batch.length, ...errorFields(err) });
+        }
       }
+      if (failedBatches > 0)
+        throw new Error(
+          `${failedBatches} of ${Math.ceil(keys.length / REMOVE_BATCH)} batches failed (removed ${removed} of ${keys.length})`,
+        );
       return { found: keys.length, removed };
     },
   };

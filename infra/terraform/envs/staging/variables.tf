@@ -47,7 +47,7 @@ variable "secret_ids" {
 }
 
 variable "supabase_url" {
-  description = "Supabase project URL (https://<ref>.supabase.co) for the worker's Storage tasks; empty skips them."
+  description = "Supabase project URL (https://<ref>.supabase.co) for the worker's Storage tasks (required: the worker refuses to start without it outside local)."
   type        = string
   default     = ""
 }

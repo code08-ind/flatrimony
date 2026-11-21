@@ -83,4 +83,19 @@ describe.skipIf(!URL)('photo upload sweep (Postgres)', () => {
     ]);
     expect(counts).toMatchObject({ found: expect.any(Number), removed: expect.any(Number) });
   });
+
+  it('a failed Storage batch does not stop the rest; the run reports it as failed', async (ctx) => {
+    if (!hasStorage) ctx.skip();
+    let calls = 0;
+    const task = photoUploadSweep({
+      remove: async () => {
+        calls += 1;
+        throw new Error('storage unavailable');
+      },
+    });
+    await expect(
+      task.run({ db, log: createLogger('error', () => {}), signal: new AbortController().signal }),
+    ).rejects.toThrow(/batches failed \(removed 0 of \d+\)/);
+    expect(calls).toBeGreaterThan(0);
+  });
 });

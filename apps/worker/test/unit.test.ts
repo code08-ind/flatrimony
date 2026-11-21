@@ -20,22 +20,42 @@ describe('configuration', () => {
     }
   });
 
-  it('names the worker after the Cloud Run execution, or the local process', () => {
+  it('names the worker after the Cloud Run execution, task and attempt, or the host and process', () => {
     const base = loadEnv({ DATABASE_URL: 'postgres://p' });
-    expect(workerId(base, 42)).toBe('local-42');
+    expect(workerId(base, 42, 'laptop')).toBe('laptop-42');
     expect(
       workerId(
         loadEnv({
           DATABASE_URL: 'postgres://p',
           CLOUD_RUN_EXECUTION: 'worker-abc',
           CLOUD_RUN_TASK_INDEX: '0',
+          CLOUD_RUN_TASK_ATTEMPT: '1',
         }),
       ),
-    ).toBe('worker-abc/0');
+    ).toBe('worker-abc/0/1');
   });
 
   it('keeps the run budget inside the 10-minute task timeout by default', () => {
     expect(loadEnv({ DATABASE_URL: 'postgres://p' }).WORKER_BUDGET_SECONDS).toBe(480);
+  });
+
+  it('never lets a run outlive the task timeout (a lock would go stale while held)', () => {
+    expect(() => loadEnv({ DATABASE_URL: 'postgres://p', WORKER_BUDGET_SECONDS: '900' })).toThrow(
+      /WORKER_BUDGET_SECONDS/,
+    );
+  });
+
+  it('requires Storage settings outside local, so the upload sweep cannot be off silently', () => {
+    const staging = { DATABASE_URL: 'postgres://p', APP_ENV: 'staging' };
+    expect(() => loadEnv(staging)).toThrow(/SUPABASE_URL/);
+    expect(
+      loadEnv({
+        ...staging,
+        SUPABASE_URL: 'https://x.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'k',
+      }).APP_ENV,
+    ).toBe('staging');
+    expect(loadEnv({ DATABASE_URL: 'postgres://p' }).SUPABASE_URL).toBeUndefined(); // local: optional
   });
 });
 

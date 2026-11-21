@@ -45,8 +45,23 @@ export async function enqueue(
   return row ? String(row.id) : null;
 }
 
+/**
+ * Limits queue operations to job kinds starting with this prefix. Production runs leave it unset;
+ * tests set it so they never touch other rows in a shared database.
+ */
+export interface Scope {
+  kindPrefix?: string;
+}
+const kindFilter = (scope: Scope) =>
+  scope.kindPrefix ? sql`and kind like ${`${scope.kindPrefix}%`}` : sql``;
+
 /** Claims up to `limit` ready jobs for `workerId`; concurrent claimers never get the same job. */
-export async function claim(db: Database, workerId: string, limit = 5): Promise<Job[]> {
+export async function claim(
+  db: Database,
+  workerId: string,
+  limit = 5,
+  scope: Scope = {},
+): Promise<Job[]> {
   const { rows } = await sql<{
     id: string;
     kind: string;
@@ -59,18 +74,39 @@ export async function claim(db: Database, workerId: string, limit = 5): Promise<
      where j.id in (
        select id from private.jobs
         where done_at is null and locked_at is null and run_after <= now()
-          and attempts < max_attempts
+          and attempts < max_attempts ${kindFilter(scope)}
         order by run_after
         for update skip locked
         limit ${limit})
     returning j.id, j.kind, j.payload, j.attempts, j.max_attempts`.execute(db);
-  return rows.map((r) => ({
-    id: String(r.id),
-    kind: r.kind,
-    payload: r.payload,
-    attempts: r.attempts,
-    maxAttempts: r.max_attempts,
-  }));
+  return rows
+    .map((r) => ({
+      id: String(r.id),
+      kind: r.kind,
+      payload: r.payload,
+      attempts: r.attempts,
+      maxAttempts: r.max_attempts,
+    }))
+    .sort((a, b) => Number(a.id) - Number(b.id));
+}
+
+/**
+ * Gives claimed jobs back without running them (the run is stopping): unlocked, and the attempt
+ * the claim counted is returned. Only jobs this worker still holds.
+ */
+export async function release(db: Database, jobs: Job[], workerId: string): Promise<number> {
+  if (jobs.length === 0) return 0;
+  const res = await db
+    .updateTable('private.jobs')
+    .set({ locked_at: null, locked_by: null, attempts: sql`greatest(attempts - 1, 0)` })
+    .where(
+      'id',
+      'in',
+      jobs.map((j) => j.id),
+    )
+    .where('locked_by', '=', workerId)
+    .executeTakeFirst();
+  return Number(res.numUpdatedRows);
 }
 
 /** Marks a job done. False when this worker no longer holds its lock (released as stale). */
@@ -91,9 +127,10 @@ export async function complete(db: Database, job: Job, workerId: string): Promis
 }
 
 /**
- * Records a failure and schedules the retry (2^attempts minutes). `permanent` (an unknown kind, an
- * invalid payload) uses up the remaining attempts at once. Returns true when the job is out of
- * attempts ("dead": it stays undone for an alert and a human).
+ * Records a failure and schedules the retry (2^attempts minutes). `permanent` (an invalid payload)
+ * uses up the remaining attempts at once. Returns 'dead' when the job is out of attempts (it stays
+ * undone for an alert and a human), 'retry' otherwise, and 'lost' when this worker no longer held
+ * the lock (another run released and may have taken it; nothing was recorded).
  */
 export async function fail(
   db: Database,
@@ -101,9 +138,8 @@ export async function fail(
   workerId: string,
   error: string,
   opts: { permanent?: boolean } = {},
-): Promise<boolean> {
-  const dead = opts.permanent || job.attempts >= job.maxAttempts;
-  await db
+): Promise<'retry' | 'dead' | 'lost'> {
+  const res = await db
     .updateTable('private.jobs')
     .set({
       locked_at: null,
@@ -114,13 +150,18 @@ export async function fail(
     })
     .where('id', '=', job.id)
     .where('locked_by', '=', workerId)
-    .execute();
-  return dead;
+    .executeTakeFirst();
+  if (res.numUpdatedRows === 0n) return 'lost';
+  return opts.permanent || job.attempts >= job.maxAttempts ? 'dead' : 'retry';
 }
 
 /** Frees jobs locked by runs that crashed or timed out; their attempt still counts. */
-export async function releaseStale(db: Database, minutes = STALE_LOCK_MINUTES): Promise<number> {
-  const res = await db
+export async function releaseStale(
+  db: Database,
+  minutes = STALE_LOCK_MINUTES,
+  scope: Scope = {},
+): Promise<number> {
+  let q = db
     .updateTable('private.jobs')
     .set({
       locked_at: null,
@@ -128,20 +169,40 @@ export async function releaseStale(db: Database, minutes = STALE_LOCK_MINUTES): 
       last_error: 'lock expired (worker crashed or timed out)',
     })
     .where('done_at', 'is', null)
-    .where('locked_at', '<', sql<Date>`now() - make_interval(mins => ${minutes})`)
-    .executeTakeFirst();
-  return Number(res.numUpdatedRows);
+    .where('locked_at', '<', sql<Date>`now() - make_interval(mins => ${minutes})`);
+  if (scope.kindPrefix) q = q.where('kind', 'like', `${scope.kindPrefix}%`);
+  return Number((await q.executeTakeFirst()).numUpdatedRows);
 }
 
 /** Jobs out of attempts and still undone (alerted on every run until someone handles them). */
-export async function deadJobs(db: Database): Promise<{ kind: string; count: number }[]> {
-  const rows = await db
+export async function deadJobs(
+  db: Database,
+  scope: Scope = {},
+): Promise<{ kind: string; count: number }[]> {
+  let q = db
     .selectFrom('private.jobs')
     .select(['kind', (eb) => eb.fn.countAll<string>().as('count')])
     .where('done_at', 'is', null)
     .where('locked_at', 'is', null)
-    .whereRef('attempts', '>=', 'max_attempts')
-    .groupBy('kind')
-    .execute();
+    .whereRef('attempts', '>=', 'max_attempts');
+  if (scope.kindPrefix) q = q.where('kind', 'like', `${scope.kindPrefix}%`);
+  const rows = await q.groupBy('kind').execute();
   return rows.map((r) => ({ kind: r.kind, count: Number(r.count) }));
+}
+
+/** Ready jobs left after a run and how long the oldest has waited (docs/03 §13: backlog). */
+export async function backlog(
+  db: Database,
+  scope: Scope = {},
+): Promise<{ ready: number; oldestMinutes: number }> {
+  const { rows } = await sql<{ ready: string; oldest: number | null }>`
+    select count(*)::text as ready,
+           extract(epoch from now() - min(run_after)) / 60 as oldest
+      from private.jobs
+     where done_at is null and locked_at is null and run_after <= now()
+       and attempts < max_attempts ${kindFilter(scope)}`.execute(db);
+  return {
+    ready: Number(rows[0]?.ready ?? 0),
+    oldestMinutes: Math.max(0, Math.round(Number(rows[0]?.oldest ?? 0))),
+  };
 }

@@ -5,9 +5,12 @@ The worker (`apps/worker`) is a Cloud Run Job. Cloud Scheduler starts it every 5
 
 1. releases job locks older than 15 minutes (a run that crashed or timed out);
 2. runs the scheduled tasks of its mode;
-3. claims ready jobs from `private.jobs` (`FOR UPDATE SKIP LOCKED`, docs/04 §11) and runs them until
-   the queue is empty or 8 minutes have passed (the task timeout is 10 minutes);
-4. logs an alert line for every job kind with jobs out of attempts.
+3. claims ready jobs from `private.jobs` (`FOR UPDATE SKIP LOCKED`, docs/04 §11), 5 at a time, and
+   runs them one by one until the queue is empty or 8 minutes have passed (the task timeout is 10
+   minutes); a job may run 5 minutes. On SIGTERM, or when the time is used, the current job finishes
+   and the rest of the batch goes back unstarted;
+4. logs an alert line for every job kind with jobs out of attempts, and the backlog
+   (`backlogReady`, `backlogOldestMinutes` on the `worker run done` line).
 
 | Mode | Tasks |
 | --- | --- |
@@ -28,8 +31,8 @@ pnpm --filter @flatrimony/worker daily   # or: tick
 | Variable | Notes |
 | --- | --- |
 | `DATABASE_URL_DIRECT` | Direct connection (Secret Manager); `DATABASE_URL` is used if it is missing |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Storage tasks; when either is missing those tasks are skipped with a warning |
-| `WORKER_BUDGET_SECONDS` | Stop claiming jobs after this long (default 480) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Storage tasks (the upload sweep). Required outside local: the worker refuses to start without them (exit 2); locally the sweep is skipped with a warning |
+| `WORKER_BUDGET_SECONDS` | Stop claiming jobs after this long (default 480, at most 540: a run must end before a lock counts as stale) |
 | `LOG_LEVEL` | `debug`, `info` (default), `warn`, `error` |
 
 Logs are JSON lines with `severity` and `message`; they never contain personal data.
@@ -45,4 +48,11 @@ Logs are JSON lines with `severity` and `message`; they never contain personal d
   or close it with `update private.jobs set done_at = now(), dedupe_key = null where id = <id>;`.
 - **A failed task** makes the run exit with code 1, so the Cloud Run execution shows as failed; the
   next run tries again (tasks are idempotent).
-- **Rollback:** `gcloud run jobs update worker --image <previous digest>` (docs/03 §11).
+- **Invalid configuration** exits with code 2 and one JSON line naming the settings (never their
+  values).
+- **Unknown job kind** (for example after a rollback): retried with backoff like any failure, so a
+  newer image picks it up; it is dead only after its attempts.
+- **Backlog:** alert when `backlogOldestMinutes` stays above 30 (docs/03 §13; set up with staging
+  monitoring, T6.9).
+- **Rollback:** `gcloud run jobs update worker --region asia-south1 --image <previous digest>`
+  (docs/03 §11).

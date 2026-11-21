@@ -25,9 +25,9 @@ create table private.jobs (
   constraint jobs_error_len_chk check (last_error is null or char_length(last_error) <= 2000)
 );
 
--- Ready jobs, in order (the claim query).
+-- Ready jobs, in order (the claim query; jobs out of attempts are left out so they never slow it).
 create index jobs_ready_idx on private.jobs (run_after)
-  where done_at is null and locked_at is null;
+  where done_at is null and locked_at is null and attempts < max_attempts;
 -- Locked jobs (releasing locks of crashed runs).
 create index jobs_locked_idx on private.jobs (locked_at)
   where done_at is null and locked_at is not null;
