@@ -6,10 +6,18 @@
 # before it reaches the nightly run.
 name: mobile-e2e
 
-# Manual runs only until the flow passes on CI (docs/07 T2.12 follow-up); then restore the nightly
-# schedule and the pull_request trigger on the flows, screens, test IDs and English copy.
 on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST
   workflow_dispatch:
+  pull_request:
+    paths:
+      - apps/mobile/e2e/maestro/**
+      - apps/mobile/app/**
+      - apps/mobile/src/**
+      - apps/mobile/app.config.ts
+      - packages/i18n/src/messages/en.json
+      - .github/workflows/mobile-e2e.yml
 
 concurrency:
   group: mobile-e2e-${{ github.ref }}
@@ -110,6 +118,7 @@ jobs:
           working-directory: apps/mobile
           script: |
             mkdir -p "$RUNNER_TEMP/maestro"
+            adb shell settings put global hide_error_dialogs 1
             adb install -r "$RUNNER_TEMP/app.apk"
             maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report.xml" --debug-output "$RUNNER_TEMP/maestro/debug"
 
