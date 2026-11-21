@@ -261,7 +261,7 @@ flatrimony/
 | Cloud Run service | `api` | min instances 0 (staging) / 0–1 (prod, decide by latency); max 10; concurrency 80; 1 vCPU, 512 MiB |
 | Cloud Run service | `web` | min 0; max 5; 1 vCPU, 512 MiB |
 | Cloud Run service | `admin` | min 0; max 2; ingress restricted to Cloudflare |
-| Cloud Run service | `routing` | min 0; max 2; 2 vCPU, 4 GiB; internal ingress only; invoked by worker with OIDC |
+| Cloud Run service | `routing` | min 0; max 2; 2 vCPU, 4 GiB; no public invoker, called by the worker (`commute.compute`) and the API (`POST /commute/preview`) with Google ID tokens; ingress "all" until the callers have Direct VPC egress, then internal only |
 | Cloud Run job | `worker` | 1 vCPU, 1 GiB; task timeout 10 min |
 | Cloud Scheduler | `worker-tick` (every 5 min), `worker-daily` (02:30 IST) | Triggers the worker job |
 | Secret Manager | one secret per key (section 5) | Mounted as env vars into Cloud Run |
@@ -312,7 +312,7 @@ Until decided, staging uses the default `run.app` URLs.
 | `EXPO_ACCESS_TOKEN` | Yes | Push notifications (enhanced security) |
 | `EMAIL_API_KEY` | Yes | Transactional email |
 | `PLAY_INTEGRITY_*` | Yes | Verify Play Integrity tokens |
-| `ROUTING_URL` | No | Internal URL of the routing service |
+| `ROUTING_URL` | No | URL of the routing service (API and worker); without it commute zones are the radius approximation |
 | `SENTRY_DSN` | No | Error tracking |
 | `POSTHOG_KEY` | No | Server-side events (optional) |
 | `CORS_ALLOWED_ORIGINS` | No | Comma-separated |
@@ -713,7 +713,7 @@ Rules:
 
 ### 10.5 Routing service pipeline
 
-`apps/routing` is rebuilt monthly (or when OpenStreetMap data needs refreshing) by `routing-build.yml`: download the NCR extract → build Valhalla tiles → bake into the image → push → deploy `routing`. After deploy, the worker recomputes commute zones older than 30 days in batches.
+`apps/routing` is rebuilt monthly (or when OpenStreetMap data needs refreshing) by `routing-build.yml`: download Geofabrik's India Northern and Central Zones (MD5-checked) → merge and cut to `LIMITS.ncrBounds` with osmium → build Valhalla tiles (pinned image) → bake into the image → smoke-test an isochrone → push → deploy `routing`. Pull requests that change `apps/routing` build and smoke-test without pushing. The worker's daily `commute.refresh` redraws commute zones older than 30 days, missing ones and road-mode approximations (500 a day). Runbook: docs/runbooks/routing.md.
 
 ### 10.6 Infrastructure pipeline (Terraform)
 

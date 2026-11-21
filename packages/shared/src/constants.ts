@@ -85,6 +85,8 @@ export const RATE_LIMITS = {
   messages: { limit: 30, windowMs: 60_000 },
   reports: { limit: 10, windowMs: 24 * 60 * 60_000 },
   uploadUrls: { limit: 30, windowMs: 60 * 60_000 },
+  /** Commute zone previews while moving the map pin (each may call the routing service). */
+  commutePreview: { limit: 30, windowMs: 60_000 },
 } as const;
 
 /** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */

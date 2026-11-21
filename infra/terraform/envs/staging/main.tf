@@ -15,6 +15,7 @@ locals {
     api      = "API service"
     worker   = "Worker job and scheduler"
     web      = "Web and admin services"
+    routing  = "Routing service (no access to anything)"
     deployer = "GitHub Actions deployer (via WIF)"
   }
 }
@@ -97,7 +98,7 @@ resource "google_project_iam_member" "deployer_run" {
 
 # The deployer must act as the runtime service accounts when rolling revisions.
 resource "google_service_account_iam_member" "deployer_act_as" {
-  for_each           = toset(["api", "worker", "web"])
+  for_each           = toset(["api", "worker", "web", "routing"])
   service_account_id = google_service_account.sa[each.key].name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.sa["deployer"].email}"
@@ -173,6 +174,14 @@ resource "google_cloud_run_v2_service" "svc" {
         name  = "TRUST_PROXY_HOPS"
         value = "1"
       }
+      # Commute zone previews call the routing service (T2.9).
+      dynamic "env" {
+        for_each = each.key == "api" ? [google_cloud_run_v2_service.routing.uri] : []
+        content {
+          name  = "ROUTING_URL"
+          value = env.value
+        }
+      }
     }
   }
 
@@ -190,6 +199,47 @@ resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+# --- Routing service: Valhalla with NCR tiles (docs/03 §4, §10.5; ADR-0008; T2.9) -----
+# Private: no public invoker; only the API (previews) and the worker (commute.compute) may call it,
+# with Google ID tokens. Ingress stays "all" because neither caller has VPC egress; IAM is the gate
+# (docs/03 asks for internal ingress, which needs Direct VPC egress on both callers: later).
+resource "google_cloud_run_v2_service" "routing" {
+  name                = "routing"
+  location            = var.region
+  deletion_protection = false
+  ingress             = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account                  = google_service_account.sa["routing"].email
+    max_instance_request_concurrency = 8
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 2
+    }
+    containers {
+      image = var.placeholder_image
+      resources {
+        limits = { cpu = "2", memory = "4Gi" }
+      }
+    }
+  }
+
+  # routing-build.yml rolls out new images; Terraform must not revert them.
+  lifecycle {
+    ignore_changes = [template[0].containers[0].image, client, client_version]
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "routing_invoker" {
+  for_each = toset(["api", "worker"])
+  name     = google_cloud_run_v2_service.routing.name
+  location = var.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.sa[each.key].email}"
 }
 
 # --- Worker job + scheduler (docs/04 §11, ADR-0006) ----------------------------
@@ -227,7 +277,11 @@ resource "google_cloud_run_v2_job" "worker" {
             }
           }
         }
-        # Storage tasks (the photo upload sweep); skipped by the worker when either is missing.
+        env {
+          name  = "ROUTING_URL"
+          value = google_cloud_run_v2_service.routing.uri
+        }
+        # Storage tasks (the photo upload sweep): required outside local (the worker refuses to start).
         dynamic "env" {
           for_each = var.supabase_url != "" ? [var.supabase_url] : []
           content {

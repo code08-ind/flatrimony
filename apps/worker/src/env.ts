@@ -16,6 +16,11 @@ const Env = z
      */
     SUPABASE_URL: z.url().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    /**
+     * The routing service (apps/routing, Valhalla). Without it commute zones are the radius
+     * approximation until it is configured (the daily refresh then redraws them).
+     */
+    ROUTING_URL: z.url().optional(),
     /** Cloud Run sets these for jobs; they name the worker in job locks. */
     CLOUD_RUN_EXECUTION: z.string().optional(),
     CLOUD_RUN_TASK_INDEX: z.string().optional(),

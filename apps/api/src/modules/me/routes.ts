@@ -7,6 +7,8 @@
  *                                 college fields, isPaused
  *   PUT    /me/preferences, /me/anchor, /me/lifestyle, /me/importance, /me/scenario-answers
  *                                 replace one part of the Flat Biodata (T2.7)
+ *   GET    /me/commute-zone       the commute zone of the anchor: none, computing or ready (T2.9)
+ *   POST   /commute/preview       the zone a point, mode and time would give (T2.9)
  *   GET    /me/consents           grants (history) + the versions current now
  *   POST   /me/consents           grant { purpose, version } (must be the current version)
  *   DELETE /me/consents/:purpose  withdraw an optional consent (Terms/Privacy: account deletion)
@@ -28,6 +30,10 @@ import {
   ConsentPurpose,
   ConsentRecord,
   ConsentsResponse,
+  CommutePreviewRequest,
+  CommutePreviewResponse,
+  CommuteZone,
+  GeoMultiPolygon,
   LIMITS,
   Me,
   MePatch,
@@ -46,6 +52,7 @@ import type { BansRepository } from '../auth/bans.js';
 import { BANNED_MESSAGE } from '../auth/otp-guard.js';
 import { ImageError, processPhoto, withImageSlot } from '../../lib/image.js';
 import { UPLOAD_URL_TTL_SECONDS, type PhotoStorage } from '../../lib/photo-storage.js';
+import type { CommutePreview } from '../../lib/commute-preview.js';
 import type { LegalVersions, MeRepository, ProfileState, ProfileUpdate } from './repository.js';
 
 export interface MeRoutesOptions {
@@ -54,6 +61,8 @@ export interface MeRoutesOptions {
   hasher: IdentifierHasher;
   /** Profile photo storage (T2.10). Without it the photo routes answer 503 and Me has no photos. */
   photos?: PhotoStorage;
+  /** Commute zone previews (T2.9); without it previews are the radius approximation. */
+  commutePreview?: CommutePreview;
   now?: () => number;
 }
 
@@ -457,8 +466,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
         throw invalid([
           { path: 'body.location', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
         ]);
-      // commute.compute is enqueued here once the job runner exists (T1.14/T2.9); until then the
-      // zone is simply absent and discovery falls back to areas.
+      // The repository enqueues commute.compute when the zone no longer matches (T2.9).
       return biodataWrite(req, reply, userId, (v) => repo.setAnchor(userId, req.body, v));
     },
   );
@@ -757,6 +765,61 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
       const after = await repo.profileState(userId);
       if (after) reply.header('etag', etagFor(after.version));
       return reply.status(204).send();
+    },
+  );
+
+  app.get(
+    '/me/commute-zone',
+    { onRequest: app.requireUser, schema: { response: { 200: CommuteZone } } },
+    async (req) => {
+      await liveProfile(req.user!.id);
+      const { anchor, zone, pending } = await repo.commuteZone(req.user!.id);
+      if (!anchor)
+        return {
+          status: 'none' as const,
+          zone: null,
+          approx: false,
+          travelMode: null,
+          maxCommuteMin: null,
+          computedAt: null,
+        };
+      const matches =
+        zone && zone.travelMode === anchor.travelMode && zone.maxMinutes === anchor.maxCommuteMin;
+      return {
+        status: matches && !pending ? ('ready' as const) : ('computing' as const),
+        zone: zone ? GeoMultiPolygon.parse(JSON.parse(zone.geojson)) : null,
+        approx: zone?.approx ?? false,
+        travelMode: anchor.travelMode,
+        maxCommuteMin: anchor.maxCommuteMin,
+        computedAt: zone ? zone.computedAt.toISOString() : null,
+      };
+    },
+  );
+
+  app.post(
+    '/commute/preview',
+    {
+      onRequest: app.requireUser,
+      config: {
+        rateLimit: {
+          bucket: 'commute_preview',
+          limit: RATE_LIMITS.commutePreview.limit,
+          windowMs: RATE_LIMITS.commutePreview.windowMs,
+        },
+      },
+      schema: { body: CommutePreviewRequest, response: { 200: CommutePreviewResponse } },
+    },
+    async (req) => {
+      await liveProfile(req.user!.id);
+      const { lat, lng } = req.body.location;
+      const b = LIMITS.ncrBounds;
+      if (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng)
+        throw invalid([
+          { path: 'body.location', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
+        ]);
+      if (!opts.commutePreview)
+        throw new ApiError('upstream.unavailable', { title: 'Commute previews are not available' });
+      return opts.commutePreview.preview(req.body);
     },
   );
 

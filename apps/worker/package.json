@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@flatrimony/db-types": "workspace:*",
+    "@flatrimony/routing": "workspace:*",
+    "@flatrimony/shared": "workspace:*",
     "@supabase/storage-js": "2.119.0",
     "kysely": "^0.29.8",
     "pg": "^8.23.1",

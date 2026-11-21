@@ -8,7 +8,7 @@ import { createDatabase } from './db.js';
 import { loadEnv, workerId, type WorkerEnv } from './env.js';
 import { createLogger, errorFields } from './log.js';
 import { MODES, runWorker, type Mode } from './runner.js';
-import { jobs, tasksFor } from './schedule.js';
+import { jobsFor, tasksFor } from './schedule.js';
 
 const mode = process.argv[2] as Mode;
 if (!MODES.includes(mode)) {
@@ -38,12 +38,14 @@ try {
   const { tasks, skipped } = tasksFor(env);
   if (mode === 'daily' && skipped.length > 0)
     log.warn('tasks skipped: not configured', { tasks: skipped.join(',') });
+  if (mode === 'daily' && !env.ROUTING_URL)
+    log.warn('ROUTING_URL not set: commute zones use the radius approximation');
   const result = await runWorker({
     mode,
     db,
     log,
     workerId: id,
-    jobs,
+    jobs: jobsFor(env),
     tasks,
     budgetMs: env.WORKER_BUDGET_SECONDS * 1000,
     signal: abort.signal,

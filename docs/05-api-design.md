@@ -387,7 +387,7 @@ Clients compare `minSupportedAppVersion` and show a forced-update screen if need
 | PATCH | `/me` | user | Update display name, bio, languages, locale, intent, category, college fields, `isPaused` | FR-BIO-01, FR-BIO-08 |
 | PUT | `/me/preferences` | user | Replace preferences (incl. `areaIds`) | FR-BIO-02 |
 | PUT | `/me/anchor` | user | Set office/college anchor; enqueues `commute.compute` | FR-BIO-03 |
-| GET | `/me/commute-zone` | user | GeoJSON of the current zone + `computedAt` + `status: ready | computing` | FR-BIO-03 |
+| GET | `/me/commute-zone` | user | `{ status: none \| computing \| ready, zone: GeoJSON MultiPolygon \| null, approx, travelMode, maxCommuteMin, computedAt }` (T2.9) | FR-BIO-03 |
 | PUT | `/me/lifestyle` | user | Replace lifestyle answers | FR-BIO-04 |
 | PUT | `/me/importance` | user | Set importance per attribute | FR-BIO-05 |
 | PUT | `/me/scenario-answers` | user | Upsert answers `[{ questionId, optionId }]` | FR-BIO-06 |
@@ -449,7 +449,7 @@ Rules:
 - Order of checks: body schema, then `409 profile.incomplete` (before bootstrap) and `403 account.suspended`, then the checks below. The codes below are `errors[].code` values inside `422 validation.failed`.
 - Bodies are strict. `PUT` replaces the part: the area set, the optional lifestyle answers and the importance map are replaced, not merged. Scenario answers are upserted per question.
 - `preferences`: every `areaIds` entry must be an active area (`unknown_area`); the window may not have ended already on today's date in India (`in_the_past`); budget, lease and window rules as in §7.
-- `anchor`: the point must lie in Delhi NCR (`outside_ncr`; an approximate bounding box, `LIMITS.ncrBounds`, to be confirmed by the founder); `maxCommuteMin` defaults to 45. A new anchor drops the old commute zone; `commute.compute` is enqueued once the job runner exists (T1.14/T2.9).
+- `anchor`: the point must lie in Delhi NCR (`outside_ncr`; an approximate bounding box, `LIMITS.ncrBounds`, to be confirmed by the founder); `maxCommuteMin` defaults to 45. A new point, travel mode or time drops the old commute zone and enqueues `commute.compute` (one pending job per user; a waiting one is pulled forward with fresh attempts). `GET /me/commute-zone` then answers `computing` until the worker stores the zone (`ready`); `none` without an anchor. `approx: true` marks the radius approximation (metro/transit until a transit source is decided, ADR-0008, or routing unavailable).
 - `lifestyle`: the six core answers (bedtime, wake time, cleaning, smoking, pets, food) are required; times are `HH:mm`.
 - `scenario-answers`: `[{ questionId, optionId }]` (up to 50), each question once; unknown or inactive questions `unknown_question` (at `body.<i>.questionId`), options a question does not have `invalid_option` (at `body.<i>.optionId`).
 
@@ -510,7 +510,7 @@ Failure codes: `name_mismatch`, `underage`, `identity_in_use` (DigiLocker identi
 | Method | Path | Auth | Description | FR |
 | --- | --- | --- | --- | --- |
 | GET | `/areas?city=gurugram` | public | Area list (localised) | FR-BIO-02 |
-| POST | `/commute/preview` | user | `{ location, travelMode, maxCommuteMin }` → `{ zone: GeoJSON, approx: boolean }` (cached; may return a radius approximation while the precise zone computes) | FR-BIO-03 |
+| POST | `/commute/preview` | user | `{ location, travelMode, maxCommuteMin = 45 }` → `{ zone: GeoJSON MultiPolygon, approx }`. Routed by the routing service (4 s timeout); metro/transit, no road near the point, or routing slow/down give the radius approximation (`approx: true`). Cached per place (~100 m), mode and minutes for an hour (temporary routing failures are not cached). `outside_ncr` as for the anchor; 30 per user per minute (T2.9) | FR-BIO-03 |
 | GET | `/places/autocomplete?q=` | user | Proxy to Places autocomplete with session token; returns `[{ placeId, label }]` (keeps the API key server-side) | FR-BIO-03 |
 | GET | `/places/{placeId}` | user | `{ label, location }` | FR-BIO-03 |
 
