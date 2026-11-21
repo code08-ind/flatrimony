@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { LIMITS } from '@flatrimony/shared';
 import {
+  cachedIdToken,
+  COMMUTE_KIND,
+  commuteDedupeKey,
   COSTING,
   fetchIsochrone,
   googleIdToken,
   isochroneRequest,
+  nearZone,
   radiusZone,
   RoutingError,
   toMultiPolygon,
@@ -15,6 +21,7 @@ const polygon = [
     [77.0, 28.4],
     [77.2, 28.4],
     [77.2, 28.6],
+    [77.0, 28.6],
     [77.0, 28.4],
   ],
 ];
@@ -130,7 +137,7 @@ describe('routing service client', () => {
     expect(await call(answer(200, { features: [] }) as typeof fetch)).toBe(false);
     expect(
       await call((async () => new Response('not json', { status: 200 })) as typeof fetch),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('rejects polygons with impossible coordinates', () => {
@@ -174,5 +181,87 @@ describe('Google ID token (private Cloud Run)', () => {
     await expect(
       googleIdToken('x', (async () => new Response('', { status: 404 })) as typeof fetch),
     ).rejects.toThrow(RoutingError);
+  });
+});
+
+describe('cached ID tokens', () => {
+  it('reuses a token for 50 minutes per audience', async () => {
+    let clock = 0;
+    let calls = 0;
+    const token = cachedIdToken(
+      (async () => {
+        calls += 1;
+        return new Response(`t${calls}`);
+      }) as typeof fetch,
+      () => clock,
+    );
+    expect(await token('a')).toBe('t1');
+    expect(await token('a')).toBe('t1');
+    expect(await token('b')).toBe('t2');
+    clock = 51 * 60_000;
+    expect(await token('a')).toBe('t3');
+  });
+});
+
+describe('shared names and the routing image', () => {
+  it('one commute job per user', () => {
+    expect(COMMUTE_KIND).toBe('commute.compute');
+    expect(commuteDedupeKey('u1')).toBe('commute:u1');
+  });
+
+  it('the tiles cover exactly LIMITS.ncrBounds (the API refuses anchors outside it)', () => {
+    const dockerfile = readFileSync(
+      new URL('../../../apps/routing/Dockerfile', import.meta.url),
+      'utf8',
+    );
+    const b = LIMITS.ncrBounds;
+    expect(dockerfile).toContain(
+      `NCR_BBOX="${b.minLng.toFixed(1)},${b.minLat.toFixed(1)},${b.maxLng.toFixed(1)},${b.maxLat.toFixed(1)}"`,
+    );
+  });
+});
+
+describe('a routed zone must reach the pin (Valhalla snaps far-away points)', () => {
+  const square = (lng: number, lat: number, d: number) => ({
+    type: 'MultiPolygon' as const,
+    coordinates: [
+      [
+        [
+          [lng - d, lat - d],
+          [lng + d, lat - d],
+          [lng + d, lat + d],
+          [lng - d, lat + d],
+          [lng - d, lat - d],
+        ] as [number, number][],
+      ],
+    ],
+  });
+  it('inside, or within the tolerance of an edge', () => {
+    expect(nearZone(square(77.089, 28.495, 0.05), cyberCity, 300)).toBe(true);
+    // ~200 m east of a zone whose east edge is at 77.087: within 300 m.
+    expect(nearZone(square(77.077, 28.495, 0.01), cyberCity, 300)).toBe(true);
+    // ~1 km away: not near.
+    expect(nearZone(square(77.069, 28.495, 0.01), cyberCity, 300)).toBe(false);
+  });
+  it('a zone drawn from somewhere else is "no road near the point": final, not retried', async () => {
+    const far = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: square(77.5, 29.9, 0.002).coordinates[0] },
+        },
+      ],
+    };
+    const err = await fetchIsochrone({
+      baseUrl: 'http://r',
+      location: cyberCity,
+      mode: 'car',
+      minutes: 30,
+      fetchImpl: (async () => new Response(JSON.stringify(far))) as typeof fetch,
+    }).catch((e: RoutingError) => e);
+    expect(err).toBeInstanceOf(RoutingError);
+    expect((err as RoutingError).retryable).toBe(false);
+    expect((err as RoutingError).message).toBe('no road near the point');
   });
 });

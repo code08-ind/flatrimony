@@ -6,6 +6,10 @@
  */
 import type { LatLng, TravelMode } from '@flatrimony/shared';
 
+/** The worker job that draws a user's commute zone, and its dedupe key (one per user). */
+export const COMMUTE_KIND = 'commute.compute';
+export const commuteDedupeKey = (userId: string) => `commute:${userId}`;
+
 /** GeoJSON MultiPolygon in [lng, lat] order (what PostGIS `ST_GeomFromGeoJSON` reads). */
 export interface MultiPolygon {
   type: 'MultiPolygon';
@@ -64,7 +68,10 @@ export function radiusZone(
 
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
-/** A routing failure. `retryable` (timeout, 5xx, 429): try later; otherwise (no road near the point, an unrouted mode): use the approximation. */
+/**
+ * A routing failure. `retryable` (timeout, 5xx, 429, a non-JSON answer): try later; otherwise (no
+ * road near the point, an unrouted mode, an unusable shape): use the approximation.
+ */
 export class RoutingError extends Error {
   constructor(
     message: string,
@@ -84,10 +91,42 @@ export function isochroneRequest(location: LatLng, mode: TravelMode, minutes: nu
     costing,
     contours: [{ time: minutes }],
     polygons: true,
-    // Smooth small holes and simplify (metres) so stored zones stay small.
+    // Smooth small holes and simplify (metres): a 90-minute car zone stays under ~90 KB of JSON.
     denoise: 0.5,
-    generalize: 50,
+    generalize: 120,
   };
+}
+
+/** A routed zone must contain the pin or come this close to it (metres). */
+export const NEAR_PIN_M = 300;
+
+const M_PER_DEG_LAT = 110_574;
+
+/** True when `p` is inside the zone (outer rings) or within `toleranceM` of one of its edges. */
+export function nearZone(zone: MultiPolygon, p: LatLng, toleranceM: number): boolean {
+  const mPerDegLng = 111_320 * Math.cos((p.lat * Math.PI) / 180);
+  // Local metres around the pin.
+  const xy = ([lng, lat]: [number, number]) => [
+    (lng - p.lng) * mPerDegLng,
+    (lat - p.lat) * M_PER_DEG_LAT,
+  ];
+  for (const polygon of zone.coordinates) {
+    const ring = polygon[0]!.map(xy);
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i]!;
+      const [xj, yj] = ring[j]!;
+      if (yi! > 0 !== yj! > 0 && 0 < ((xj! - xi!) * (0 - yi!)) / (yj! - yi!) + xi!)
+        inside = !inside;
+      // Distance from the pin (origin) to segment i–j.
+      const dx = xj! - xi!;
+      const dy = yj! - yi!;
+      const t = Math.max(0, Math.min(1, -(xi! * dx + yi! * dy) / (dx * dx + dy * dy || 1)));
+      if (Math.hypot(xi! + t * dx, yi! + t * dy) <= toleranceM) return true;
+    }
+    if (inside) return true;
+  }
+  return false;
 }
 
 /** Calls the routing service and returns the zone. Throws RoutingError. */
@@ -122,7 +161,15 @@ export async function fetchIsochrone(opts: {
     const retryable = res.status >= 500 || res.status === 429;
     throw new RoutingError(`routing answered ${res.status}`, retryable);
   }
-  return toMultiPolygon(await res.json().catch(() => null));
+  const answer: unknown = await res.json().catch(() => undefined);
+  // A 200 that is not JSON is not Valhalla (e.g. a placeholder before the first deploy): temporary.
+  if (answer === undefined) throw new RoutingError('routing answered with no JSON', true);
+  const zone = toMultiPolygon(answer);
+  // Valhalla snaps a point to a road even kilometres away and answers 200. A zone that does not
+  // reach the pin was drawn from somewhere else: treat it as "no road near the point".
+  if (!nearZone(zone, opts.location, NEAR_PIN_M))
+    throw new RoutingError('no road near the point', false);
+  return zone;
 }
 
 /** The zone from a Valhalla isochrone FeatureCollection (Polygon or MultiPolygon geometry). */
@@ -152,6 +199,24 @@ const isPolygon = (poly: unknown) =>
   Array.isArray(poly) &&
   poly.length > 0 &&
   poly.every((ring) => Array.isArray(ring) && ring.length >= 4 && ring.every(isPosition));
+
+/**
+ * `googleIdToken`, reused for 50 minutes (the tokens last an hour), so a busy caller does not ask
+ * the metadata server on every request.
+ */
+export function cachedIdToken(
+  fetchImpl: typeof fetch = fetch,
+  now: () => number = Date.now,
+): (audience: string) => Promise<string> {
+  const tokens = new Map<string, { token: string; until: number }>();
+  return async (audience) => {
+    const hit = tokens.get(audience);
+    if (hit && hit.until > now()) return hit.token;
+    const token = await googleIdToken(audience, fetchImpl);
+    tokens.set(audience, { token, until: now() + 50 * 60_000 });
+    return token;
+  };
+}
 
 /**
  * A Google-signed ID token for calling a private Cloud Run service (audience = its URL), from the

@@ -28,6 +28,7 @@ import {
 import type { ProfilePhotos, VerifiedGender } from '@flatrimony/db-types';
 import type { Selectable } from 'kysely';
 import type { Database } from '../../lib/db.js';
+import { COMMUTE_KIND, commuteDedupeKey } from '@flatrimony/routing';
 
 type ConsentPurpose = ConsentGrant['purpose'];
 export type LegalVersions = Partial<Record<ConsentPurpose, string>>;
@@ -709,20 +710,24 @@ export function pgMeRepository(db: Database): MeRepository {
           )
           .execute();
         // No zone that matches the anchor any more (or never one): draw it (T2.9). One pending job
-        // per user; a pending one is pulled forward with fresh attempts. A job already running
-        // checks the anchor again before it stores its zone.
+        // per user; a waiting or dead one is pulled forward with fresh attempts.
         const zone = await tx
           .selectFrom('commute_zones')
           .select('user_id')
           .where('user_id', '=', userId)
           .executeTakeFirst();
+        // A running job (its zone just stored, or not yet) runs once more when it finishes
+        // (apps/worker queue `complete`): `clock_timestamp()` is after its claim even when this
+        // write waited for its lock. Same statement as the worker's `requestRun`.
         if (!zone)
           await sql`
             insert into private.jobs (kind, payload, dedupe_key)
-            values ('commute.compute', ${JSON.stringify({ userId })}::jsonb, ${`commute:${userId}`})
+            values (${COMMUTE_KIND}, ${JSON.stringify({ userId })}::jsonb, ${commuteDedupeKey(userId)})
             on conflict (dedupe_key) do update
-              set run_after = now(), attempts = 0, last_error = null
-              where private.jobs.locked_at is null and private.jobs.done_at is null`.execute(tx);
+              set run_after = clock_timestamp(),
+                  attempts = case when private.jobs.locked_at is null then 0 else private.jobs.attempts end,
+                  last_error = case when private.jobs.locked_at is null then null else private.jobs.last_error end
+              where private.jobs.done_at is null`.execute(tx);
       });
     },
 
@@ -739,9 +744,9 @@ export function pgMeRepository(db: Database): MeRepository {
       }>`
         select a.travel_mode, a.max_commute_min,
                z.travel_mode as zone_mode, z.max_minutes as zone_minutes, z.source, z.computed_at,
-               extensions.st_asgeojson(z.zone, 6) as geojson,
+               extensions.st_asgeojson(z.zone, 5) as geojson,
                exists (select 1 from private.jobs j
-                        where j.dedupe_key = ${`commute:${userId}`}
+                        where j.dedupe_key = ${commuteDedupeKey(userId)}
                           and j.done_at is null and j.attempts < j.max_attempts) as pending
           from (select ${userId}::uuid as id) u
           left join public.anchors a on a.user_id = u.id

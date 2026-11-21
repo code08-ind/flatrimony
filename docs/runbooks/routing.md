@@ -13,9 +13,15 @@ reachable from an office or college within the user's maximum commute (FR-BIO-03
 
 When routing is not configured, is down, or finds no road near the point, the zone is a radius
 approximation (`source = 'fallback_radius'`, `approx: true` in the API) at the straight-line speeds
-in `packages/routing` (`FALLBACK_SPEED_KMH`: assumptions awaiting founder review). The worker
-stores the approximation at once, retries routing, and its daily `commute.refresh` redraws
-approximate road zones, zones older than 30 days and missing ones.
+in `packages/routing` (`FALLBACK_SPEED_KMH`: assumptions awaiting founder review). "No road near
+the point" is decided by us, not Valhalla: Valhalla snaps a point to a road even kilometres away
+and answers 200, so a routed zone that neither contains the pin nor comes within 300 m of it is
+replaced by the approximation. The worker stores the approximation and finishes; its daily
+`commute.refresh` redraws approximate road zones, zones older than 30 days and missing ones.
+
+**Known limit:** Valhalla has no traffic data, so road zones assume free-flowing roads and are
+large (45 min by car: 3,700–5,000 km²). Speed caps for NCR peak traffic are a founder decision
+(docs/07 T2.9).
 
 ## Data and licence
 

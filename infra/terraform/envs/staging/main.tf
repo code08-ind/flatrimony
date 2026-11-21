@@ -212,8 +212,10 @@ resource "google_cloud_run_v2_service" "routing" {
   ingress             = "INGRESS_TRAFFIC_ALL"
 
   template {
-    service_account                  = google_service_account.sa["routing"].email
-    max_instance_request_concurrency = 8
+    service_account = google_service_account.sa["routing"].email
+    # Two Valhalla threads (apps/routing): more queued requests would pass the API's 4 s preview
+    # timeout.
+    max_instance_request_concurrency = 4
     scaling {
       min_instance_count = 0
       max_instance_count = 2

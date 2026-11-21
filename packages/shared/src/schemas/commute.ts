@@ -16,9 +16,9 @@ export type GeoMultiPolygon = z.infer<typeof GeoMultiPolygon>;
 /**
  * `GET /v1/me/commute-zone` (FR-BIO-03; docs/05 §8.2):
  * - `none`: no office or college set (discovery uses areas);
- * - `computing`: the anchor changed and its zone is being drawn (`zone` may be the earlier one
- *   or an approximation, or null);
- * - `ready`: the zone matches the anchor.
+ * - `computing`: no zone fits the anchor yet (it changed, or the zone is being drawn); `zone` is
+ *   null or the earlier one;
+ * - `ready`: the zone matches the anchor (it stays `ready` while a refresh redraws it).
  * `approx` is true for the radius approximation (metro/transit, or routing unavailable).
  */
 export const CommuteZone = z.object({

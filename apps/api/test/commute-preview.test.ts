@@ -14,6 +14,7 @@ const routed = {
             [77.0, 28.4],
             [77.2, 28.4],
             [77.2, 28.6],
+            [77.0, 28.6],
             [77.0, 28.4],
           ],
         ],
@@ -89,28 +90,50 @@ describe('commute preview (T2.9)', () => {
     expect(r.calls).toHaveLength(1);
   });
 
-  it('the cache forgets old entries (time and size)', async () => {
+  it('the cache forgets old entries by time and by size, least recently used first', async () => {
     let clock = 0;
     const r = routing();
+    // Room for two routed answers (JSON bytes).
+    const one = JSON.stringify({
+      zone: { type: 'MultiPolygon', coordinates: [routed.features[0]!.geometry.coordinates] },
+      approx: false,
+    }).length;
     const p = createCommutePreview({
       routingUrl: 'http://routing.test',
       fetchImpl: r.fetchImpl,
       now: () => clock,
       cacheTtlMs: 1_000,
-      cacheSize: 2,
+      cacheMaxBytes: 2 * one + 10,
     });
     const at = (lat: number) => ({
       location: { lat, lng: 77.1 },
       travelMode: 'car' as const,
       maxCommuteMin: 45,
     });
-    await p.preview(at(28.4));
+    await p.preview(at(28.4)); // call 1
     clock = 2_000;
-    await p.preview(at(28.4)); // expired
-    await p.preview(at(28.5));
-    await p.preview(at(28.6)); // evicts 28.4
-    await p.preview(at(28.4));
+    await p.preview(at(28.4)); // expired: call 2
+    await p.preview(at(28.5)); // call 3
+    await p.preview(at(28.4)); // hit: 28.4 is now the most recent
+    await p.preview(at(28.6)); // call 4: evicts 28.5, the least recently used
+    await p.preview(at(28.4)); // still cached
+    await p.preview(at(28.5)); // call 5
     expect(r.calls).toHaveLength(5);
+  });
+
+  it('a 200 that is not JSON (not Valhalla) is a temporary failure: approximated, not cached', async () => {
+    let calls = 0;
+    const p = createCommutePreview({
+      routingUrl: 'http://routing.test',
+      fetchImpl: (async () => {
+        calls += 1;
+        return new Response('<html>placeholder</html>', { status: 200 });
+      }) as typeof fetch,
+    });
+    const req = { location: cyberCity, travelMode: 'car' as const, maxCommuteMin: 45 };
+    expect((await p.preview(req)).approx).toBe(true);
+    await p.preview(req);
+    expect(calls).toBe(2);
   });
 
   it('sends a Google ID token when configured (private Cloud Run)', async () => {

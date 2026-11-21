@@ -4,7 +4,7 @@
  * need them: `commute.compute` (T2.9) is here; `media.process` (photo processing off the request
  * path), listing expiry (T3.10), reminders and purges (M5/M6) come with theirs.
  */
-import { googleIdToken } from '@flatrimony/routing';
+import { cachedIdToken } from '@flatrimony/routing';
 import type { WorkerEnv } from './env.js';
 import { COMMUTE_KIND, commuteJob, commuteRefresh, type RoutingConfig } from './jobs/commute.js';
 import type { AnyJobDefinition, Task } from './runner.js';
@@ -15,7 +15,7 @@ import { photoUploadSweep } from './tasks/photo-uploads.js';
 export function routingFor(env: WorkerEnv): RoutingConfig {
   return {
     url: env.ROUTING_URL,
-    ...(env.APP_ENV === 'local' ? {} : { token: (audience: string) => googleIdToken(audience) }),
+    ...(env.APP_ENV === 'local' ? {} : { token: cachedIdToken() }),
   };
 }
 

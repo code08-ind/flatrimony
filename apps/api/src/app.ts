@@ -30,7 +30,7 @@ import { inMemorySystemRepository, type SystemRepository } from './modules/syste
 import { meRoutes } from './modules/me/routes.js';
 import type { MeRepository } from './modules/me/repository.js';
 import type { PhotoStorage } from './lib/photo-storage.js';
-import { googleIdToken } from '@flatrimony/routing';
+import { cachedIdToken } from '@flatrimony/routing';
 import { createCommutePreview, type CommutePreview } from './lib/commute-preview.js';
 
 export interface BuildOptions {
@@ -184,12 +184,10 @@ export async function buildApp({
         createCommutePreview({
           routingUrl: env.ROUTING_URL,
           // The routing service is private on Cloud Run: call it with a Google ID token.
-          ...(env.APP_ENV === 'local'
-            ? {}
-            : { token: (audience: string) => googleIdToken(audience) }),
+          ...(env.APP_ENV === 'local' ? {} : { token: cachedIdToken() }),
           onRoutingError: (err) =>
             app.log.warn(
-              { err: err.name, retryable: err.retryable },
+              { err: err.message, retryable: err.retryable },
               'routing failed; approximating',
             ),
         }),

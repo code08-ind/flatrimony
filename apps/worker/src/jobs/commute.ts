@@ -3,7 +3,7 @@
  * anchor (office or college, travel mode, maximum minutes) and stores it in `public.commute_zones`.
  * Road modes come from the routing service (Valhalla); metro/transit, a point with no road nearby
  * and a missing routing service give the radius approximation (`fallback_radius`). When routing is
- * temporarily down the approximation is stored at once and the job fails to try again later.
+ * temporarily down the approximation is stored and the daily `commute.refresh` redraws it.
  * The zone is stored only if the anchor still matches what was drawn (the user may have moved it
  * meanwhile); otherwise the new anchor is drawn.
  */
@@ -11,6 +11,8 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { TravelMode } from '@flatrimony/shared';
 import {
+  COMMUTE_KIND,
+  commuteDedupeKey,
   COSTING,
   fetchIsochrone,
   radiusZone,
@@ -21,8 +23,7 @@ import type { Database } from '../db.js';
 import { enqueue } from '../queue.js';
 import { defineJob, type Task } from '../runner.js';
 
-export const COMMUTE_KIND = 'commute.compute';
-export const commuteDedupeKey = (userId: string) => `commute:${userId}`;
+export { COMMUTE_KIND, commuteDedupeKey };
 /** Zones older than this are redrawn (docs/04 §11 daily tasks: fresh OpenStreetMap data). */
 export const COMMUTE_ZONE_MAX_AGE_DAYS = 30;
 
@@ -61,7 +62,8 @@ const same = (a: AnchorRow, b: AnchorRow) =>
 
 /**
  * Stores the zone if the anchor still matches `drawn`. Returns 'stored', 'gone' (no anchor any
- * more) or 'moved' (the anchor changed while drawing).
+ * more), 'moved' (the anchor changed while drawing) or 'empty' (the shape has no area once made
+ * valid, e.g. a degenerate polygon: nothing stored).
  */
 async function store(
   db: Database,
@@ -69,7 +71,7 @@ async function store(
   drawn: AnchorRow,
   zone: MultiPolygon,
   source: 'valhalla' | 'fallback_radius',
-): Promise<'stored' | 'gone' | 'moved'> {
+): Promise<'stored' | 'gone' | 'moved' | 'empty'> {
   return db.transaction().execute(async (tx) => {
     // Lock the anchor row: a concurrent PUT /me/anchor waits until the zone is stored or not.
     const now = (await tx
@@ -85,10 +87,18 @@ async function store(
       .executeTakeFirst()) as AnchorRow | undefined;
     if (!now) return 'gone';
     if (!same(now, drawn)) return 'moved';
+    const { rows } = await sql<{ geom: string | null }>`
+      select case when extensions.st_isempty(g) or extensions.st_area(g) = 0 then null else g::text end as geom
+        from (select extensions.st_multi(extensions.st_collectionextract(extensions.st_makevalid(
+                extensions.st_setsrid(extensions.st_geomfromgeojson(${JSON.stringify(zone)}), 4326)), 3)) as g) s`.execute(
+      tx,
+    );
+    const geom = rows[0]?.geom;
+    if (!geom) return 'empty';
     const row = {
       travel_mode: drawn.travel_mode,
       max_minutes: drawn.max_commute_min,
-      zone: sql<string>`extensions.st_multi(extensions.st_collectionextract(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(${JSON.stringify(zone)}), 4326)), 3))::extensions.geography`,
+      zone: sql<string>`${geom}::extensions.geometry::extensions.geography`,
       source,
       computed_at: sql<Date>`now()`,
     };
@@ -106,7 +116,7 @@ async function draw(
   anchor: AnchorRow,
   routing: RoutingConfig,
   signal: AbortSignal,
-): Promise<{ zone: MultiPolygon; source: 'valhalla' | 'fallback_radius'; retry?: RoutingError }> {
+): Promise<{ zone: MultiPolygon; source: 'valhalla' | 'fallback_radius'; failure?: RoutingError }> {
   const location = { lat: Number(anchor.lat), lng: Number(anchor.lng) };
   const approx = () => radiusZone(location, anchor.travel_mode, anchor.max_commute_min);
   if (!routing.url || !COSTING[anchor.travel_mode])
@@ -125,9 +135,10 @@ async function draw(
     return { zone, source: 'valhalla' };
   } catch (err) {
     const e = err instanceof RoutingError ? err : new RoutingError((err as Error).message, true);
-    // A final answer (no road near the point): the approximation is the zone. A temporary one:
-    // the approximation for now, and the job is retried.
-    return { zone: approx(), source: 'fallback_radius', ...(e.retryable ? { retry: e } : {}) };
+    // The approximation either way. A final answer (no road near the point) keeps it; after a
+    // temporary failure (routing down) the daily refresh redraws road-mode approximations, so the
+    // job does not retry (a long outage would leave dead jobs blocking the refresh).
+    return { zone: approx(), source: 'fallback_radius', failure: e };
   }
 }
 
@@ -139,8 +150,15 @@ export function commuteJob(routing: RoutingConfig) {
       for (let round = 0; round < 3; round += 1) {
         const anchor = await loadAnchor(db, userId);
         if (!anchor) return; // anchor removed: nothing to draw
-        const { zone, source, retry } = await draw(anchor, routing, signal);
-        const outcome = await store(db, userId, anchor, zone, source);
+        const drawn = await draw(anchor, routing, signal);
+        let { zone, source } = drawn;
+        let outcome = await store(db, userId, anchor, zone, source);
+        if (outcome === 'empty') {
+          const at = { lat: Number(anchor.lat), lng: Number(anchor.lng) };
+          zone = radiusZone(at, anchor.travel_mode, anchor.max_commute_min);
+          source = 'fallback_radius';
+          outcome = await store(db, userId, anchor, zone, source);
+        }
         if (outcome === 'moved') continue;
         if (outcome === 'stored')
           log.info('commute zone stored', {
@@ -148,8 +166,10 @@ export function commuteJob(routing: RoutingConfig) {
             source,
             travelMode: anchor.travel_mode,
             minutes: anchor.max_commute_min,
+            ...(drawn.failure
+              ? { routing: drawn.failure.message, retryable: drawn.failure.retryable }
+              : {}),
           });
-        if (retry) throw retry; // stored the approximation; try routing again later
         return;
       }
       throw new Error('anchor kept changing; trying again later');

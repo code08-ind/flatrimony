@@ -162,7 +162,7 @@ flowchart TB
 | Realtime | Supabase Realtime (Postgres changes + broadcast) | — | Chat delivery and status changes without our own websocket server. |
 | Object storage | Supabase Storage (photos, move-in log photos) · Cloudflare R2 (videos) | — | Image transformations for photos; zero egress fees for video. |
 | Background jobs | Postgres job table (`private.jobs`, `SELECT … FOR UPDATE SKIP LOCKED`) processed by a Cloud Run Job triggered by Cloud Scheduler | — | No Redis; scales to zero. |
-| Routing / commute | Valhalla (isochrones) container on Cloud Run with NCR OpenStreetMap extract baked in | Pin image version | Free commute zones; called only by the worker. |
+| Routing / commute | Valhalla (isochrones) container on Cloud Run with NCR OpenStreetMap extract baked in | Pin image version | Free commute zones; called by the worker (`commute.compute`) and the API (`POST /commute/preview`). |
 | Push | Expo Push Notifications (FCM underneath) | — | One API for Android and later iOS. |
 | Payments | Razorpay (web; Android subject to Play billing policy) | — | UPI, cards; Indian standard. |
 | ID verification | DigiLocker via a licensed provider (e.g., Cashfree) | — | No company registration needed to start. |

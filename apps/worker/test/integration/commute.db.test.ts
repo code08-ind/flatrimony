@@ -148,22 +148,82 @@ describe.skipIf(!URL)('commute.compute (Postgres)', () => {
     expect(zone!.area_km2).toBeLessThan(720);
   });
 
-  it('no road near the point (400): the approximation is the zone; routing down (503): approximation now, retried', async () => {
+  it('no road near the point (400) or routing down (503): the approximation, and the job is done', async () => {
     const lonely = await userWithAnchor('car', 30);
     expect((await compute(lonely, routed({ error_code: 171 }, 400).fetchImpl)).jobsDone).toBe(1);
     expect((await zoneOf(lonely))!.source).toBe('fallback_radius');
 
+    // Routing down: no retries that could die and block the refresh; commute.refresh redraws it.
     const down = await userWithAnchor('car', 30);
-    const result = await compute(down, routed({}, 503).fetchImpl);
-    expect(result).toMatchObject({ jobsDone: 0, jobsFailed: 1 });
+    expect((await compute(down, routed({}, 503).fetchImpl)).jobsDone).toBe(1);
     expect((await zoneOf(down))!.source).toBe('fallback_radius');
-    const job = await db
+    const pending = await db
       .selectFrom('private.jobs')
-      .select(['attempts', 'done_at', 'last_error'])
+      .select('id')
       .where('dedupe_key', '=', `commute:${down}`)
-      .executeTakeFirstOrThrow();
-    expect(job).toMatchObject({ attempts: 1, done_at: null });
-    expect(job.last_error).toContain('503');
+      .execute();
+    expect(pending).toEqual([]);
+  });
+
+  it('a zone that does not reach the pin (Valhalla snapped far away): the approximation', async () => {
+    const id = await userWithAnchor('car', 30);
+    expect((await compute(id, routed(square(77.6, 29.4)).fetchImpl)).jobsDone).toBe(1);
+    expect((await zoneOf(id))!).toMatchObject({ source: 'fallback_radius', contains: true });
+  });
+
+  it('a degenerate routed shape (no area) is never stored; the approximation is', async () => {
+    const id = await userWithAnchor('car', 30);
+    const flat = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [77.0, 28.495],
+                [77.089, 28.495],
+                [77.2, 28.495],
+                [77.0, 28.495],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+    expect((await compute(id, routed(flat).fetchImpl)).jobsDone).toBe(1);
+    expect((await zoneOf(id))!.source).toBe('fallback_radius');
+  });
+
+  it('a re-run request while the job runs (PUT /me/anchor): it runs once more instead of finishing', async () => {
+    const id = await userWithAnchor('car', 30);
+    let calls = 0;
+    const fetchImpl = (async (_u: string, init: RequestInit) => {
+      calls += 1;
+      if (calls === 1)
+        // The anchor changes and the API asks for a run while this job is still locked.
+        await sql`insert into private.jobs (kind, payload, dedupe_key)
+          values ('commute.compute', ${JSON.stringify({ userId: id })}::jsonb, ${`commute:${id}`})
+          on conflict (dedupe_key) do update set run_after = clock_timestamp(),
+            attempts = case when private.jobs.locked_at is null then 0 else private.jobs.attempts end
+          where private.jobs.done_at is null`.execute(db);
+      const req = JSON.parse(String(init.body)) as { locations: { lat: number; lon: number }[] };
+      return new Response(JSON.stringify(square(req.locations[0]!.lon, req.locations[0]!.lat)));
+    }) as typeof fetch;
+    // The finished job goes back to the queue (ready at once), so the same run draws it again.
+    const result = await compute(id, fetchImpl);
+    expect(result.jobsDone).toBe(2);
+    expect(calls).toBe(2);
+    const left = await db
+      .selectFrom('private.jobs')
+      .select(['done_at', 'dedupe_key'])
+      .where('payload', '@>', JSON.stringify({ userId: id }))
+      .where('kind', '=', 'commute.compute')
+      .execute();
+    expect(left).toHaveLength(1);
+    expect(left[0]!.done_at).not.toBeNull(); // finished after the second run
+    expect(left[0]!.dedupe_key).toBeNull();
   });
 
   it('an anchor moved while drawing: the new anchor is drawn, never the old one', async () => {
@@ -193,7 +253,7 @@ describe.skipIf(!URL)('commute.compute (Postgres)', () => {
   it('the daily refresh enqueues missing, mismatched, old and approximate road zones once', async () => {
     const missing = await userWithAnchor('walk', 20);
     const approxRoad = await userWithAnchor('car', 30);
-    await compute(approxRoad, routed({}, 503).fetchImpl); // approximation stored, job retrying
+    await compute(approxRoad, routed({}, 503).fetchImpl); // routing down: approximation stored
     const fresh = await userWithAnchor('car', 30);
     await compute(fresh, routed(square(77.089, 28.495)).fetchImpl);
     const old = await userWithAnchor('car', 30);
@@ -215,7 +275,7 @@ describe.skipIf(!URL)('commute.compute (Postgres)', () => {
     await commuteRefresh(10_000).run({ db, log, signal: new AbortController().signal });
     expect(await pending(missing)).toBe(1);
     expect(await pending(old)).toBe(1);
-    expect(await pending(approxRoad)).toBe(1); // its retrying job, not a second one
+    expect(await pending(approxRoad)).toBe(1); // a road zone still approximate: redrawn
     expect(await pending(fresh)).toBe(0);
     expect(await pending(transit)).toBe(0);
   });

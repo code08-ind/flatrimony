@@ -52,7 +52,7 @@ import type { BansRepository } from '../auth/bans.js';
 import { BANNED_MESSAGE } from '../auth/otp-guard.js';
 import { ImageError, processPhoto, withImageSlot } from '../../lib/image.js';
 import { UPLOAD_URL_TTL_SECONDS, type PhotoStorage } from '../../lib/photo-storage.js';
-import type { CommutePreview } from '../../lib/commute-preview.js';
+import { createCommutePreview, type CommutePreview } from '../../lib/commute-preview.js';
 import type { LegalVersions, MeRepository, ProfileState, ProfileUpdate } from './repository.js';
 
 export interface MeRoutesOptions {
@@ -178,6 +178,8 @@ export function consentErrors(
 export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts) => {
   const now = opts.now ?? Date.now;
   const { repo } = opts;
+  /** Without a configured preview (tests), previews are the radius approximation. */
+  const commutePreview = opts.commutePreview ?? createCommutePreview({});
 
   async function currentVersions(): Promise<LegalVersions> {
     const versions = await repo.legalVersions();
@@ -773,7 +775,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
     { onRequest: app.requireUser, schema: { response: { 200: CommuteZone } } },
     async (req) => {
       await liveProfile(req.user!.id);
-      const { anchor, zone, pending } = await repo.commuteZone(req.user!.id);
+      const { anchor, zone } = await repo.commuteZone(req.user!.id);
       if (!anchor)
         return {
           status: 'none' as const,
@@ -786,8 +788,11 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
       const matches =
         zone && zone.travelMode === anchor.travelMode && zone.maxMinutes === anchor.maxCommuteMin;
       return {
-        status: matches && !pending ? ('ready' as const) : ('computing' as const),
-        zone: zone ? GeoMultiPolygon.parse(JSON.parse(zone.geojson)) : null,
+        // A redraw of a zone that still matches (30-day refresh, a routed zone replacing the
+        // approximation) keeps it `ready`; `computing` means no zone fits the anchor yet.
+        status: matches ? ('ready' as const) : ('computing' as const),
+        // A stored shape that is not a usable MultiPolygon is reported as no zone, never a 500.
+        zone: zone ? (GeoMultiPolygon.safeParse(JSON.parse(zone.geojson)).data ?? null) : null,
         approx: zone?.approx ?? false,
         travelMode: anchor.travelMode,
         maxCommuteMin: anchor.maxCommuteMin,
@@ -817,9 +822,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
         throw invalid([
           { path: 'body.location', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
         ]);
-      if (!opts.commutePreview)
-        throw new ApiError('upstream.unavailable', { title: 'Commute previews are not available' });
-      return opts.commutePreview.preview(req.body);
+      return commutePreview.preview(req.body);
     },
   );
 

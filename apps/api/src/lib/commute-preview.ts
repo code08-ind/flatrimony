@@ -19,15 +19,29 @@ export function createCommutePreview(opts: {
   fetchImpl?: typeof fetch;
   /** The picker waits for this, at most. */
   timeoutMs?: number;
-  cacheSize?: number;
+  /**
+   * Cache budget in bytes of JSON (a 90-minute car zone is ~150 KB): the API has 512 MiB, so the
+   * default keeps previews to ~16 MB.
+   */
+  cacheMaxBytes?: number;
   cacheTtlMs?: number;
   now?: () => number;
   onRoutingError?: (err: RoutingError) => void;
 }): CommutePreview {
   const now = opts.now ?? Date.now;
   const ttl = opts.cacheTtlMs ?? 60 * 60_000;
-  const max = opts.cacheSize ?? 1_000;
-  const cache = new Map<string, { at: number; value: CommutePreviewResponse }>();
+  const maxBytes = opts.cacheMaxBytes ?? 16 * 1024 * 1024;
+  // Least recently used first (a Map keeps insertion order; a hit is moved to the end). Entries are
+  // kept as JSON text: a parsed zone takes about three times as much memory.
+  const cache = new Map<string, { at: number; json: string }>();
+  let bytes = 0;
+  const drop = (key: string) => {
+    const old = cache.get(key);
+    if (old) {
+      bytes -= old.json.length;
+      cache.delete(key);
+    }
+  };
 
   return {
     async preview(req) {
@@ -38,7 +52,12 @@ export function createCommutePreview(opts: {
         req.maxCommuteMin,
       ].join('|');
       const hit = cache.get(key);
-      if (hit && now() - hit.at < ttl) return hit.value;
+      if (hit && now() - hit.at < ttl) {
+        cache.delete(key);
+        cache.set(key, hit);
+        return JSON.parse(hit.json) as CommutePreviewResponse;
+      }
+      drop(key);
 
       let value: CommutePreviewResponse | undefined;
       let cacheable = true;
@@ -66,8 +85,12 @@ export function createCommutePreview(opts: {
         approx: true,
       };
       if (cacheable) {
-        if (cache.size >= max) cache.delete(cache.keys().next().value!); // oldest first
-        cache.set(key, { at: now(), value });
+        const json = JSON.stringify(value);
+        if (json.length <= maxBytes) {
+          while (bytes + json.length > maxBytes && cache.size > 0) drop(cache.keys().next().value!);
+          cache.set(key, { at: now(), json });
+          bytes += json.length;
+        }
       }
       return value;
     },
