@@ -45,3 +45,9 @@ variable "secret_ids" {
     "SEND_SMS_HOOK_SECRETS",
   ]
 }
+
+variable "supabase_url" {
+  description = "Supabase project URL (https://<ref>.supabase.co) for the worker's Storage tasks; empty skips them."
+  type        = string
+  default     = ""
+}

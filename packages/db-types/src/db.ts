@@ -188,6 +188,21 @@ export interface PrivateIdentityRecords {
   verified_name_enc: Buffer;
 }
 
+export interface PrivateJobs {
+  attempts: Generated<number>;
+  created_at: Generated<Timestamp>;
+  dedupe_key: string | null;
+  done_at: Timestamp | null;
+  id: Generated<Int8>;
+  kind: string;
+  last_error: string | null;
+  locked_at: Timestamp | null;
+  locked_by: string | null;
+  max_attempts: Generated<number>;
+  payload: Generated<Json>;
+  run_after: Generated<Timestamp>;
+}
+
 export interface PrivateUserContact {
   phone_hash: Buffer;
   updated_at: Generated<Timestamp>;
@@ -326,6 +341,7 @@ export interface DB {
   'private.banned_identities': PrivateBannedIdentities;
   'private.email_verifications': PrivateEmailVerifications;
   'private.identity_records': PrivateIdentityRecords;
+  'private.jobs': PrivateJobs;
   'private.user_contact': PrivateUserContact;
   profile_photos: ProfilePhotos;
   profiles: Profiles;

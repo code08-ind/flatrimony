@@ -1,0 +1,33 @@
+{
+  "name": "@flatrimony/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Flatrimony background worker: job queue runner and scheduled tasks (Cloud Run Job)",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "tick": "node --env-file-if-exists=.env.local dist/main.js tick",
+    "daily": "node --env-file-if-exists=.env.local dist/main.js daily",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --coverage --exclude \"test/integration/**\"",
+    "test:integration": "vitest run test/integration"
+  },
+  "dependencies": {
+    "@flatrimony/db-types": "workspace:*",
+    "@supabase/storage-js": "2.119.0",
+    "kysely": "^0.29.8",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@flatrimony/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^5.1.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

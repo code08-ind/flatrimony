@@ -204,6 +204,37 @@ resource "google_cloud_run_v2_job" "worker" {
           name  = "APP_ENV"
           value = "staging"
         }
+        env {
+          name  = "NODE_ENV"
+          value = "production"
+        }
+        # Direct connection (not the pooler): jobs may hold a transaction (docs/03 §5.2).
+        env {
+          name = "DATABASE_URL_DIRECT"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.secrets["DATABASE_URL_DIRECT"].secret_id
+              version = "latest"
+            }
+          }
+        }
+        # Storage tasks (the photo upload sweep); skipped by the worker when either is missing.
+        dynamic "env" {
+          for_each = var.supabase_url != "" ? [var.supabase_url] : []
+          content {
+            name  = "SUPABASE_URL"
+            value = env.value
+          }
+        }
+        env {
+          name = "SUPABASE_SERVICE_ROLE_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.secrets["SUPABASE_SERVICE_ROLE_KEY"].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
     }
   }
@@ -212,7 +243,7 @@ resource "google_cloud_run_v2_job" "worker" {
     ignore_changes = [template[0].template[0].containers[0].image, client, client_version]
   }
 
-  depends_on = [google_project_service.apis]
+  depends_on = [google_project_service.apis, google_secret_manager_secret_iam_member.runtime_access]
 }
 
 resource "google_cloud_run_v2_job_iam_member" "worker_invoker" {

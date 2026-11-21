@@ -79,6 +79,15 @@ if (serviceRoleKey)
       SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
     }),
   );
+// The worker (apps/worker): direct database connection, and Storage for the upload sweep.
+const workerEnv = join(root, 'apps/worker/.env.local');
+const w = upsert(workerEnv, {
+  APP_ENV: 'local',
+  DATABASE_URL_DIRECT: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
+  ...(serviceRoleKey
+    ? { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey }
+    : {}),
+});
 const mobileEnv = join(root, 'apps/mobile/.env.local');
 const c = upsert(mobileEnv, {
   EXPO_PUBLIC_API_URL: 'http://localhost:8080',
@@ -89,3 +98,4 @@ const c = upsert(mobileEnv, {
 console.log(`supabase/.env: ${a.length ? `added ${a.join(', ')}` : 'unchanged'}`);
 console.log(`apps/api/.env.local: ${b.length ? `added ${b.join(', ')}` : 'unchanged'}`);
 console.log(`apps/mobile/.env.local: ${c.length ? `added ${c.join(', ')}` : 'unchanged'}`);
+console.log(`apps/worker/.env.local: ${w.length ? `added ${w.join(', ')}` : 'unchanged'}`);
