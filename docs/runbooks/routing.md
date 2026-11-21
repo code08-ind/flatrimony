@@ -6,8 +6,8 @@ reachable from an office or college within the user's maximum commute (FR-BIO-03
 
 | Travel mode | Source |
 | --- | --- |
-| `car` | Valhalla `auto` |
-| `two_wheeler` | Valhalla `motorcycle` |
+| `car` | Valhalla `auto`, top speed 30 km/h |
+| `two_wheeler` | Valhalla `motorcycle`, top speed 30 km/h |
 | `walk` | Valhalla `pedestrian` |
 | `metro_transit` | Radius approximation until a transit data source is decided (ADR-0008, founder) |
 
@@ -19,9 +19,11 @@ and answers 200, so a routed zone that neither contains the pin nor comes within
 replaced by the approximation. The worker stores the approximation and finishes; its daily
 `commute.refresh` redraws approximate road zones, zones older than 30 days and missing ones.
 
-**Known limit:** Valhalla has no traffic data, so road zones assume free-flowing roads and are
-large (45 min by car: 3,700–5,000 km²). Speed caps for NCR peak traffic are a founder decision
-(docs/07 T2.9).
+**Traffic:** Valhalla has no traffic data. Car and two-wheeler zones are therefore capped at
+30 km/h (`ROAD_TOP_SPEED_KMH` in `packages/routing`, founder decision 2026-11-22): from Cyber City,
+45 min by car ≈ 710 km² (~19 km), 30 min ≈ 290 km², 90 min ≈ 3,300 km². Uncapped, 45 min reached
+~53 km. Changing the cap changes every new zone; existing zones are redrawn by the 30-day refresh
+(or enqueue `commute.compute` for all anchors to redraw at once).
 
 ## Data and licence
 

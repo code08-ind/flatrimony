@@ -11,6 +11,7 @@ import {
   isochroneRequest,
   nearZone,
   radiusZone,
+  ROAD_TOP_SPEED_KMH,
   RoutingError,
   toMultiPolygon,
 } from './index.js';
@@ -57,6 +58,17 @@ describe('travel modes (ADR-0008)', () => {
       contours: [{ time: 30 }],
       polygons: true,
     });
+  });
+
+  it('caps road modes at 30 km/h for NCR traffic (founder decision); walking is not capped', () => {
+    expect(ROAD_TOP_SPEED_KMH).toBe(30);
+    expect(isochroneRequest(cyberCity, 'car', 45).costing_options).toEqual({
+      auto: { top_speed: 30 },
+    });
+    expect(isochroneRequest(cyberCity, 'two_wheeler', 45).costing_options).toEqual({
+      motorcycle: { top_speed: 30 },
+    });
+    expect(isochroneRequest(cyberCity, 'walk', 20)).not.toHaveProperty('costing_options');
   });
 });
 
