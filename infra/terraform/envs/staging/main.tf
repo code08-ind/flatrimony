@@ -117,9 +117,18 @@ resource "google_secret_manager_secret" "secrets" {
   depends_on = [google_project_service.apis]
 }
 
+locals {
+  # Least privilege (docs/03 §4): the worker reads only the secrets it uses.
+  worker_secret_ids = ["DATABASE_URL", "DATABASE_URL_DIRECT", "SUPABASE_SERVICE_ROLE_KEY"]
+  secret_access = concat(
+    [for id in var.secret_ids : [id, "api"]],
+    [for id in local.worker_secret_ids : [id, "worker"] if contains(var.secret_ids, id)],
+  )
+}
+
 resource "google_secret_manager_secret_iam_member" "runtime_access" {
   for_each = {
-    for pair in setproduct(var.secret_ids, ["api", "worker"]) : "${pair[0]}-${pair[1]}" => pair
+    for pair in local.secret_access : "${pair[0]}-${pair[1]}" => pair
   }
   secret_id = google_secret_manager_secret.secrets[each.value[0]].id
   role      = "roles/secretmanager.secretAccessor"
@@ -204,6 +213,37 @@ resource "google_cloud_run_v2_job" "worker" {
           name  = "APP_ENV"
           value = "staging"
         }
+        env {
+          name  = "NODE_ENV"
+          value = "production"
+        }
+        # Direct connection (not the pooler): jobs may hold a transaction (docs/03 §5.2).
+        env {
+          name = "DATABASE_URL_DIRECT"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.secrets["DATABASE_URL_DIRECT"].secret_id
+              version = "latest"
+            }
+          }
+        }
+        # Storage tasks (the photo upload sweep); skipped by the worker when either is missing.
+        dynamic "env" {
+          for_each = var.supabase_url != "" ? [var.supabase_url] : []
+          content {
+            name  = "SUPABASE_URL"
+            value = env.value
+          }
+        }
+        env {
+          name = "SUPABASE_SERVICE_ROLE_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.secrets["SUPABASE_SERVICE_ROLE_KEY"].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
     }
   }
@@ -212,13 +252,15 @@ resource "google_cloud_run_v2_job" "worker" {
     ignore_changes = [template[0].template[0].containers[0].image, client, client_version]
   }
 
-  depends_on = [google_project_service.apis]
+  depends_on = [google_project_service.apis, google_secret_manager_secret_iam_member.runtime_access]
 }
 
+# Cloud Scheduler starts the job as worker-sa with `containerOverrides.args` (tick/daily), which
+# needs run.jobs.runWithOverrides: roles/run.invoker alone answers 403.
 resource "google_cloud_run_v2_job_iam_member" "worker_invoker" {
   name     = google_cloud_run_v2_job.worker.name
   location = var.region
-  role     = "roles/run.invoker"
+  role     = "roles/run.jobsExecutorWithOverrides"
   member   = "serviceAccount:${google_service_account.sa["worker"].email}"
 }
 

@@ -2,3 +2,6 @@
 project_id         = "flatrimony-staging"
 billing_account_id = ""   # e.g. 0X0X0X-0X0X0X-0X0X0X
 # monthly_budget_inr = <founder sets>
+
+# Supabase project URL for the worker (photo upload sweep, a launch gate); required outside local.
+supabase_url = "https://<project-ref>.supabase.co"

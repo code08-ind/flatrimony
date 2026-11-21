@@ -60,8 +60,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
-          pnpm turbo run build --filter=@flatrimony/api^...
+          pnpm turbo run build --filter=@flatrimony/api^... --filter=@flatrimony/worker^...
           pnpm --filter @flatrimony/api test:integration
+          pnpm --filter @flatrimony/worker test:integration
       - name: Stop Postgres
         if: always()
         run: pnpm exec supabase stop --no-backup
@@ -195,3 +196,5 @@ jobs:
         run: docker build -f apps/web/Dockerfile -t web:ci .
       - name: Build admin image
         run: docker build -f apps/admin/Dockerfile -t admin:ci .
+      - name: Build worker image
+        run: docker build -f apps/worker/Dockerfile -t worker:ci .

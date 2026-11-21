@@ -550,7 +550,7 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
       const userId = await writableProfile(req);
       const store = storage();
       // Originals still carry EXIF/GPS: remove this user's uploads that were never confirmed and
-      // whose upload URL has expired (until the sweeper job exists, T1.14). Best effort.
+      // whose upload URL has expired (the worker's daily sweep, T1.14, removes everyone else's). Best effort.
       await sweepStaleUploads(store, userId).catch((err: unknown) =>
         req.log.warn({ err: (err as Error).name }, 'upload sweep failed'),
       );
