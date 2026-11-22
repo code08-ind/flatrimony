@@ -45,15 +45,21 @@ describe('mock places (local and CI)', () => {
       (await mock.autocomplete('delhi', { sessionToken: session, locale: 'en' }))[0]!.label,
     ).toBe('Hauz Khas');
     expect(await mock.autocomplete('mumbai', { sessionToken: session, locale: 'en' })).toEqual([]);
+    // City names in Hindi too.
+    expect(
+      (await mock.autocomplete('गुरुग्राम', { sessionToken: session, locale: 'hi' }))[0]!.placeId,
+    ).toBe('mock:gurugram-cyber-city');
   });
 
   it('details give the area centre; unknown ids are null', async () => {
-    expect(await mock.details('mock:delhi-hauz-khas', { locale: 'en' })).toEqual({
+    expect(
+      await mock.details('mock:delhi-hauz-khas', { sessionToken: session, locale: 'en' }),
+    ).toEqual({
       label: 'Hauz Khas',
       location: { lat: 28.5494, lng: 77.2001 },
     });
-    expect(await mock.details('mock:nowhere', { locale: 'en' })).toBeNull();
-    expect(await mock.details('ChIJ123', { locale: 'en' })).toBeNull();
+    expect(await mock.details('mock:nowhere', { sessionToken: session, locale: 'en' })).toBeNull();
+    expect(await mock.details('ChIJ123', { sessionToken: session, locale: 'en' })).toBeNull();
   });
 });
 
@@ -112,15 +118,11 @@ describe('Google Places (API New)', () => {
     expect(url).not.toContain('cyber'); // the search text is never in a URL
   });
 
-  it('details: name and location only (field mask), session token; unknown → null', async () => {
-    const g = google(200, {
-      id: 'ChIJ_cyber',
-      displayName: { text: 'DLF Cyber City' },
-      location: { latitude: 28.4949, longitude: 77.0887 },
-    });
+  it('details: the location only (cheaper tier), session token; 404 → null', async () => {
+    const g = google(200, { location: { latitude: 28.4949, longitude: 77.0887 } });
     expect(await g.provider.details('ChIJ_cyber', { sessionToken: session, locale: 'en' })).toEqual(
       {
-        label: 'DLF Cyber City',
+        label: null,
         location: { lat: 28.4949, lng: 77.0887 },
       },
     );
@@ -128,19 +130,33 @@ describe('Google Places (API New)', () => {
       `https://places.googleapis.com/v1/places/ChIJ_cyber?languageCode=en&sessionToken=${session}`,
     );
     expect((g.calls[0]!.init.headers as Record<string, string>)['X-Goog-FieldMask']).toBe(
-      'id,displayName,location',
+      'location',
     );
-    expect(await google(404, {}).provider.details('x', { locale: 'en' })).toBeNull();
     expect(
-      await google(200, { displayName: { text: 'No location' } }).provider.details('x', {
-        locale: 'en',
-      }),
+      await google(404, {}).provider.details('x', { sessionToken: session, locale: 'en' }),
     ).toBeNull();
   });
 
-  it('vendor down or failing: PlacesUnavailable', async () => {
+  it('a bad key (400), 403, 5xx, no location or no JSON: PlacesUnavailable, never "no results"', async () => {
+    for (const status of [400, 403, 503])
+      await expect(
+        google(status, { error: { status: 'INVALID_ARGUMENT' } }).provider.autocomplete('cyber', {
+          sessionToken: session,
+          locale: 'en',
+        }),
+      ).rejects.toThrow(PlacesUnavailable);
     await expect(
-      google(503, {}).provider.autocomplete('cyber', { sessionToken: session, locale: 'en' }),
+      google(400, {}).provider.details('x', { sessionToken: session, locale: 'en' }),
+    ).rejects.toThrow(PlacesUnavailable);
+    await expect(
+      google(200, {}).provider.details('x', { sessionToken: session, locale: 'en' }),
+    ).rejects.toThrow(PlacesUnavailable);
+    const notJson = googlePlacesProvider({
+      apiKey: 'k',
+      fetchImpl: (async () => new Response('<html>', { status: 200 })) as typeof fetch,
+    });
+    await expect(
+      notJson.autocomplete('cyber', { sessionToken: session, locale: 'en' }),
     ).rejects.toThrow(PlacesUnavailable);
     const unreachable = googlePlacesProvider({
       apiKey: 'k',
@@ -148,7 +164,9 @@ describe('Google Places (API New)', () => {
         throw new TypeError('fetch failed');
       }) as typeof fetch,
     });
-    await expect(unreachable.details('x', { locale: 'en' })).rejects.toThrow(PlacesUnavailable);
+    await expect(unreachable.details('x', { sessionToken: session, locale: 'en' })).rejects.toThrow(
+      PlacesUnavailable,
+    );
   });
 });
 
@@ -183,28 +201,46 @@ describe('/v1/places routes', () => {
     return { call, logs };
   }
 
-  it('search and details with the default (mock) provider; the search text is not logged', async () => {
-    const { call, logs } = await setup();
+  it('search and details with the default (mock) provider', async () => {
+    const { call } = await setup();
     const res = await call('POST', '/v1/places/autocomplete', {
       q: 'Cyber',
       sessionToken: session,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().suggestions[0]).toMatchObject({ placeId: 'mock:gurugram-cyber-city' });
-    const place = await call('GET', `/v1/places/mock:gurugram-cyber-city?sessionToken=${session}`);
+    const place = await call('POST', '/v1/places/details', {
+      placeId: 'mock:gurugram-cyber-city',
+      sessionToken: session,
+    });
     expect(place.json()).toEqual({
       placeId: 'mock:gurugram-cyber-city',
       label: 'Cyber City',
       location: { lat: 28.495, lng: 77.089 },
     });
-    expect(logs.join('\n')).not.toContain('Cyber');
+  });
+
+  it('neither the search text nor the chosen place reaches the logs', async () => {
+    const placeId = 'ChIJsecretOfficeXyz123';
+    const { call, logs } = await setup({
+      name: 'google',
+      autocomplete: async () => [{ placeId, label: 'Secret Office Tower', secondary: 'Gurugram' }],
+      details: async () => ({ label: null, location: { lat: 28.49, lng: 77.08 } }),
+    });
+    await call('POST', '/v1/places/autocomplete', { q: 'Secret Office', sessionToken: session });
+    const res = await call('POST', '/v1/places/details', { placeId, sessionToken: session });
+    expect(res.json()).toMatchObject({ placeId, label: null });
+    const all = logs.join('\n');
+    expect(all).not.toContain('Secret');
+    expect(all).not.toContain(placeId);
+    expect(all).not.toContain(session);
   });
 
   it('needs a session; validates input; unknown place 404; outside NCR 422; vendor down 503', async () => {
     const { call } = await setup({
       name: 'google',
       autocomplete: async () => {
-        throw new PlacesUnavailable('places answered 503');
+        throw new PlacesUnavailable('places answered 400');
       },
       details: async (id) =>
         id === 'mumbai' ? { label: 'Mumbai office', location: { lat: 19.07, lng: 72.88 } } : null,
@@ -223,16 +259,40 @@ describe('/v1/places routes', () => {
       (await call('POST', '/v1/places/autocomplete', { q: 'cyber', sessionToken: session }))
         .statusCode,
     ).toBe(503);
-    expect((await call('GET', '/v1/places/unknown')).statusCode).toBe(404);
-    const mumbai = await call('GET', '/v1/places/mumbai');
+    const details = (placeId: string) =>
+      call('POST', '/v1/places/details', { placeId, sessionToken: session });
+    expect((await details('unknown')).statusCode).toBe(404);
+    const mumbai = await details('mumbai');
     expect(mumbai.statusCode).toBe(422);
-    expect(mumbai.json().errors[0]).toMatchObject({ code: 'outside_ncr' });
-    expect((await call('GET', '/v1/places/bad%20id')).statusCode).toBe(422);
+    expect(mumbai.json().errors[0]).toMatchObject({ path: 'body.placeId', code: 'outside_ncr' });
+    for (const bad of ['bad id', '../x', 'a.b'])
+      expect((await details(bad)).statusCode, bad).toBe(422);
+    expect((await call('POST', '/v1/places/details', { placeId: 'unknown' })).statusCode).toBe(422);
   });
 
-  it('google needs its key', () => {
+  it('60 searches a minute per user, then 429', async () => {
+    const { call } = await setup();
+    let last = 0;
+    for (let i = 0; i < 61; i += 1)
+      last = (await call('POST', '/v1/places/autocomplete', { q: 'cyber', sessionToken: session }))
+        .statusCode;
+    expect(last).toBe(429);
+  });
+
+  it('google needs its key; production refuses the mock', () => {
     expect(() => loadEnv({ APP_ENV: 'local', PLACES_PROVIDER: 'google' })).toThrow(
       /GOOGLE_PLACES_API_KEY/,
     );
+    const production = {
+      APP_ENV: 'production',
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgres://x',
+      SUPABASE_JWT_ISSUER: 'https://x.supabase.co/auth/v1',
+      SUPABASE_JWKS_URL: 'https://x.supabase.co/auth/v1/.well-known/jwks.json',
+      HASH_PEPPER: 'p'.repeat(40),
+      SEND_SMS_HOOK_SECRETS: `v1,whsec_${Buffer.alloc(32).toString('base64')}`,
+      CORS_ALLOWED_ORIGINS: 'https://app.example.com',
+    };
+    expect(() => loadEnv(production)).toThrow(/PLACES_PROVIDER=mock is not allowed in production/);
   });
 });

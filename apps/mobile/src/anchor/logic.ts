@@ -143,12 +143,17 @@ export function placeLabels(
   candidates: { id: number; name: string; x: number; y: number; inReach: boolean }[],
   pin: { x: number; y: number },
   width: number,
+  /** Areas labels must keep clear of (e.g. the map credit). */
+  reserved: { x1: number; y1: number; x2: number; y2: number }[] = [],
   charWidth = 6.4,
   lineHeight = 14,
 ): PlacedLabel[] {
   type Box = { x1: number; y1: number; x2: number; y2: number };
   const overlaps = (a: Box, b: Box) => a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
-  const taken: Box[] = [{ x1: pin.x - 12, y1: pin.y - 12, x2: pin.x + 12, y2: pin.y + 12 }];
+  const taken: Box[] = [
+    { x1: pin.x - 12, y1: pin.y - 12, x2: pin.x + 12, y2: pin.y + 12 },
+    ...reserved,
+  ];
   const placed: PlacedLabel[] = [];
   const ordered = [...candidates].sort((a, b) => Number(b.inReach) - Number(a.inReach));
   for (const c of ordered) {
@@ -158,7 +163,7 @@ export function placeLabels(
         side === 'right'
           ? { x1: c.x - 4, y1: c.y - lineHeight / 2, x2: c.x + w, y2: c.y + lineHeight / 2 }
           : { x1: c.x - w, y1: c.y - lineHeight / 2, x2: c.x + 4, y2: c.y + lineHeight / 2 };
-      if (taken.some((t) => overlaps(t, box))) continue;
+      if (box.x1 < 0 || box.x2 > width || taken.some((t) => overlaps(t, box))) continue;
       taken.push(box);
       placed.push({ id: c.id, name: c.name, x: c.x, y: c.y, side });
       break;
@@ -166,3 +171,24 @@ export function placeLabels(
   }
   return placed;
 }
+
+/**
+ * The anchor's label: the place's name with its locality ("DLF Cyber City, Gurugram"), so offices
+ * with the same name stay distinguishable. Trimmed to the stored limit without a trailing space
+ * or comma (the API refuses those).
+ */
+export function anchorLabel(name: string, secondary: string | null): string {
+  const locality = secondary?.split(',')[0]?.trim();
+  const full = locality && !name.includes(locality) ? `${name.trim()}, ${locality}` : name.trim();
+  return full
+    .slice(0, LIMITS.anchorLabelMaxChars)
+    .replace(/[\s,]+$/u, '')
+    .trim();
+}
+
+/** Identifies one commute zone preview request: a zone is shown only for the request it answers. */
+export const previewKey = (
+  location: LatLng | undefined,
+  travelMode: TravelMode,
+  maxCommuteMin: number,
+) => (location ? `${location.lat},${location.lng},${travelMode},${maxCommuteMin}` : null);

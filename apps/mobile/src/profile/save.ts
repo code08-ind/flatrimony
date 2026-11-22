@@ -17,7 +17,7 @@ export function useProfileSave() {
   const save = useCallback(
     (
       path: string,
-      method: 'PUT' | 'PATCH',
+      method: 'PUT' | 'PATCH' | 'DELETE',
       body: unknown,
       /** false keeps `saved` unchanged (a save on the editor itself, which stays open). */
       { leave = true }: { leave?: boolean } = {},

@@ -387,6 +387,7 @@ Clients compare `minSupportedAppVersion` and show a forced-update screen if need
 | PATCH | `/me` | user | Update display name, bio, languages, locale, intent, category, college fields, `isPaused` | FR-BIO-01, FR-BIO-08 |
 | PUT | `/me/preferences` | user | Replace preferences (incl. `areaIds`) | FR-BIO-02 |
 | PUT | `/me/anchor` | user | Set office/college anchor; enqueues `commute.compute` | FR-BIO-03 |
+| DELETE | `/me/anchor` | user | Remove it with its commute zone and any waiting job; `409 conflict` without a preferred area (T2.8) | FR-BIO-03 |
 | GET | `/me/commute-zone` | user | `{ status: none \| computing \| ready, zone: GeoJSON MultiPolygon \| null, approx, travelMode, maxCommuteMin, computedAt }` (T2.9) | FR-BIO-03 |
 | PUT | `/me/lifestyle` | user | Replace lifestyle answers | FR-BIO-04 |
 | PUT | `/me/importance` | user | Set importance per attribute | FR-BIO-05 |
@@ -512,7 +513,7 @@ Failure codes: `name_mismatch`, `underage`, `identity_in_use` (DigiLocker identi
 | GET | `/areas?city=gurugram` | public | Area list (localised) | FR-BIO-02 |
 | POST | `/commute/preview` | user | `{ location, travelMode, maxCommuteMin = 45 }` → `{ zone: GeoJSON MultiPolygon, approx }`. Routed by the routing service (4 s timeout); metro/transit, no road near the point, or routing slow/down give the radius approximation (`approx: true`). Cached per place (~100 m), mode and minutes for an hour (temporary routing failures are not cached). `outside_ncr` as for the anchor; 30 per user per minute (T2.9) | FR-BIO-03 |
 | POST | `/places/autocomplete` | user | `{ q (2–100 chars), sessionToken (UUID) }` → `{ suggestions: [{ placeId, label, secondary }] }` (up to 5). A POST, not `GET ?q=`, so what the user types (their office) stays out of URLs and logs. Google Places (New) restricted to `LIMITS.ncrBounds` and India, with the session token; the key stays server-side. `mock` provider (local, CI) searches the seeded areas. Vendor down `503`; 60/min per user (T2.8) | FR-BIO-03 |
-| GET | `/places/{placeId}?sessionToken=` | user | `{ placeId, label, location }`; `404` unknown, `422 outside_ncr` outside Delhi NCR, `503` vendor down; ends the search session (T2.8) | FR-BIO-03 |
+| POST | `/places/details` | user | `{ placeId, sessionToken }` → `{ placeId, label \| null, location }` (a POST: the chosen place is the user's office). `label` null for Google (location-only details; use the suggestion's name). `404` unknown, `422 outside_ncr`, `503` vendor down or misconfigured; ends the search session (T2.8) | FR-BIO-03 |
 
 ### 8.6 Listings
 

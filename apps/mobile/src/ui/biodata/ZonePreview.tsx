@@ -77,6 +77,8 @@ export function ZonePreview({
                 })),
               pin,
               width,
+              // Keep clear of the map credit (bottom right).
+              [{ x1: width - 190, y1: HEIGHT - 22, x2: width, y2: HEIGHT }],
             ).map((l) => (
               <SvgAreaLabel
                 key={l.id}
@@ -111,11 +113,9 @@ export function ZonePreview({
               ? t('anchor.zone.reaches', { areas: reach.map((a) => a.name).join(', ') })
               : t('anchor.zone.noAreas')}
           </Text>
-          {approx ? (
-            <Text style={[textStyle('caption', locale), { color: theme.color.text.secondary }]}>
-              {t('anchor.zone.approx')}
-            </Text>
-          ) : null}
+          <Text style={[textStyle('caption', locale), { color: theme.color.text.secondary }]}>
+            {approx ? t('anchor.zone.approx') : t('anchor.zone.basis')}
+          </Text>
         </View>
       ) : null}
     </View>

@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import type { ImportanceMap } from '@flatrimony/shared';
+import { CommuteZone, type ImportanceMap } from '@flatrimony/shared';
+import { api } from '../../../src/api';
 import { useMe } from '../../../src/me';
 import { formatInr } from '../../../src/onboarding/logic';
 import { Avatar } from '../../../src/profile/Avatar';
@@ -37,6 +38,31 @@ export default function BiodataEditor() {
   const { me } = useMe();
   const saving = useProfileSave();
   const reference = useReference(locale);
+  // The office card says when the commute zone is still being drawn (T2.9).
+  const [zoneStatus, setZoneStatus] = useState<CommuteZone['status'] | null>(null);
+  const anchorKey = me?.anchor
+    ? [
+        me.anchor.location.lat,
+        me.anchor.location.lng,
+        me.anchor.travelMode,
+        me.anchor.maxCommuteMin,
+      ].join(',')
+    : null;
+  useEffect(() => {
+    if (!anchorKey) {
+      setZoneStatus(null);
+      return;
+    }
+    let live = true;
+    void api('/me/commute-zone')
+      .then((res) => {
+        if (live) setZoneStatus(CommuteZone.safeParse(res.body).data?.status ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [anchorKey]);
   const [importance, setImportance] = useState<ImportanceMap>(me?.importance ?? {});
   const [savedNote, setSavedNote] = useState(false);
   // Reset the choices only when the saved levels really change (a save here, or the latest profile
@@ -151,6 +177,11 @@ export default function BiodataEditor() {
                 n: me.anchor.maxCommuteMin,
               })}
             </Text>
+            {zoneStatus === 'computing' ? (
+              <Text style={[textStyle('caption', locale), styles.muted]}>
+                {t('anchor.computing')}
+              </Text>
+            ) : null}
           </>
         ) : (
           <Text style={[textStyle('body', locale), styles.muted]}>{t('anchor.notSet')}</Text>

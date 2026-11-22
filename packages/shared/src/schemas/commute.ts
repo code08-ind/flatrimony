@@ -76,10 +76,24 @@ export const PlaceAutocompleteResponse = z.object({
 });
 export type PlaceAutocompleteResponse = z.infer<typeof PlaceAutocompleteResponse>;
 
-/** `GET /v1/places/{placeId}?sessionToken=`: the point to use as the anchor (inside NCR). */
+/** Place ids: Google's (base64url-like) or the mock's `mock:<slug>`. */
+export const PlaceId = z.string().regex(/^[A-Za-z0-9_:-]{1,300}$/);
+
+/**
+ * `POST /v1/places/details` (a POST for the same reason as autocomplete: the chosen place is the
+ * user's office, and request URLs are logged). Ends the search session.
+ */
+export const PlaceDetailsRequest = z.object({ placeId: PlaceId, sessionToken: z.uuid() }).strict();
+export type PlaceDetailsRequest = z.infer<typeof PlaceDetailsRequest>;
+
+/**
+ * The point to use as the anchor (inside NCR). `label` is null when the vendor's answer has no
+ * name (Google details are asked for the location only, the cheaper tier): the picker then uses
+ * the suggestion's label.
+ */
 export const PlaceDetails = z.object({
-  placeId: z.string().min(1),
-  label: z.string().min(1).max(LIMITS.anchorLabelMaxChars),
+  placeId: PlaceId,
+  label: z.string().min(1).max(LIMITS.anchorLabelMaxChars).nullable(),
   location: LatLng,
 });
 export type PlaceDetails = z.infer<typeof PlaceDetails>;

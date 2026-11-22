@@ -19,11 +19,11 @@ export interface PlacesProvider {
     q: string,
     opts: { sessionToken: string; locale: 'en' | 'hi' },
   ): Promise<PlaceSuggestion[]>;
-  /** The place, or null when the id is unknown. */
+  /** The place, or null when the id is unknown. `label` null: use the suggestion's. */
   details(
     placeId: string,
-    opts: { sessionToken?: string; locale: 'en' | 'hi' },
-  ): Promise<{ label: string; location: LatLng } | null>;
+    opts: { sessionToken: string; locale: 'en' | 'hi' },
+  ): Promise<{ label: string | null; location: LatLng } | null>;
 }
 
 /** The vendor failed or is not reachable: the picker shows "search is unavailable". */
@@ -64,9 +64,13 @@ export function mockPlacesProvider(
       const needle = q.trim().toLowerCase();
       return (await find(locale))
         .filter((a) =>
-          [a.name, a.otherName, a.slug.replace(/-/g, ' '), CITY_LABEL[a.city].en].some((s) =>
-            s.toLowerCase().includes(needle),
-          ),
+          [
+            a.name,
+            a.otherName,
+            a.slug.replace(/-/g, ' '),
+            CITY_LABEL[a.city].en,
+            CITY_LABEL[a.city].hi,
+          ].some((s) => s.toLowerCase().includes(needle)),
         )
         .slice(0, MAX_SUGGESTIONS)
         .map((a) => ({
@@ -93,16 +97,23 @@ export function googlePlacesProvider(opts: {
 }): PlacesProvider {
   const doFetch = opts.fetchImpl ?? fetch;
   const timeout = () => AbortSignal.timeout(opts.timeoutMs ?? 3_000);
-  const call = async (url: string, init: RequestInit) => {
+  /**
+   * One Places request. Only `notFound` statuses mean "no such place"; anything else that is not
+   * a 2xx (400 for a bad or restricted key, 403, 429, 5xx) or not JSON is the vendor failing, so
+   * it is reported, never shown to users as "no results".
+   */
+  const call = async (url: string, init: RequestInit, notFound: number[] = []) => {
     let res: Response;
     try {
       res = await doFetch(url, { ...init, signal: timeout() });
     } catch (err) {
       throw new PlacesUnavailable(`places unreachable: ${(err as Error).name}`);
     }
-    if (res.status === 404 || res.status === 400) return null;
+    if (notFound.includes(res.status)) return null;
     if (!res.ok) throw new PlacesUnavailable(`places answered ${res.status}`);
-    return (await res.json().catch(() => null)) as unknown;
+    const body: unknown = await res.json().catch(() => undefined);
+    if (body === undefined) throw new PlacesUnavailable('places answered with no JSON');
+    return body;
   };
   const b = LIMITS.ncrBounds;
   return {
@@ -143,27 +154,19 @@ export function googlePlacesProvider(opts: {
         }));
     },
     async details(placeId, { sessionToken, locale }) {
-      const params = new URLSearchParams({ languageCode: locale });
-      if (sessionToken) params.set('sessionToken', sessionToken);
+      const params = new URLSearchParams({ languageCode: locale, sessionToken });
+      // The location only (Place Details "Essentials"): the name comes from the suggestion.
       const body = (await call(
         `${GOOGLE}/places/${encodeURIComponent(placeId)}?${params.toString()}`,
-        {
-          headers: {
-            'X-Goog-Api-Key': opts.apiKey,
-            'X-Goog-FieldMask': 'id,displayName,location',
-          },
-        },
-      )) as {
-        displayName?: { text?: string };
-        location?: { latitude?: number; longitude?: number };
-      } | null;
-      const lat = body?.location?.latitude;
-      const lng = body?.location?.longitude;
-      if (!body || typeof lat !== 'number' || typeof lng !== 'number') return null;
-      return {
-        label: (body.displayName?.text ?? 'Office').slice(0, LIMITS.anchorLabelMaxChars),
-        location: { lat, lng },
-      };
+        { headers: { 'X-Goog-Api-Key': opts.apiKey, 'X-Goog-FieldMask': 'location' } },
+        [404],
+      )) as { location?: { latitude?: number; longitude?: number } } | null;
+      if (!body) return null;
+      const lat = body.location?.latitude;
+      const lng = body.location?.longitude;
+      if (typeof lat !== 'number' || typeof lng !== 'number')
+        throw new PlacesUnavailable('places answered without a location');
+      return { label: null, location: { lat, lng } };
     },
   };
 }

@@ -65,6 +65,16 @@ export interface BuildOptions {
   logStream?: { write(line: string): void };
 }
 
+/** Place search from env: Google with its key, or the mock (never a silent fallback). */
+function placesFromEnv(env: Env, repo: SystemRepository): PlacesProvider {
+  if (env.PLACES_PROVIDER === 'google') {
+    if (!env.GOOGLE_PLACES_API_KEY)
+      throw new Error('PLACES_PROVIDER=google needs GOOGLE_PLACES_API_KEY');
+    return googlePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY });
+  }
+  return mockPlacesProvider(async (locale) => (await repo.referenceData(locale)).areas);
+}
+
 /** Builds the JWT verifier from env; undefined when auth is not configured (local only). */
 export function verifierFromEnv(env: Env): JwtVerifier | undefined {
   if (!env.SUPABASE_JWT_ISSUER || !(env.SUPABASE_JWKS_URL || env.SUPABASE_JWT_SECRET))
@@ -209,11 +219,7 @@ export async function buildApp({
   // Place search for the office/college picker (T2.8): the vendor key stays server-side.
   await app.register(placesRoutes, {
     prefix: '/v1',
-    provider:
-      placesProvider ??
-      (env.PLACES_PROVIDER === 'google' && env.GOOGLE_PLACES_API_KEY
-        ? googlePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY })
-        : mockPlacesProvider(async (locale) => (await repo.referenceData(locale)).areas)),
+    provider: placesProvider ?? placesFromEnv(env, repo),
   });
 
   // Supabase Auth Send SMS hook (only when its secret is configured; required outside local).

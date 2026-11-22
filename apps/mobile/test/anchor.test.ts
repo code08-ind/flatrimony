@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { GeoMultiPolygon, Me } from '@flatrimony/shared';
 import {
   anchorComplete,
+  anchorLabel,
+  previewKey,
   areasInReach,
   fitProjection,
   inZone,
@@ -145,5 +147,36 @@ describe('onboarding with an office instead of areas', () => {
         budgetMaxInr: 20000,
       }),
     ).toBe('commute');
+  });
+});
+
+describe('anchor label and preview requests', () => {
+  it('the name with its locality, within 80 characters, no trailing space or comma', () => {
+    expect(anchorLabel('DLF Cyber City', 'Gurugram, Haryana, India')).toBe(
+      'DLF Cyber City, Gurugram',
+    );
+    expect(anchorLabel('Cyber City', null)).toBe('Cyber City');
+    expect(anchorLabel('Noida Sector 62', 'Noida')).toBe('Noida Sector 62'); // locality already in it
+    const long = anchorLabel(`${'A'.repeat(77)} Tower`, 'Gurugram');
+    expect(long.length).toBeLessThanOrEqual(80);
+    expect(long).not.toMatch(/[\s,]$/);
+  });
+  it('a preview answers one place, mode and time', () => {
+    expect(previewKey(undefined, 'car', 45)).toBeNull();
+    expect(previewKey(cyberCity, 'car', 45)).not.toBe(previewKey(cyberCity, 'car', 30));
+    expect(previewKey(cyberCity, 'car', 45)).not.toBe(previewKey(cyberCity, 'walk', 45));
+  });
+  it('labels stay clear of the map credit and inside the drawing', () => {
+    const placed = placeLabels(
+      [
+        { id: 1, name: 'Under the credit', x: 220, y: 210, inReach: true },
+        { id: 2, name: 'Off the left edge', x: 5, y: 100, inReach: true },
+      ],
+      { x: 150, y: 50 },
+      300,
+      [{ x1: 110, y1: 198, x2: 300, y2: 220 }],
+    );
+    expect(placed.map((p) => p.name)).toEqual(['Off the left edge']);
+    expect(placed[0]!.side).toBe('right');
   });
 });

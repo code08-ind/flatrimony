@@ -94,7 +94,7 @@ env:
     timeout: 15000
 - tapOn: 'Cyber City'
 - extendedWaitUntil:
-    visible: '.*In reach.*'
+    visible: '.*roughly within your commute.*'
     timeout: 20000
 - hideKeyboard
 - tapOn: { id: continue }

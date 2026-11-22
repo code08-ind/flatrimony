@@ -1,16 +1,17 @@
 /**
  * /v1/places (docs/05 §8.5; T2.8):
  *   POST /places/autocomplete   { q, sessionToken } → { suggestions: [{ placeId, label, secondary }] }
- *   GET  /places/:placeId       ?sessionToken= → { placeId, label, location } (inside Delhi NCR)
- * Autocomplete is a POST so the search text stays out of URLs and logs.
+ *   POST /places/details        { placeId, sessionToken } → { placeId, label, location } (in NCR)
+ * Both are POSTs: the search text and the chosen place (the user's office) stay out of URLs, which
+ * are logged.
  */
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { z } from 'zod';
 import {
   LIMITS,
   PlaceAutocompleteRequest,
   PlaceAutocompleteResponse,
   PlaceDetails,
+  PlaceDetailsRequest,
   RATE_LIMITS,
 } from '@flatrimony/shared';
 import { ApiError } from '../../plugins/errors.js';
@@ -68,22 +69,18 @@ export const placesRoutes: FastifyPluginAsyncZod<PlacesRoutesOptions> = async (a
     },
   );
 
-  app.get(
-    '/places/:placeId',
+  app.post(
+    '/places/details',
     {
       onRequest: app.requireUser,
       config: placesRateLimit,
-      schema: {
-        params: z.object({ placeId: z.string().regex(/^[A-Za-z0-9_:.-]{1,300}$/) }),
-        querystring: z.object({ sessionToken: z.uuid().optional() }).strict(),
-        response: { 200: PlaceDetails },
-      },
+      schema: { body: PlaceDetailsRequest, response: { 200: PlaceDetails } },
     },
     async (req) => {
       let place: Awaited<ReturnType<PlacesProvider['details']>>;
       try {
-        place = await provider.details(req.params.placeId, {
-          ...(req.query.sessionToken ? { sessionToken: req.query.sessionToken } : {}),
+        place = await provider.details(req.body.placeId, {
+          sessionToken: req.body.sessionToken,
           locale: localeOf(req.headers['accept-language']),
         });
       } catch (err) {
@@ -100,10 +97,10 @@ export const placesRoutes: FastifyPluginAsyncZod<PlacesRoutesOptions> = async (a
         throw new ApiError('validation.failed', {
           title: 'Validation failed',
           errors: [
-            { path: 'params.placeId', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
+            { path: 'body.placeId', code: 'outside_ncr', message: 'Pick a place in Delhi NCR' },
           ],
         });
-      return { placeId: req.params.placeId, ...place };
+      return { placeId: req.body.placeId, ...place };
     },
   );
 };

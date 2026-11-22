@@ -7,6 +7,7 @@
  *                                 college fields, isPaused
  *   PUT    /me/preferences, /me/anchor, /me/lifestyle, /me/importance, /me/scenario-answers
  *                                 replace one part of the Flat Biodata (T2.7)
+ *   DELETE /me/anchor             remove the office or college (needs at least one area, T2.8)
  *   GET    /me/commute-zone       the commute zone of the anchor: none, computing or ready (T2.9)
  *   POST   /commute/preview       the zone a point, mode and time would give (T2.9)
  *   GET    /me/consents           grants (history) + the versions current now
@@ -53,7 +54,13 @@ import { BANNED_MESSAGE } from '../auth/otp-guard.js';
 import { ImageError, processPhoto, withImageSlot } from '../../lib/image.js';
 import { UPLOAD_URL_TTL_SECONDS, type PhotoStorage } from '../../lib/photo-storage.js';
 import { createCommutePreview, type CommutePreview } from '../../lib/commute-preview.js';
-import type { LegalVersions, MeRepository, ProfileState, ProfileUpdate } from './repository.js';
+import {
+  AreasRequired,
+  type LegalVersions,
+  type MeRepository,
+  type ProfileState,
+  type ProfileUpdate,
+} from './repository.js';
 
 export interface MeRoutesOptions {
   repo: MeRepository;
@@ -767,6 +774,24 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
       const after = await repo.profileState(userId);
       if (after) reply.header('etag', etagFor(after.version));
       return reply.status(204).send();
+    },
+  );
+
+  app.delete(
+    '/me/anchor',
+    { onRequest: app.requireUser, schema: { response: { 200: Me } } },
+    async (req, reply) => {
+      const userId = await writableProfile(req);
+      try {
+        return await biodataWrite(req, reply, userId, (v) => repo.removeAnchor(userId, v));
+      } catch (err) {
+        if (err instanceof AreasRequired)
+          throw new ApiError('conflict', {
+            title: 'Pick an area first',
+            detail: 'Your profile needs an office or college, or at least one area.',
+          });
+        throw err;
+      }
     },
   );
 

@@ -167,6 +167,9 @@ function fakeRepo(state: FakeState): MeRepository {
     async commuteZone() {
       return { anchor: null, zone: null, pending: false };
     },
+    async removeAnchor(_id, v) {
+      return biodata('anchor', null, v);
+    },
     async replaceLifestyle(_id, l, v) {
       return biodata('lifestyle', l, v);
     },
