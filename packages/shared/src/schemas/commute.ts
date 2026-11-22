@@ -48,3 +48,52 @@ export type CommutePreviewRequest = z.infer<typeof CommutePreviewRequest>;
 
 export const CommutePreviewResponse = z.object({ zone: GeoMultiPolygon, approx: z.boolean() });
 export type CommutePreviewResponse = z.infer<typeof CommutePreviewResponse>;
+
+/**
+ * Place search for the office/college picker (FR-BIO-03; docs/05 §8.5). POST, not GET: what a
+ * user types (their office) must not end up in URLs and access logs. `sessionToken` groups one
+ * search's keystrokes and the final details call (Google Places session billing).
+ */
+export const PlaceAutocompleteRequest = z
+  .object({
+    q: z.string().trim().min(2).max(100),
+    sessionToken: z.uuid(),
+  })
+  .strict();
+export type PlaceAutocompleteRequest = z.infer<typeof PlaceAutocompleteRequest>;
+
+export const PlaceSuggestion = z.object({
+  placeId: z.string().min(1).max(300),
+  /** The place's name, e.g. "DLF Cyber City". */
+  label: z.string().min(1),
+  /** Where it is, e.g. "Gurugram, Haryana". */
+  secondary: z.string().nullable(),
+});
+export type PlaceSuggestion = z.infer<typeof PlaceSuggestion>;
+
+export const PlaceAutocompleteResponse = z.object({
+  suggestions: z.array(PlaceSuggestion).max(10),
+});
+export type PlaceAutocompleteResponse = z.infer<typeof PlaceAutocompleteResponse>;
+
+/** Place ids: Google's (base64url-like) or the mock's `mock:<slug>`. */
+export const PlaceId = z.string().regex(/^[A-Za-z0-9_:-]{1,300}$/);
+
+/**
+ * `POST /v1/places/details` (a POST for the same reason as autocomplete: the chosen place is the
+ * user's office, and request URLs are logged). Ends the search session.
+ */
+export const PlaceDetailsRequest = z.object({ placeId: PlaceId, sessionToken: z.uuid() }).strict();
+export type PlaceDetailsRequest = z.infer<typeof PlaceDetailsRequest>;
+
+/**
+ * The point to use as the anchor (inside NCR). `label` is null when the vendor's answer has no
+ * name (Google details are asked for the location only, the cheaper tier): the picker then uses
+ * the suggestion's label.
+ */
+export const PlaceDetails = z.object({
+  placeId: PlaceId,
+  label: z.string().min(1).max(LIMITS.anchorLabelMaxChars).nullable(),
+  location: LatLng,
+});
+export type PlaceDetails = z.infer<typeof PlaceDetails>;

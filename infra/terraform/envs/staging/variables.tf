@@ -43,6 +43,7 @@ variable "secret_ids" {
     "FIELD_ENCRYPTION_KEY",
     "HASH_PEPPER",
     "SEND_SMS_HOOK_SECRETS",
+    "GOOGLE_PLACES_API_KEY",
   ]
 }
 

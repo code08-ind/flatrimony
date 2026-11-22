@@ -99,6 +99,14 @@ export interface NewPhoto {
   phash: string;
 }
 
+/** DELETE /me/anchor without any preferred area: the profile would have neither (FR-BIO-03). */
+export class AreasRequired extends Error {
+  constructor() {
+    super('areas required');
+    this.name = 'AreasRequired';
+  }
+}
+
 /** GET /me/commute-zone (T2.9). */
 export interface CommuteZoneState {
   anchor: { travelMode: TravelMode; maxCommuteMin: number } | null;
@@ -144,6 +152,11 @@ export interface MeRepository {
     ifVersion?: string,
   ): Promise<boolean>;
   setAnchor(userId: string, anchor: Anchor, ifVersion?: string): Promise<boolean>;
+  /**
+   * Removes the office or college, its commute zone and any pending commute job. Throws
+   * AreasRequired when the user has no preferred areas (the profile needs one or the other).
+   */
+  removeAnchor(userId: string, ifVersion?: string): Promise<boolean>;
   /** The anchor, its commute zone and whether one is being drawn (GET /me/commute-zone). */
   commuteZone(userId: string): Promise<CommuteZoneState>;
   replaceLifestyle(userId: string, lifestyle: Lifestyle, ifVersion?: string): Promise<boolean>;
@@ -728,6 +741,26 @@ export function pgMeRepository(db: Database): MeRepository {
                   attempts = case when private.jobs.locked_at is null then 0 else private.jobs.attempts end,
                   last_error = case when private.jobs.locked_at is null then null else private.jobs.last_error end
               where private.jobs.done_at is null`.execute(tx);
+      });
+    },
+
+    async removeAnchor(userId, ifVersion) {
+      return biodataTx(db, userId, ifVersion, async (tx) => {
+        const area = await tx
+          .selectFrom('preference_areas')
+          .select('area_id')
+          .where('user_id', '=', userId)
+          .executeTakeFirst();
+        if (!area) throw new AreasRequired();
+        await tx.deleteFrom('commute_zones').where('user_id', '=', userId).execute();
+        await tx.deleteFrom('anchors').where('user_id', '=', userId).execute();
+        // A waiting commute job has nothing to draw any more (a running one finds no anchor).
+        await tx
+          .deleteFrom('private.jobs')
+          .where('dedupe_key', '=', commuteDedupeKey(userId))
+          .where('done_at', 'is', null)
+          .where('locked_at', 'is', null)
+          .execute();
       });
     },
 

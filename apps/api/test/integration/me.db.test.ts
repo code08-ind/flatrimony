@@ -477,6 +477,25 @@ describe.skipIf(!url)('/v1/me on Postgres', () => {
     });
     expect(await jobs()).toEqual([]);
     expect((await call(user, 'GET', '/v1/me/commute-zone')).json().status).toBe('ready');
+
+    // Removing it: refused without an area (the profile needs one or the other)...
+    const refused = await call(user, 'DELETE', '/v1/me/anchor');
+    expect(refused.statusCode).toBe(409);
+    // ...done with one: anchor, zone and any waiting job go; completion still counts the area.
+    await call(user, 'PUT', '/v1/me/anchor', { ...office, location: { lat: 28.62, lng: 77.36 } });
+    expect(await jobs()).toHaveLength(1);
+    await db.insertInto('preference_areas').values({ user_id: user.id, area_id: 1 }).execute();
+    const removed = await call(user, 'DELETE', '/v1/me/anchor');
+    expect(removed.statusCode, removed.body).toBe(200);
+    expect(removed.json().anchor ?? null).toBeNull(); // Me omits a missing anchor
+    expect(await jobs()).toEqual([]);
+    expect((await call(user, 'GET', '/v1/me/commute-zone')).json().status).toBe('none');
+    const zones = await db
+      .selectFrom('commute_zones')
+      .select('user_id')
+      .where('user_id', '=', user.id)
+      .execute();
+    expect(zones).toEqual([]);
   });
 
   it('anchor, importance and scenario answers round-trip through Postgres', async () => {

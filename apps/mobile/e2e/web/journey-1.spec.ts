@@ -114,9 +114,13 @@ test('journey 1: sign up with OTP → onboarding → Discover', async ({ page })
     await next(page);
   });
 
-  await test.step('areas: pick one', async () => {
-    await expect(page.getByRole('heading', { name: en.onboarding.commute.title })).toBeVisible();
-    await page.getByRole('checkbox').first().click();
+  await test.step('office: search, pick a place, see the commute zone', async () => {
+    await expect(page.getByRole('heading', { name: en.anchor.title })).toBeVisible();
+    // Place search (mock provider in local and CI: the seeded NCR areas).
+    await page.getByLabel(en.anchor.searchLabel).fill('Cyber');
+    await page.getByRole('button', { name: /^Cyber City/ }).click();
+    // The zone preview (the approximation without a routing service) names what is in reach.
+    await expect(page.getByRole('img', { name: /Commute zone from Cyber City/ })).toBeVisible();
     await next(page);
   });
 

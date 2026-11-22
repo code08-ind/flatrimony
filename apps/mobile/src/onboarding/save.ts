@@ -10,7 +10,7 @@ export type SaveResult =
 /** Sends a write that answers with the new Me (bootstrap, PATCH /me, the biodata PUTs). */
 export async function saveMe(
   path: string,
-  method: 'POST' | 'PUT' | 'PATCH',
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   body: unknown,
   {
     ifMatch,
