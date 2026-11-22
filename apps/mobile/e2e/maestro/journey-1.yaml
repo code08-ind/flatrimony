@@ -96,7 +96,8 @@ env:
 - extendedWaitUntil:
     visible: '.*roughly within your commute.*'
     timeout: 20000
-- hideKeyboard
+# No hideKeyboard here: choosing a place removes the search field, so the keyboard is already
+# closed, and hideKeyboard would then press Back (to the budget step).
 - tapOn: { id: continue }
 
 # Move-in
