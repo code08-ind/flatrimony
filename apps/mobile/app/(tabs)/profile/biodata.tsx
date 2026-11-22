@@ -141,6 +141,22 @@ export default function BiodataEditor() {
         )}
       </Section>
 
+      <Section title={t('anchor.editTitle')} href="/profile/edit-anchor">
+        {me.anchor ? (
+          <>
+            <Text style={[textStyle('bodyLg', locale), styles.strong]}>{me.anchor.label}</Text>
+            <Text style={[textStyle('body', locale), styles.muted]}>
+              {t('anchor.summary', {
+                mode: t(`anchor.modes.${me.anchor.travelMode}`),
+                n: me.anchor.maxCommuteMin,
+              })}
+            </Text>
+          </>
+        ) : (
+          <Text style={[textStyle('body', locale), styles.muted]}>{t('anchor.notSet')}</Text>
+        )}
+      </Section>
+
       <Section title={t('profile.editor.areas')} href="/profile/edit-areas">
         {(me.preferences?.areaIds.length ?? 0) > 0 && reference.failed ? (
           <View style={{ gap: theme.space['2'] }}>

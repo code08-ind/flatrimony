@@ -173,7 +173,6 @@
       "overline": "Where you'll live",
       "title": "Where would you like to live?",
       "subtitle": "Pick up to 3 areas.",
-      "officeSoon": "Office and college search with commute times is coming soon. For now, pick the areas you'd like to live in.",
       "maxReached": "You can pick up to 3 areas.",
       "loading": "Loading areas…",
       "loadFailed": "Couldn't load the areas. Check your connection.",
@@ -300,7 +299,6 @@
       "noAreas": "No areas yet",
       "notSet": "Not set yet",
       "lease": "Lease (months): {months}",
-      "areasMore": "Office and college search with commute times is coming soon.",
       "editShort": "Edit",
       "changedElsewhere": "Your profile changed on another device. We've loaded the latest version — check it and save again.",
       "unavailable": "Profile changes aren't available right now. Please try again later.",
@@ -398,5 +396,42 @@
       "ur": "Urdu",
       "or": "Odia"
     }
+  },
+  "anchor": {
+    "title": "Where do you go every day?",
+    "subtitle": "We'll match you with rooms and people within your commute.",
+    "office": "Office",
+    "college": "College",
+    "searchLabel": "Search your office or college",
+    "searchPlaceholderOffice": "Search your office",
+    "searchPlaceholderCollege": "Search your college",
+    "clear": "Clear the place",
+    "searching": "Searching…",
+    "noResults": "No places found in Delhi NCR. Try another name.",
+    "searchUnavailable": "Place search isn't available right now. Try again, or pick areas instead.",
+    "outsideNcr": "That place is outside Delhi NCR. Pick a place in NCR.",
+    "travelMode": "How you travel",
+    "modes": {
+      "metro_transit": "Metro",
+      "car": "Car",
+      "two_wheeler": "Two-wheeler",
+      "walk": "Walk"
+    },
+    "maxCommute": "Longest commute you'd accept",
+    "minutes": "{n} min",
+    "pickAreas": "No office? Pick areas instead",
+    "useAnchor": "Have an office or college? Search it",
+    "zone": {
+      "label": "Commute zone from {place}",
+      "reaches": "In reach: {areas}",
+      "noAreas": "None of the listed areas are in reach. Try more minutes or another way to travel.",
+      "approx": "Approximate area: travel times for this mode aren't available yet.",
+      "loading": "Drawing your commute zone…",
+      "failed": "Couldn't draw the commute zone. You can still continue."
+    },
+    "editTitle": "Office or college",
+    "notSet": "No office or college yet",
+    "summary": "{mode} · up to {n} min",
+    "computing": "Your commute zone is being drawn."
   }
 }

@@ -32,6 +32,12 @@ import type { MeRepository } from './modules/me/repository.js';
 import type { PhotoStorage } from './lib/photo-storage.js';
 import { cachedIdToken } from '@flatrimony/routing';
 import { createCommutePreview, type CommutePreview } from './lib/commute-preview.js';
+import {
+  googlePlacesProvider,
+  mockPlacesProvider,
+  type PlacesProvider,
+} from './modules/places/provider.js';
+import { placesRoutes } from './modules/places/routes.js';
 
 export interface BuildOptions {
   env: Env;
@@ -51,6 +57,8 @@ export interface BuildOptions {
   meRepo?: MeRepository;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
   photoStorage?: PhotoStorage;
+  /** Place search (default: from PLACES_PROVIDER; tests inject their own). */
+  placesProvider?: PlacesProvider;
   /** Commute zone previews (default: from ROUTING_URL, radius approximation without it). */
   commutePreview?: CommutePreview;
   /** Capture logs (tests assert that no personal data is logged). */
@@ -94,6 +102,7 @@ export async function buildApp({
   meRepo,
   photoStorage,
   commutePreview,
+  placesProvider,
   logStream,
 }: BuildOptions): Promise<FastifyInstance> {
   const app = Fastify({
@@ -196,6 +205,16 @@ export async function buildApp({
       ...(now ? { now } : {}),
     });
   }
+
+  // Place search for the office/college picker (T2.8): the vendor key stays server-side.
+  await app.register(placesRoutes, {
+    prefix: '/v1',
+    provider:
+      placesProvider ??
+      (env.PLACES_PROVIDER === 'google' && env.GOOGLE_PLACES_API_KEY
+        ? googlePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY })
+        : mockPlacesProvider(async (locale) => (await repo.referenceData(locale)).areas)),
+  });
 
   // Supabase Auth Send SMS hook (only when its secret is configured; required outside local).
   const sms = smsProvider ?? createSmsProvider(env.SMS_PROVIDER);

@@ -62,7 +62,7 @@ export function resumeStep(me: Me | null, draft: Draft): Step | null {
   }
   if (!me.preferences) {
     if (draft.budgetMinInr === undefined) return 'budget';
-    if (!draft.areaIds?.length) return 'commute';
+    if (!draft.areaIds?.length && !me.anchor) return 'commute';
     return 'move-in';
   }
   if (!me.anchor && me.preferences.areaIds.length === 0) return 'commute';

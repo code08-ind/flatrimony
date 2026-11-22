@@ -511,8 +511,8 @@ Failure codes: `name_mismatch`, `underage`, `identity_in_use` (DigiLocker identi
 | --- | --- | --- | --- | --- |
 | GET | `/areas?city=gurugram` | public | Area list (localised) | FR-BIO-02 |
 | POST | `/commute/preview` | user | `{ location, travelMode, maxCommuteMin = 45 }` → `{ zone: GeoJSON MultiPolygon, approx }`. Routed by the routing service (4 s timeout); metro/transit, no road near the point, or routing slow/down give the radius approximation (`approx: true`). Cached per place (~100 m), mode and minutes for an hour (temporary routing failures are not cached). `outside_ncr` as for the anchor; 30 per user per minute (T2.9) | FR-BIO-03 |
-| GET | `/places/autocomplete?q=` | user | Proxy to Places autocomplete with session token; returns `[{ placeId, label }]` (keeps the API key server-side) | FR-BIO-03 |
-| GET | `/places/{placeId}` | user | `{ label, location }` | FR-BIO-03 |
+| POST | `/places/autocomplete` | user | `{ q (2–100 chars), sessionToken (UUID) }` → `{ suggestions: [{ placeId, label, secondary }] }` (up to 5). A POST, not `GET ?q=`, so what the user types (their office) stays out of URLs and logs. Google Places (New) restricted to `LIMITS.ncrBounds` and India, with the session token; the key stays server-side. `mock` provider (local, CI) searches the seeded areas. Vendor down `503`; 60/min per user (T2.8) | FR-BIO-03 |
+| GET | `/places/{placeId}?sessionToken=` | user | `{ placeId, label, location }`; `404` unknown, `422 outside_ncr` outside Delhi NCR, `503` vendor down; ends the search session (T2.8) | FR-BIO-03 |
 
 ### 8.6 Listings
 

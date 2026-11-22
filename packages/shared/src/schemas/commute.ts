@@ -48,3 +48,38 @@ export type CommutePreviewRequest = z.infer<typeof CommutePreviewRequest>;
 
 export const CommutePreviewResponse = z.object({ zone: GeoMultiPolygon, approx: z.boolean() });
 export type CommutePreviewResponse = z.infer<typeof CommutePreviewResponse>;
+
+/**
+ * Place search for the office/college picker (FR-BIO-03; docs/05 §8.5). POST, not GET: what a
+ * user types (their office) must not end up in URLs and access logs. `sessionToken` groups one
+ * search's keystrokes and the final details call (Google Places session billing).
+ */
+export const PlaceAutocompleteRequest = z
+  .object({
+    q: z.string().trim().min(2).max(100),
+    sessionToken: z.uuid(),
+  })
+  .strict();
+export type PlaceAutocompleteRequest = z.infer<typeof PlaceAutocompleteRequest>;
+
+export const PlaceSuggestion = z.object({
+  placeId: z.string().min(1).max(300),
+  /** The place's name, e.g. "DLF Cyber City". */
+  label: z.string().min(1),
+  /** Where it is, e.g. "Gurugram, Haryana". */
+  secondary: z.string().nullable(),
+});
+export type PlaceSuggestion = z.infer<typeof PlaceSuggestion>;
+
+export const PlaceAutocompleteResponse = z.object({
+  suggestions: z.array(PlaceSuggestion).max(10),
+});
+export type PlaceAutocompleteResponse = z.infer<typeof PlaceAutocompleteResponse>;
+
+/** `GET /v1/places/{placeId}?sessionToken=`: the point to use as the anchor (inside NCR). */
+export const PlaceDetails = z.object({
+  placeId: z.string().min(1),
+  label: z.string().min(1).max(LIMITS.anchorLabelMaxChars),
+  location: LatLng,
+});
+export type PlaceDetails = z.infer<typeof PlaceDetails>;

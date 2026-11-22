@@ -313,6 +313,8 @@ Until decided, staging uses the default `run.app` URLs.
 | `EMAIL_API_KEY` | Yes | Transactional email |
 | `PLAY_INTEGRITY_*` | Yes | Verify Play Integrity tokens |
 | `ROUTING_URL` | No | URL of the routing service (API and worker); without it commute zones are the radius approximation |
+| `PLACES_PROVIDER` | No | `mock` (default: searches the seeded NCR areas; local and CI) or `google`; production refuses `mock` |
+| `GOOGLE_PLACES_API_KEY` | With `google` | Google Places API (New) key, server-side only (Secret Manager); restrict it to the Places API |
 | `SENTRY_DSN` | No | Error tracking |
 | `POSTHOG_KEY` | No | Server-side events (optional) |
 | `CORS_ALLOWED_ORIGINS` | No | Comma-separated |

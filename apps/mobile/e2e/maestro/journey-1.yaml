@@ -83,11 +83,20 @@ env:
     timeout: 10000
 - tapOn: { id: continue }
 
-# Areas
+# Office: search (mock places provider in CI: the seeded NCR areas), pick, commute zone preview
 - extendedWaitUntil:
-    visible: Hauz Khas
+    visible: { id: anchor-search }
     timeout: 15000
-- tapOn: Hauz Khas
+- tapOn: { id: anchor-search }
+- inputText: Cyber
+- extendedWaitUntil:
+    visible: 'Cyber City'
+    timeout: 15000
+- tapOn: 'Cyber City'
+- extendedWaitUntil:
+    visible: '.*In reach.*'
+    timeout: 20000
+- hideKeyboard
 - tapOn: { id: continue }
 
 # Move-in

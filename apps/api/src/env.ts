@@ -74,6 +74,12 @@ export const EnvSchema = z.object({
    * the radius approximation (`approx: true`).
    */
   ROUTING_URL: z.url().optional(),
+  /**
+   * Place search for the office/college picker (T2.8). `mock` searches the seeded NCR areas (local
+   * and CI); `google` needs GOOGLE_PLACES_API_KEY and is required in production.
+   */
+  PLACES_PROVIDER: z.enum(['mock', 'google']).default('mock'),
+  GOOGLE_PLACES_API_KEY: z.string().min(1).optional(),
   APP_VERSION: z.string().default('0.0.0'),
 });
 
@@ -91,6 +97,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     env.CORS_ALLOWED_ORIGINS.some((o) => o.startsWith('http:') || isLocalOrigin(o))
   ) {
     throw new Error('CORS_ALLOWED_ORIGINS must be https and not local in production');
+  }
+  if (env.PLACES_PROVIDER === 'google' && !env.GOOGLE_PLACES_API_KEY) {
+    throw new Error('PLACES_PROVIDER=google needs GOOGLE_PLACES_API_KEY');
+  }
+  if (env.APP_ENV === 'production' && env.PLACES_PROVIDER === 'mock') {
+    throw new Error('PLACES_PROVIDER=mock is not allowed in production');
   }
   if (env.APP_ENV === 'production' && env.SMS_PROVIDER === 'mock') {
     throw new Error('SMS_PROVIDER=mock is not allowed in production');

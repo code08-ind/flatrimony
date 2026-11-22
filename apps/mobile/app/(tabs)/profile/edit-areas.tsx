@@ -13,9 +13,9 @@ import { SecondaryButton } from '../../../src/ui/buttons';
 import { Notice } from '../../../src/ui/Notice';
 
 /**
- * Areas: up to 3 preferred areas (FR-BIO-02; PUT /me/preferences). Office/college with commute
- * zones arrives with T2.8/T2.9. At least one area is kept while there is no anchor. The PUT sends
- * the saved move-in window too, so once it has ended the dates must be updated first.
+ * Areas: up to 3 preferred areas (FR-BIO-02; PUT /me/preferences). The office or college has its
+ * own screen (edit-anchor). At least one area is kept while there is no anchor. The PUT sends the
+ * saved move-in window too, so once it has ended the dates must be updated first.
  */
 export default function EditAreas() {
   const { t, locale } = useT();
@@ -29,7 +29,7 @@ export default function EditAreas() {
   return (
     <EditScreen
       title={t('profile.editor.areas')}
-      subtitle={`${t('onboarding.commute.subtitle')} ${t('profile.editor.areasMore')}`}
+      subtitle={t('onboarding.commute.subtitle')}
       busy={saving.busy}
       error={saving.error}
       dirty={!sameSet(selected, prefs.areaIds)}
