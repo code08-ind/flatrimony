@@ -1,0 +1,474 @@
+{
+  "title": "Community Standards",
+  "intro": [
+    {
+      "t": "p",
+      "c": ["How we keep Flatrimony real, safe and broker-free across Delhi NCR."]
+    },
+    {
+      "t": "p",
+      "c": ["Last updated: [DD Month YYYY]"]
+    },
+    {
+      "t": "p",
+      "c": ["Effective immediately for all members"]
+    },
+    {
+      "t": "p",
+      "c": ["Zero Brokerage Mandate"]
+    }
+  ],
+  "sections": [
+    {
+      "title": "Draft — Operational Beta Policy",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "This document is pending final regulatory legal review and outlines our active operating principles, member code of conduct, and disciplinary actions enforced during our current Delhi NCR private beta."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Be Real",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Authenticity is the bedrock of reliable shared living. Every individual listing a room or browsing for flatmates must maintain a singular, authentic persona backed by verified national credentials."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["DigiLocker Verification"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "To initiate conversations or schedule flat visits, your legal name and age must be corroborated via official government records. Unverified profiles cannot access member contact data."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Recent, Unaltered Imagery"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Photos must show you clearly and present real room conditions without deceptive filters or staging. Stock renders, avatars, and pictures of celebrities trigger automated removal."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Privacy:"]
+            },
+            " Only your verified first name and verified lifestyle biodata are shown publicly. Surnames, phone numbers, and company affiliations remain masked until you mutually accept an introduction request. Burner accounts are subject to automatic permanent hardware blocks."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Flatmates, Not Dating",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Flatrimony is engineered purely for shared home tenancy, lease-splitting, and co-living logistics. We are fundamentally not a dating application, matrimonial matchmaker, or casual social mixer."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Strictly Prohibited: Romantic or Sexual Solicitations"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Any user sending flirtatious messages, sexual comments, unsolicited compliments on appearance, requests for dates, or attempting to leverage tenancy inquiries for romantic overtures will receive an irreversible, immediate lifetime platform ban."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "If an exchange makes you feel uncomfortable or strays beyond flat logistics, house rules, and rent arrangements, use the in-thread ",
+            {
+              "t": "strong",
+              "c": ["\"Flag for Romance/Harassment\""]
+            },
+            " action. Trust moderators review flagged messages within 120 minutes."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "No Brokers or Landlords",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Our ecosystem is built exclusively by tenants, for tenants. We prohibit commercial intermediaries whose financial incentives distort real housing costs and misrepresent living situations."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["No brokers"]
+        },
+        {
+          "t": "p",
+          "c": ["Zero Fees"]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["No Brokerage Fees:"]
+                },
+                " You will never be asked to pay half a month’s rent, consultation charges, or document fees to anyone on Flatrimony."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["No Visiting Charges:"]
+                },
+                " Demanding petrol fees, key-access fees, or security-gate entry passes prior to a flat tour is an immediate offense."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Residents Only:"]
+                },
+                " Listings may only be created by an active co-tenant vacating their own room or seeking an incoming flatmate for an ongoing lease."
+              ]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Property management companies, corporate hostel aggregators, and commercial dealers operating clandestine shell profiles will be identified by algorithmic device tracking and referred to local consumer dispute authorities."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Never Ask for Advance Money",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "The single most common co-living fraud across Gurgaon and Noida involves asking prospective flatmates to transfer “token amounts” or “gate pass security deposits” via UPI before an in-person physical inspection."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Automated Financial Guardrails"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Our secure messaging layer automatically detects payment handles (UPI IDs, QR codes, Google Pay links, phone numbers coupled with monetary requests) exchanged prior to a confirmed physical visit checklist. Both parties will see an explicit red warning banner advising against advance settlement."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Always meet in daylight, inspect the original tenancy agreement, and verify landlord permissions before transferring rent or security deposits."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Respect & Fair Preferences",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Finding a compatible flatmate requires clear lifestyle alignment. We distinguish between reasonable day-to-day household habits and unlawful discriminatory exclusions."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Permitted Objective Preferences"]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": ["• Gender preference for safe shared spaces"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Kitchen policies (strictly vegetarian / vegan / non-veg permitted)"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Sleep routines (early birds vs. night-shift professionals)"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Smoking, alcohol, and house party policies"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Pet compatibility and verified allergies"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Work-from-home acoustic habits"]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Strictly Prohibited Bias"]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": ["• Religion or caste requirements"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• State, linguistic, or regional origin bias"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Marital status prejudices"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Sexual orientation or gender identity discrimination"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Degrading remarks regarding a member's profession"]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": ["• Verbal slurs, insults, or demeaning vocabulary"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Safety & Protected Spaces",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Women moving into Delhi NCR face acute safety considerations. Flatrimony incorporates structural barriers designed to prevent intrusive profiling and maintain inviolable protective bubbles."
+          ]
+        },
+        {
+          "t": "h3",
+          "c": ["Women-Only Enclaves"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Flats designated as \"All-Women\" and profiles of female seekers seeking female roommates are strictly hidden from male accounts. Only users with female government identity corroborated through DigiLocker can view these listings, initiate introductions, or receive location coordinates."
+          ]
+        },
+        {
+          "t": "h3",
+          "c": ["In-app live safety session"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "When scheduling an on-site room tour, activate ",
+            {
+              "t": "strong",
+              "c": ["safety session"]
+            },
+            ". The app creates a temporary live-location audit link shareable with your trusted emergency contacts and offers an instantaneous one-touch SOS beacon that triggers an alert to local support desks."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Reporting & Response Times",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Account accountability is fast and unbureaucratic. A persistent contextual report button is present within two taps on every bio, card, and message thread across the product."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Priority 1 · Safety Incident"]
+        },
+        {
+          "t": "p",
+          "c": ["< 2 Hours Response"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Physical threats, stalking, romantic harassment, or unsolicited off-platform contact. Reviewed by human trust officers daily from 9:00 AM to 11:00 PM IST."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Priority 2 · Commercial Spam"]
+        },
+        {
+          "t": "p",
+          "c": ["< 24 Hours Resolution"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Suspected property dealers, broker intermediaries, misleading rent amounts, or advance token requests. Involves forensic device cross-checks."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Enforcement Escalation Ladder",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Except in severe safety breaches (which trigger immediate permanent termination), our trust operations apply an escalating 4-step compliance model:"
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Step 1"]
+        },
+        {
+          "t": "p",
+          "c": ["Formal Warning"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Account flag logged. Educational notice issued regarding specific clause infraction."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Step 2"]
+        },
+        {
+          "t": "p",
+          "c": ["Content Removal"]
+        },
+        {
+          "t": "p",
+          "c": ["Listing delisted, biodata masked from feed, and search shadow-ban activated."]
+        },
+        {
+          "t": "p",
+          "c": ["Step 3"]
+        },
+        {
+          "t": "p",
+          "c": ["7-Day Suspension"]
+        },
+        {
+          "t": "p",
+          "c": ["Complete platform freeze, instant chat lockout, and removal of pending visits."]
+        },
+        {
+          "t": "p",
+          "c": ["Step 4"]
+        },
+        {
+          "t": "p",
+          "c": ["Permanent Ban"]
+        },
+        {
+          "t": "p",
+          "c": ["Irreversible hardware hash, phone, and DigiLocker ID blacklist."]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Predatory behavior, stalking, and advance fee scams bypass Steps 1–3 and trigger an immediate lifetime ban."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Appeals Process",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "We value procedural justice. If your listing was removed or account restricted in error, you are entitled to submit one formal appeal per disciplinary action."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Independent Review Protocol"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Every appeal is reviewed independently by a senior trust moderator who was not involved in the original restriction decision. Reviews are conducted within 72 hours of submission. To request a review, email [appeals email] referencing your registered phone number and case token. Decisions issued following appeal review are definitive."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Trust, Safety & Legal Grievance"]
+        },
+        {
+          "t": "h3",
+          "c": ["Questions or Trust & Safety Concerns?"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Flatrimony is committed to operating an uncompromised co-living standard across Delhi NCR. For legal inquiries, official law enforcement correspondence, or grievance redressal:"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Grievance Officer ",
+            {
+              "t": "strong",
+              "c": ["[Grievance Officer name]"]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Direct Correspondence [grievance email] SLA: 24 to 48 business hours"]
+        }
+      ]
+    }
+  ]
+}

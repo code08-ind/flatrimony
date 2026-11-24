@@ -1,0 +1,454 @@
+{
+  "title": "Terms of Service",
+  "intro": [
+    {
+      "t": "p",
+      "c": [
+        "The legal terms governing your use of Flatrimony's verified flatmate matching platform and rental community in Delhi NCR."
+      ]
+    },
+    {
+      "t": "p",
+      "c": ["Last updated: [DD Month YYYY] · Effective immediately for all Delhi NCR cohorts"]
+    }
+  ],
+  "sections": [
+    {
+      "title": "1. Who can use Flatrimony",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Flatrimony is an invite-driven and verified tenant discovery ecosystem built purposefully for shared accommodation across the National Capital Region (NCR). Access to and membership on our platform is conditional upon your strict agreement to and compliance with these foundational eligibility requirements:"
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Minimum Age Requirement:"]
+                },
+                " You must be at least 18 years of age to register, review shared flats, or message any cohort member."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Strict Intended Use:"]
+                },
+                " Flatrimony is designed exclusively for verified flatmate matching, room-sharing logistics, and household co-tenancy compatibility. The platform is not a dating service, matrimonial portal, casual meetup network, or employment board. Soliciting personal romantic encounters or unverified commerce is grounds for immediate termination."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Bona Fide Residents Only:"]
+                },
+                " Eligibility is restricted entirely to individual bona fide prospective residents or current leaseholding tenants seeking roommate replacements in Delhi NCR."
+              ]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Strict Zero-Broker Policy"]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Real estate brokers, commercial leasing agencies, property agents, property aggregators, and unauthorized middlemen are categorically forbidden. Any profile suspected of acting as a commercial broker or operating sub-leasing networks will be permanently banned with forfeited paid tokens and zero appeal recourse."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "2. Your Account and DigiLocker Verification",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "To ensure collective physical safety and eliminate anonymous harassment, Flatrimony implements mandatory identity authentication before any member is permitted to transmit direct messages, view detailed residency biodatas, or attend offline property visits."
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Mandatory DigiLocker Verification:"]
+                },
+                " Verification via government-sanctioned DigiLocker integration is mandatory prior to sending connection requests ('Rishtas') or unlocking mutual chat channels."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Minimal Data Retention Standard:"]
+                },
+                " Flatrimony interfaces strictly through certified, audited verification partners. We retrieve and retain only verified legal full name, date of birth, gender, and a non-reversible cryptographic hash validating document authenticity. We never inspect, store, or warehouse raw national identity documents, biometrics, or identification numbers."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Single Identity Rule:"]
+                },
+                " Flatrimony strictly enforces a 'One Person, One Account' governance rule. Maintaining burner accounts, creating parallel profiles using third-party credentials, or falsifying your employer or educational biodata will lead to immediate, irrevocable suspension across your device footprint."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3. Listings and True Monthly Cost",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Every room posting, flat share invitation, or pre-lease co-application created on Flatrimony must adhere strictly to factual integrity and radical financial transparency."
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["True monthly cost:"]
+                },
+                " Every listing must publish the inclusive True Monthly Cost. This mandatory total must account for base room rent, society maintenance charges, regular shared cook and domestic staff dues, Wi-Fi subscriptions, estimated electricity splits, and mandatory clubhouse levies. Omitting fixed overheads or introducing surprise expenses during site visits is a breach of our Community Code."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Unedited Video Walkthroughs:"]
+                },
+                " Room vacancy postings require real, continuous, and unfiltered video walkthroughs documenting authentic bedroom natural daylight, bathroom water pressure, and true ambient street acoustic levels. Staged real-estate stock renders, architectural mockups, or heavily filtered promotional assets are flagged and purged."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Zero Tolerance on Brokerage:"]
+                },
+                " No brokerage, finder's cut, sub-lease markup, or administrative fee may ever be demanded, levied, or settled through Flatrimony."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4. Meeting Safely and Payments",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Your real-world safety is our utmost structural priority. We establish strict operational guardrails surrounding in-person viewings and tenancy monetary transactions."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["'Pehli Mulaqat' Public Meeting Protocol"]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Before committing to a residential flat walkthrough, we strongly recommend that prospective co-habitants host their introductory compatibility interview at vetted public transit corridors or daylight partnership establishments (such as busy public places or vetted transit corridors) utilizing our in-app safety session geofenced check-in."
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Prohibition of Pre-Visit Financial Transfers:"]
+                },
+                " NEVER send advance booking tokens, holding deposits, key reserves, or advance rental payments over UPI or bank wire before executing an in-person physical viewing and reviewing the landlord's registered title deed or primary tenancy agreement. Flatrimony will never prompt you to wire funds to secure a room queue."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Pure Matchmaking Intermediary Scope:"]
+                },
+                " [Company legal name] operates exclusively as a software matching intermediary. We do not act as an escrow agent, rent collector, landlord agent, or custodian of rental security deposits."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "5. Move Pass and Listing Boosts",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "While fundamental exploration and chat remain open to verified candidates, users may optionally purchase value-added premium discovery features."
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Optional Paid Services:"]
+                },
+                " Users may acquire the 'Move Pass' (providing algorithmic compatibility rankings and lifestyle biodata matching) or optional Listing Spotlight Boosts for elevated visibility within target geographic hubs (e.g. DLF Phase 5, Noida Sector 137)."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Transparent Pricing & Taxes:"]
+                },
+                " All purchases are transacted in Indian National Rupees (INR). Prices shown include applicable taxes where required, itemized clearly prior to gateway checkout."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": ["Refund Terms:"]
+                },
+                " Once a Listing Boost or Move Pass matching cycle has commenced, it cannot be refunded or transferred. In the event of documented technical server outages that obstruct paid service delivery, prorated credit balances will be issued within 7 business days upon written audit."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "6. Suspension, Sanctions, and Bans",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "To maintain peace of mind across our urban shared apartments, our Trust & Safety operations team enforces an escalating sanctions matrix across reported infractions:"
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Level 1 · Warning"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Formal written warning and compliance corrective notice logged on your permanent account record."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Level 2 · Moderation"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Removal of offending listing content, lifestyle badge rescission, and algorithmic search shadow-ban."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Level 3 · Suspension"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "7-day account freeze, immediate chat lockout, and revocation of scheduled visit appointments."
+          ]
+        },
+        {
+          "t": "p",
+          "c": ["Level 4 · Permanent Ban"]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Total hardware and phone number blacklist, credential revocation, and referral to authorities where applicable."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Users impacted by administrative sanctions may file a formal written appeal within 72 hours of notification via written notice to [grievance email]."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7. Limitation of Liability",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "To the maximum extent permitted under applicable Indian law, [Company legal name], its founding directors, officers, agents, and corporate affiliates shall not be liable for any indirect, incidental, punitive, exemplary, or consequential damages resulting from:"
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                "Domestic disagreements, personality disputes, or behavioral fallout between flatmates;"
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                "Tenancy contract violations, illegal evictions, or unilateral lock changes executed by third-party landlords or master tenants;"
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                "Loss of rental deposits, damage to personal belonging, theft, or physical injury arising from offline interactions between platform users."
+              ]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Nothing in these terms limits liability that cannot be lawfully excluded under the Consumer Protection Act, 2019 or the Information Technology Act, 2000."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "8. Governing Law & Dispute Resolution",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "These Terms of Service and any contractual relationship formed hereunder shall be exclusively governed by, construed, and interpreted in accordance with the laws of the Republic of India, without giving effect to conflict-of-law principles."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "You agree that the competent courts situated in ",
+            {
+              "t": "strong",
+              "c": ["New Delhi, India"]
+            },
+            " shall possess sole and exclusive jurisdiction over any claim, suit, controversy, or proceeding arising out of or related to these terms or use of Flatrimony."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9. Contact and Grievance Officer",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "In compliance with Rule 3(2) of the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, and the Digital Personal Data Protection Act, 2023, the details of our designated Grievance Officer are set forth below:"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Officer:"]
+            },
+            " [Grievance Officer name]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Designation:"]
+            },
+            " Grievance Officer & Data Protection Officer, [Company legal name]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Official Email:"]
+            },
+            " [grievance email]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            {
+              "t": "strong",
+              "c": ["Corporate Address:"]
+            },
+            " [Registered address]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Receipt of any consumer or safety grievance will be formally acknowledged within 24 hours, and substantive resolution shall be furnished within 15 working days as mandated under Indian statute."
+          ]
+        }
+      ]
+    }
+  ]
+}

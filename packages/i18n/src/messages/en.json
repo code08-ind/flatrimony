@@ -445,6 +445,15 @@
     "signOut": "Sign out",
     "signingOut": "Signing out…",
     "savedTitle": "Your Flat Biodata is saved",
-    "savedBody": "Discover on the web is being built. Your answers are saved to your profile."
+    "savedBody": "Discover on the web is being built. Your answers are saved to your profile.",
+    "legalPage": {
+      "draft": "Draft — this page is pending legal review and is not yet our final policy.",
+      "onThisPage": "On this page",
+      "emergencyTitle": "Need an emergency report?",
+      "emergency": "For immediate physical threats or harassment, dial national emergency {number} instantly.",
+      "otherLanguage": "हिन्दी में पढ़ें",
+      "home": "Home",
+      "legal": "Legal"
+    }
   }
 }
