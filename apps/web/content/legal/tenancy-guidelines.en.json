@@ -1,0 +1,650 @@
+{
+  "title": "Tenancy Guidelines",
+  "intro": [
+    {
+      "t": "p",
+      "c": [
+        "Practical guidance for sharing a flat in Delhi NCR — general information, not legal advice."
+      ]
+    },
+    {
+      "t": "p",
+      "c": [
+        "Last updated: [DD Month YYYY]"
+      ]
+    },
+    {
+      "t": "p",
+      "c": [
+        "Applicable across Delhi, Gurugram, Noida & Greater Noida"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "title": "Before You Visit",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Finding a compatible co-living situation in Delhi NCR begins with systematic remote due diligence. Before spending commute hours traversing the Gurgaon Expressway or the Noida Sector 62 corridor, inspect every pre-uploaded parameter on Flatrimony."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Verified Walkthroughs"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Inspect in-app unedited video logs to verify genuine natural light, active water pressure, and room floorplates."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "True Cost Transparency"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Never evaluate on bare rent alone. Verify the comprehensive breakdown inclusive of society maintenance and summer DG load."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "RWA & House Rules"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Check resident welfare restrictions beforehand regarding guest curfews, pets, car parking permits, and culinary dietary preferences."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pehli Mulaqat — Visiting Safely",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "The transition from digital compatibility to shared physical quarters requires disciplined caution. We advocate the mandatory ",
+            {
+              "t": "strong",
+              "c": [
+                "\"Pehli Mulaqat\""
+              ]
+            },
+            " public interaction standard prior to entering private residential premises."
+          ]
+        },
+        {
+          "t": "h3",
+          "c": [
+            "The Public Meetup Protocol"
+          ]
+        },
+        {
+          "t": "ul",
+          "c": [
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": [
+                    "High-Footfall Public Rendezvous:"
+                  ]
+                },
+                " Always schedule the initial meetup in daylight at well-lit, public commercial spots — such as CyberHub (Gurgaon), Galleria Market (DLF Phase 4), Sector 18 Metro (Noida), or Hauz Khas Village/Metro Station."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": [
+                    "safety session Location Broadcast:"
+                  ]
+                },
+                " Tap \"Start safety session\" in the Flatrimony mobile view to securely transmit live location updates and visit duration timers to your designated emergency contact."
+              ]
+            },
+            " ",
+            {
+              "t": "li",
+              "c": [
+                {
+                  "t": "strong",
+                  "c": [
+                    "Zero Advance Transfer Rule:"
+                  ]
+                },
+                " NEVER transfer money, token advances, gate passes, or \"room holding reserves\" via UPI or bank transfer before physically verifying the property and the registered owner."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Rent, Deposit & True Monthly Cost",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "In Delhi NCR, hidden co-living expenditures regularly exceed basic lease numbers by 25% to 40%. Flatrimony enforces the ",
+            {
+              "t": "strong",
+              "c": [
+                "True Monthly Cost"
+              ]
+            },
+            " model so you avoid end-of-month friction among flatmates."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Sample Delhi NCR 3BHK Cost Matrix (Golf Course Road / Sector 137)"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Illustrative Split"
+          ]
+        },
+        {
+          "t": "table",
+          "c": [
+            {
+              "t": "thead",
+              "c": [
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "th",
+                      "c": [
+                        "Expense Category"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "th",
+                      "c": [
+                        "Estimated Monthly Unit"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "th",
+                      "c": [
+                        "Per Person Split (3 Co-tenants)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            " ",
+            {
+              "t": "tbody",
+              "c": [
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "Base Apartment Rent"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹60,000"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹20,000"
+                      ]
+                    }
+                  ]
+                },
+                " ",
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "Society Maintenance & Common Sinking Fund"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹6,000"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹2,000"
+                      ]
+                    }
+                  ]
+                },
+                " ",
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "Electricity & Dual-Source DG Backup (Summer avg.)"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹4,500"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹1,500"
+                      ]
+                    }
+                  ]
+                },
+                " ",
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "High-Speed Optical Fiber Wi-Fi (300 Mbps)"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹1,200"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹400"
+                      ]
+                    }
+                  ]
+                },
+                " ",
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "Dedicated Cook & Housekeeping Help"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹7,500"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹2,500"
+                      ]
+                    }
+                  ]
+                },
+                " ",
+                {
+                  "t": "tr",
+                  "c": [
+                    {
+                      "t": "td",
+                      "c": [
+                        "Total True Monthly Cost"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹79,200"
+                      ]
+                    },
+                    " ",
+                    {
+                      "t": "td",
+                      "c": [
+                        "₹26,400 / month"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Refundable Security Deposit Norms"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Security deposits across Delhi NCR predominantly range from ",
+            {
+              "t": "strong",
+              "c": [
+                "2 months' base rent"
+              ]
+            },
+            " (e.g., ₹40,000 per person in the above case). Treat this as a segregated capital outlay — never pool this money into unsecured personal accounts without clear co-signed documentation."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Your Rent Agreement",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Most residential leases across Haryana, Delhi, and Uttar Pradesh are executed as an ",
+            {
+              "t": "strong",
+              "c": [
+                "11-Month Leave and License Agreement"
+              ]
+            },
+            " to bypass protracted tenancy litigation under traditional Rent Control acts."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Notice & Lock-in Periods"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Verify if your contract contains an initial lock-in period (commonly 3–6 months). Ensure the standard mutual notice period is 30 to 60 calendar days with clear communication avenues."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "e-Stamping & Attestation"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Leases must be executed on verified non-judicial e-stamp paper (value between ₹100 and ₹500 depending on regional state rules in Delhi, Haryana, or UP) and notarized."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Important Notice"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "This page represents operational community guidelines and peer guidance — it does not constitute formal legal counsel. Tenancy regulations and enforcement bodies vary significantly across the Municipal Corporation of Delhi (MCD), Gurugram Metropolitan Development Authority (GMDA), and Noida Authority."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Moving In & Photo Log",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Unfair deductions from security deposits are the single most prevalent conflict reported by tenants in Delhi NCR. Protect your capital with on-day-one digital inventory mapping."
+          ]
+        },
+        {
+          "t": "h3",
+          "c": [
+            "The Day-1 Move-In Checklist:"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Timestamped 4K video walk of all skirting boards, window latches, and ceilings."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Close-up photographs of pre-existing dampness, water seepage, or drill holes."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Testing geysers, air conditioners, chimneys, and RO water purifiers in presence of the agent."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Written counter-sign by landlord/current tenants confirming deposit distribution."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Living Together & House Rules",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Shared domestic spaces succeed when explicit boundaries replace assumed courtesies. Establish a clear written roommate covenant during your first week."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Quiet Hours & WFH Respect"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Agree on common quiet intervals (e.g. 11:00 PM to 7:30 AM). Keep phone calls and high-volume speakers inside private rooms during peak corporate working hours."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Overnight Guests & Advance Notice"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Enforce a minimum 12-hour WhatsApp group heads-up before hosting overnight friends, family, or partners to maintain comfort and mutual respect in common zones."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "When Someone Leaves",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Career transitions and relocations are natural. To maintain lease stability, departing tenants must not leave the remaining flatmates financially encumbered."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Flatrimony Replacement Protocol"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Departing co-tenants should activate the ",
+            {
+              "t": "strong",
+              "c": [
+                "Flatrimony Replacement Finder"
+              ]
+            },
+            " at least 30 days prior to their planned exit. The existing tenants retain absolute veto rights over lifestyle alignment, ensuring incoming housemates match the household's cleanliness, culinary, and social parameters before executing lease novation."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Getting Your Deposit Back",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Reclaiming your capital cleanly requires documentation rather than confrontation. Leverage your original verified record to resolve final settlements."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Move-Out Audit"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Compare room states side-by-side with day-one photo records to disprove arbitrary repainting or wear-and-tear claims."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Utility Clearance"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Procure official final meter readings for DHBVN/UPPCL power and piped natural gas (PNG) to settle accounts to the exact day."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Written Refund Timeline"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Get a signed bank transfer timeline (usually 7 to 14 days post-handover) on the landlord's official WhatsApp or letterhead."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Need Help & Grievance Redressal",
+      "blocks": [
+        {
+          "t": "p",
+          "c": [
+            "Flatrimony is committed to transparent resolutions, platform compliance, and user safety across Delhi NCR."
+          ]
+        },
+        {
+          "t": "h3",
+          "c": [
+            "National Emergency"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "National Emergency Helpline (Police, Medical, Fire) Dial 112 immediately in case of physical endangerment, unlawful lockouts, or distress."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Grievance Redressal Officer"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "In accordance with the Information Technology Act and applicable Delhi NCR tenancy guidelines, you may direct formal complaints and tenancy grievances to our designated Grievance Officer."
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Designated Officer [Grievance Officer name]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Grievance Email [grievance email]"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Response SLA Initial acknowledgment within 24–48 business hours"
+          ]
+        },
+        {
+          "t": "p",
+          "c": [
+            "Jurisdiction New Delhi, Delhi NCR, India"
+          ]
+        }
+      ]
+    }
+  ]
+}

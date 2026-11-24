@@ -103,12 +103,18 @@ describe('processPhoto', () => {
     expect({ width: out.width, height: out.height }).toEqual({ width: 600, height: 800 });
   });
 
-  it('scales large photos down to 1600 px on the longer side, never up', async () => {
-    const big = await processPhoto(await picture(3200, 2400));
-    expect(Math.max(big.width, big.height)).toBe(PHOTO_MAX_SIDE);
-    const small = await processPhoto(await picture(300, 200));
-    expect({ width: small.width, height: small.height }).toEqual({ width: 300, height: 200 });
-  });
+  // Encoding a 3200 × 2400 picture and re-encoding it takes seconds on a shared CI runner (it ran
+  // past the 5 s default once): give it room rather than let a slow machine fail the build.
+  it(
+    'scales large photos down to 1600 px on the longer side, never up',
+    { timeout: 30_000 },
+    async () => {
+      const big = await processPhoto(await picture(3200, 2400));
+      expect(Math.max(big.width, big.height)).toBe(PHOTO_MAX_SIDE);
+      const small = await processPhoto(await picture(300, 200));
+      expect({ width: small.width, height: small.height }).toEqual({ width: 300, height: 200 });
+    },
+  );
 
   it.each([
     ['PNG', async () => picture(100, 100, 'png'), 'unsupported_format'],
