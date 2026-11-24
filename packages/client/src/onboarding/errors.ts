@@ -12,6 +12,8 @@ export function saveErrorKey(
   if (code === 'profile.category_not_allowed') return 'onboarding.errors.categoryNotAllowed';
   if (code === 'auth.banned') return 'auth.errors.banned';
   if (code === 'profile.underage') return 'onboarding.errors.underage';
+  // Sign-in itself is down (the web server could not renew the session): not "sign-up closed".
+  if (code === 'auth.unavailable') return 'auth.errors.unavailable';
   if (status === 503) return 'onboarding.errors.notOpen';
   if (status === 429) return 'auth.errors.tooManyRequests';
   return 'onboarding.errors.generic';

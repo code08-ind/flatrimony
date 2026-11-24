@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import type { MessageKey } from '@flatrimony/i18n';
 import { LIMITS } from '@flatrimony/shared';
 import { api } from '../../../src/api';
-import { readMe } from '../../../src/me-parse';
+import { readMe } from '@flatrimony/client';
 import { useMe } from '../../../src/me';
 import { canAddPhoto, photoErrorKey, withMainFirst } from '../../../src/profile/logic';
 import { pickAndUploadPhoto } from '../../../src/profile/photo-upload';

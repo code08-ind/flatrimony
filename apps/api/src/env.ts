@@ -65,6 +65,12 @@ export const EnvSchema = z.object({
    * instead of raising this, or the run.app URL becomes spoofable.
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+  /**
+   * Shared with the web app's server, which calls the API for signed-in web users (docs/05 §2):
+   * requests carrying it are rate-limited by the client IP the web server forwards. Unset: the
+   * forwarded IP is ignored and all web users share the web server's per-IP limit.
+   */
+  WEB_PROXY_SECRET: z.string().min(32).optional(),
   /** Origins whose browser pages may call the API (docs/05 §1). Empty: no cross-origin calls. */
   CORS_ALLOWED_ORIGINS: csv.refine((origins) => origins.every(isBareOrigin), {
     message: 'each entry must be a bare origin such as https://app.example.com',

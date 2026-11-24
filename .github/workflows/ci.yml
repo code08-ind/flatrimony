@@ -111,8 +111,10 @@ jobs:
           -x studio,imgproxy,vector,logflare,edge-runtime,mailpit,supavisor,realtime,postgres-meta
       - name: Local keys for the API and the app (from the running stack)
         run: pnpm dev:secrets
-      - name: Build the API and the app's packages
-        run: pnpm turbo run build --filter=@flatrimony/api... --filter=@flatrimony/mobile^...
+      - name: Build the API and the apps' packages
+        run: >-
+          pnpm turbo run build --filter=@flatrimony/api... --filter=@flatrimony/mobile^...
+          --filter=@flatrimony/web^...
       - name: Start the API
         working-directory: apps/api
         run: |
@@ -129,6 +131,10 @@ jobs:
       - name: Journey 1 (Playwright; exports the app for web first)
         working-directory: apps/mobile
         run: pnpm test:e2e:web
+      - name: Journey 1 on the web app (Playwright + axe; builds and starts Next.js first)
+        if: success() || failure()
+        working-directory: apps/web
+        run: pnpm test:e2e
       - name: API log
         if: failure()
         run: tail -n 200 "$RUNNER_TEMP/api.log" || true
@@ -136,7 +142,7 @@ jobs:
       # Playwright's error context holds the page's accessibility snapshot at the failure.
       - name: Failure evidence (page snapshot at the failing step)
         if: failure()
-        run: find apps/mobile/test-results -name 'error-context.md' -exec cat {} \; || true
+        run: find apps/mobile/test-results apps/web/test-results -name 'error-context.md' -exec cat {} \; || true
       - name: Stop Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

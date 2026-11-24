@@ -12,8 +12,8 @@ import {
   sessionToken,
   TRAVEL_MODES,
   zonePath,
-} from '../src/anchor/logic';
-import { resumeStep } from '../src/onboarding/logic';
+  resumeStep,
+} from '../src/index.js';
 
 /** A square zone around Cyber City (0.1° on each side), with a hole in the north-east corner. */
 const zone: GeoMultiPolygon = {

@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { config } from './config';
-import { fetchWithTimeout } from './net';
+import { fetchWithTimeout } from '@flatrimony/client';
 import { supabase } from './supabase';
 
 /** A response from the Flatrimony API: status and parsed JSON (RFC 9457 problem on errors). */

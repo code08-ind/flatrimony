@@ -121,9 +121,12 @@ resource "google_secret_manager_secret" "secrets" {
 locals {
   # Least privilege (docs/03 §4): the worker reads only the secrets it uses.
   worker_secret_ids = ["DATABASE_URL", "DATABASE_URL_DIRECT", "SUPABASE_SERVICE_ROLE_KEY"]
+  # The web app's server holds no database or service-role access, only the proxy secret.
+  web_secret_ids = ["WEB_PROXY_SECRET"]
   secret_access = concat(
     [for id in var.secret_ids : [id, "api"]],
     [for id in local.worker_secret_ids : [id, "worker"] if contains(var.secret_ids, id)],
+    [for id in local.web_secret_ids : [id, "web"] if contains(var.secret_ids, id)],
   )
 }
 

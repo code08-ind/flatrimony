@@ -19,6 +19,7 @@
     "@expo-google-fonts/noto-sans-devanagari": "^0.4.2",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/metro-runtime": "~58.0.17",
+    "@flatrimony/client": "workspace:*",
     "@flatrimony/design-tokens": "workspace:*",
     "@flatrimony/i18n": "workspace:*",
     "@flatrimony/shared": "workspace:*",

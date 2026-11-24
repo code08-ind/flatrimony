@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import type { Lifestyle } from '@flatrimony/shared';
 import { useMe } from '../../src/me';
 import { resetDraft } from '../../src/onboarding/draft';
-import { habitsComplete, stepNumber, type HabitAnswers } from '../../src/onboarding/logic';
+import { habitsComplete, stepNumber, type HabitAnswers } from '@flatrimony/client';
 import { saveMe, useSaving } from '../../src/onboarding/save';
 import { Text } from 'react-native';
 import { textStyle, theme } from '../../src/theme';

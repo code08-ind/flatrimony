@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useMe } from '../../../src/me';
-import { anchorComplete, DEFAULT_MINUTES, type AnchorDraft } from '../../../src/anchor/logic';
+import { anchorComplete, DEFAULT_MINUTES, type AnchorDraft } from '@flatrimony/client';
 import { EditScreen } from '../../../src/profile/EditScreen';
 import { useProfileSave } from '../../../src/profile/save';
 import { useReference } from '../../../src/profile/reference';

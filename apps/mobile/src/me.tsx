@@ -11,7 +11,7 @@ import type { Me } from '@flatrimony/shared';
 import { api, problemCode } from './api';
 import { useSession } from './auth/session';
 import { resetDraft } from './onboarding/draft';
-import { readMe } from './me-parse';
+import { readMe } from '@flatrimony/client';
 import { supabase } from './supabase';
 
 /**

@@ -16,7 +16,7 @@ import {
   sessionToken,
   TRAVEL_MODES,
   type AnchorDraft,
-} from '../../anchor/logic';
+} from '@flatrimony/client';
 import { textStyle, theme } from '../../theme';
 import { useT } from '../../useT';
 import {

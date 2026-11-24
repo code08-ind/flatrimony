@@ -3,18 +3,21 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ShieldCheck, X } from '../../src/ui/icons';
 import { authConfigured, config, legalUrl } from '../../src/config';
-import { fetchWithTimeout } from '../../src/net';
-import { getDeviceId } from '../../src/device';
-import { requestOtp, type RequestOtpResult } from '../../src/auth/otp-flow';
 import {
+  fetchWithTimeout,
+  requestOtp,
+  type RequestOtpResult,
   applyKey,
   formatNational,
   hasValidStart,
   isValidMobile,
   toE164,
-} from '../../src/auth/phone';
-import { requestErrorKey } from '../../src/auth/messages';
-import { codeStillFresh, getPendingSignIn, setPendingSignIn } from '../../src/auth/pending';
+  requestErrorKey,
+  codeStillFresh,
+  getPendingSignIn,
+  setPendingSignIn,
+} from '@flatrimony/client';
+import { getDeviceId } from '../../src/device';
 import { supabase } from '../../src/supabase';
 import { textStyle, theme } from '../../src/theme';
 import { useT } from '../../src/useT';

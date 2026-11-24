@@ -3,7 +3,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { MessageKey } from '@flatrimony/i18n';
 import { PhotoUploadUrlResponse } from '@flatrimony/shared';
 import { api } from '../api';
-import { fetchWithTimeout } from '../net';
+import { fetchWithTimeout } from '@flatrimony/client';
 import { photoErrorKey, resizeFor } from './logic';
 
 export type PhotoResult =

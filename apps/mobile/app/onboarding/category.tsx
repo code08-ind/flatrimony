@@ -7,7 +7,7 @@ import { config } from '../../src/config';
 import { getDeviceId } from '../../src/device';
 import { useMe } from '../../src/me';
 import { getDraft, updateDraft, useDraft } from '../../src/onboarding/draft';
-import { bootstrapBody, genderPrefFor, stepNumber } from '../../src/onboarding/logic';
+import { bootstrapBody, genderPrefFor, stepNumber } from '@flatrimony/client';
 import { saveMe, useSaving, type SaveResult } from '../../src/onboarding/save';
 import { textStyle, theme } from '../../src/theme';
 import { useT } from '../../src/useT';
@@ -61,7 +61,8 @@ async function saveIdentity(
         ...prefs,
         flatmateGenderPref: genderPrefFor(category),
       });
-      if (updated.ok) return updated;
+      // The category changed but the flatmate preference did not: say so (save again).
+      return updated;
     }
     return patched;
   }

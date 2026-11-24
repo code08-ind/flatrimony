@@ -3,7 +3,7 @@ import { BudgetPicker } from '../../src/ui/biodata/BudgetPicker';
 import { router } from 'expo-router';
 import { useMe } from '../../src/me';
 import { updateDraft, useDraft } from '../../src/onboarding/draft';
-import { clampBudget, stepNumber } from '../../src/onboarding/logic';
+import { clampBudget, stepNumber } from '@flatrimony/client';
 import { useGoOnce } from '../../src/onboarding/nav';
 import { useT } from '../../src/useT';
 import { PrimaryButton } from '../../src/ui/buttons';

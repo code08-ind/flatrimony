@@ -8,7 +8,7 @@ import {
   placeLabels,
   zonePath,
   type PlacedLabel,
-} from '../../anchor/logic';
+} from '@flatrimony/client';
 import { textStyle, theme } from '../../theme';
 import { useT } from '../../useT';
 

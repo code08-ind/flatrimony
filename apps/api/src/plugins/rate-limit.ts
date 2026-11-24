@@ -3,7 +3,14 @@
  * signed-in requests also against the per-user bucket; routes may add their own bucket with
  * `config.rateLimit`. `config.rateLimit: false` exempts a route (health checks, SOS).
  * Responses carry RateLimit-Limit / -Remaining / -Reset; excess gets 429 `rate_limited`.
+ *
+ * The web app calls the API from its server on the user's behalf (tokens stay in HttpOnly cookies,
+ * docs/05 §2), so every web user would share the web server's IP. With `trustedProxySecret`, a
+ * request carrying that secret counts against the client IP the web server read from its own
+ * trusted front end (`x-flatrimony-client-ip`); without the secret the header is ignored.
  */
+import { timingSafeEqual } from 'node:crypto';
+import { isIP } from 'node:net';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import { RATE_LIMITS } from '@flatrimony/shared';
@@ -27,6 +34,8 @@ declare module 'fastify' {
 
 export interface RateLimitOptions {
   store: RateLimitStore;
+  /** Shared with the web app's server (WEB_PROXY_SECRET); enables the forwarded client IP. */
+  trustedProxySecret?: string;
   now?: () => number;
 }
 
@@ -38,7 +47,18 @@ interface Verdict {
 }
 
 export const rateLimitPlugin = fp<RateLimitOptions>(
-  async (app: FastifyInstance, { store, now = Date.now }) => {
+  async (app: FastifyInstance, { store, now = Date.now, trustedProxySecret }) => {
+    const secret = trustedProxySecret ? Buffer.from(trustedProxySecret) : null;
+    /** The socket (or trusted front end) address, or the web server's forwarded client IP. */
+    function clientIp(req: FastifyRequest): string {
+      const sent = req.headers['x-flatrimony-proxy-secret'];
+      const forwarded = req.headers['x-flatrimony-client-ip'];
+      if (!secret || typeof sent !== 'string' || typeof forwarded !== 'string') return req.ip;
+      const given = Buffer.from(sent);
+      const trusted = given.length === secret.length && timingSafeEqual(given, secret);
+      return trusted && isIP(forwarded) ? forwarded : req.ip;
+    }
+
     async function check(
       bucket: string,
       limit: number,
@@ -56,15 +76,16 @@ export const rateLimitPlugin = fp<RateLimitOptions>(
       if (route === false) return;
       const t = now();
 
+      const ip = clientIp(req);
       const verdicts: Verdict[] = [];
       const g = RATE_LIMITS.globalPerIp;
-      verdicts.push(await check(`ip:${req.ip}`, g.limit, g.windowMs, t));
+      verdicts.push(await check(`ip:${ip}`, g.limit, g.windowMs, t));
       if (req.user) {
         const u = RATE_LIMITS.perUser;
         verdicts.push(await check(`user:${req.user.id}`, u.limit, u.windowMs, t));
       }
       if (route) {
-        const subject = route.by === 'ip' || !req.user ? `ip:${req.ip}` : `user:${req.user.id}`;
+        const subject = route.by === 'ip' || !req.user ? `ip:${ip}` : `user:${req.user.id}`;
         verdicts.push(await check(`${route.bucket}:${subject}`, route.limit, route.windowMs, t));
       }
 

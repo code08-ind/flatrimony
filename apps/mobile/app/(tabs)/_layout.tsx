@@ -1,7 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 import { useSession } from '../../src/auth/session';
 import { useMe } from '../../src/me';
-import { isComplete } from '../../src/onboarding/logic';
+import { isComplete } from '@flatrimony/client';
 import { ProfileLoadError } from '../../src/ui/ProfileLoadError';
 import { useTranslation } from 'react-i18next';
 import { theme } from '../../src/theme';

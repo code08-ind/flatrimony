@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import { useMe } from '../../../src/me';
-import { todayIst } from '../../../src/onboarding/logic';
+import { todayIst } from '@flatrimony/client';
 import { EditScreen } from '../../../src/profile/EditScreen';
 import { moveInWindowOver, preferencesWith, sameSet } from '../../../src/profile/logic';
 import { useProfileSave } from '../../../src/profile/save';

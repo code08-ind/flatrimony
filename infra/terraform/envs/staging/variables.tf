@@ -34,7 +34,7 @@ variable "placeholder_image" {
 }
 
 variable "secret_ids" {
-  description = "Secret Manager secrets the API/worker read (values are added outside Terraform)."
+  description = "Secret Manager secrets the API, worker and web app read (values are added outside Terraform)."
   type        = list(string)
   default = [
     "DATABASE_URL",
@@ -44,6 +44,8 @@ variable "secret_ids" {
     "HASH_PEPPER",
     "SEND_SMS_HOOK_SECRETS",
     "GOOGLE_PLACES_API_KEY",
+    # Shared by the web app's server and the API: the API rate-limits web users by their own IP.
+    "WEB_PROXY_SECRET",
   ]
 }
 
