@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import type { Intent } from '@flatrimony/shared';
 import { useMe } from '../../src/me';
 import { updateDraft, useDraft } from '../../src/onboarding/draft';
-import { stepNumber } from '../../src/onboarding/logic';
+import { stepNumber } from '@flatrimony/client';
 import { useGoOnce } from '../../src/onboarding/nav';
 import { textStyle, theme } from '../../src/theme';
 import { useT } from '../../src/useT';

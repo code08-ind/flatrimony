@@ -1,7 +1,7 @@
 import { Linking, StyleSheet, Text } from 'react-native';
 import type { Locale } from '@flatrimony/i18n';
 import { textStyle, theme } from '../theme';
-import { parseRich } from '../rich-text';
+import { parseRich } from '@flatrimony/client';
 
 /**
  * "By continuing you agree to our Terms and Privacy Policy" with tappable links (FR-AUTH-09 shows

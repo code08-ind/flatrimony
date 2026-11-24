@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { LIMITS } from '@flatrimony/shared';
-import { BUDGET_BRACKETS, BUDGET_STEP, clampBudget, formatInr } from '../../onboarding/logic';
+import { BUDGET_BRACKETS, BUDGET_STEP, clampBudget, formatInr } from '@flatrimony/client';
 import { textStyle, theme } from '../../theme';
 import { useT } from '../../useT';
 import { Info } from '../icons';

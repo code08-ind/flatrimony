@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { LIMITS } from '@flatrimony/shared';
 import { useMe } from '../../../src/me';
-import { clampBudget } from '../../../src/onboarding/logic';
+import { clampBudget } from '@flatrimony/client';
 import { EditScreen } from '../../../src/profile/EditScreen';
 import { preferencesWith } from '../../../src/profile/logic';
 import { useProfileSave } from '../../../src/profile/save';

@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { authConfigured, config } from './config';
-import { fetchWithTimeout } from './net';
+import { fetchWithTimeout } from '@flatrimony/client';
 import { storage } from './storage';
 
 /**

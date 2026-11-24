@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useMe } from '../../src/me';
 import { getDraft } from '../../src/onboarding/draft';
-import { resumeStep } from '../../src/onboarding/logic';
+import { resumeStep } from '@flatrimony/client';
 
 /** Opens the first step not yet answered (after a restart, from what the server has). */
 export default function OnboardingIndex() {

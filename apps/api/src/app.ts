@@ -91,6 +91,7 @@ const REDACT = [
   'req.headers.authorization',
   'req.headers.cookie',
   'req.headers["idempotency-key"]',
+  'req.headers["x-flatrimony-proxy-secret"]',
   'body.phone',
   'body.otp',
   'body.token',
@@ -168,6 +169,7 @@ export async function buildApp({
   const limiter = rateLimitStore ?? memoryRateLimitStore();
   await app.register(rateLimitPlugin, {
     store: limiter,
+    ...(env.WEB_PROXY_SECRET ? { trustedProxySecret: env.WEB_PROXY_SECRET } : {}),
     ...(now ? { now } : {}),
   });
   await app.register(idempotencyPlugin, {

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Draft } from './logic';
+import type { Draft } from '@flatrimony/client';
 
 /**
  * The onboarding answers not yet saved, in memory only (like the pending sign-in): personal data

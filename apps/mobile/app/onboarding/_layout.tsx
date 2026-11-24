@@ -2,7 +2,7 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 import { useSession } from '../../src/auth/session';
 import { useMe } from '../../src/me';
 import { useDraft } from '../../src/onboarding/draft';
-import { isComplete, resumeStep, stepAhead } from '../../src/onboarding/logic';
+import { isComplete, resumeStep, stepAhead } from '@flatrimony/client';
 import { theme } from '../../src/theme';
 import { ProfileLoadError } from '../../src/ui/ProfileLoadError';
 

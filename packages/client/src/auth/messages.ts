@@ -1,5 +1,5 @@
 import type { MessageKey } from '@flatrimony/i18n';
-import type { RequestOtpResult, VerifyOtpResult } from './otp-flow';
+import type { RequestOtpResult, VerifyOtpResult } from './otp-flow.js';
 
 type RequestReason = Exclude<Extract<RequestOtpResult, { ok: false }>['reason'], 'rate_limited'>;
 type VerifyReason = Extract<VerifyOtpResult, { ok: false }>['reason'];

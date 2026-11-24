@@ -1,4 +1,4 @@
-import { BEDTIMES, WAKE_TIMES, type HabitAnswers } from '../../onboarding/logic';
+import { BEDTIMES, WAKE_TIMES, type HabitAnswers } from '@flatrimony/client';
 import { theme } from '../../theme';
 import { useT } from '../../useT';
 import { CigaretteSlash, ForkKnife, Moon, PawPrint, Sparkle, Sun } from '../icons';

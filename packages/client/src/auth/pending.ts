@@ -1,4 +1,4 @@
-import { secondsLeft } from './countdown';
+import { secondsLeft } from './countdown.js';
 
 /**
  * The number an OTP was just requested for, kept in memory only. Passing it as a route param would

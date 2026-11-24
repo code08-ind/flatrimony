@@ -318,6 +318,17 @@ Until decided, staging uses the default `run.app` URLs.
 | `SENTRY_DSN` | No | Error tracking |
 | `POSTHOG_KEY` | No | Server-side events (optional) |
 | `CORS_ALLOWED_ORIGINS` | No | Comma-separated |
+| `WEB_PROXY_SECRET` | Yes | Shared by the API and the web app's server (≥ 32 characters). Web users' API calls go through the web server (tokens stay in HttpOnly cookies, docs/05 §2); with this secret the API rate-limits them by the client IP the web server forwards instead of the web server's own |
+
+**Web app (`apps/web`, Next.js) — read at runtime on the server, never baked into the bundle:**
+
+| Variable | Secret? | Description |
+| --- | --- | --- |
+| `APP_ENV` | No | `local` turns off the `Secure` flag on the session cookies (plain-http localhost); anything else keeps it on |
+| `API_URL` | No | The API, called by the browser (OTP guard) and by the web server (everything else) |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | No | Supabase Auth for the browser's OTP request and verification (the anon key is public by design) |
+| `WEB_PROXY_SECRET` | Yes | As for the API (same value) |
+| `TRUST_PROXY_HOPS` | No | Proxies in front of the web server whose `X-Forwarded-For` entry is trusted (Cloud Run: 1); the client IP sent to the API comes from that entry only |
 | `RATE_LIMIT_*` | No | Tunable limits |
 
 ## 6. Software development lifecycle (start to finish)

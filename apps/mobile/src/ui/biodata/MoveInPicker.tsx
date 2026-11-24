@@ -1,13 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LIMITS } from '@flatrimony/shared';
-import {
-  monthGrid,
-  presetWindow,
-  tapDay,
-  todayIst,
-  type MoveInPreset,
-} from '../../onboarding/logic';
+import { monthGrid, presetWindow, tapDay, todayIst, type MoveInPreset } from '@flatrimony/client';
 import { textStyle, theme } from '../../theme';
 import { useT } from '../../useT';
 import { CaretLeft, CaretRight } from '../icons';

@@ -19,9 +19,9 @@ import {
   tapDay,
   todayIst,
   type Draft,
-} from '../src/onboarding/logic';
-import { saveErrorKey } from '../src/onboarding/errors';
-import { readMe } from '../src/me-parse';
+  saveErrorKey,
+  readMe,
+} from '../src/index.js';
 
 const baseMe = Me.parse({
   id: '2b7e4c1a-9d3f-4e5a-8b6c-0d1e2f3a4b5c',
@@ -249,6 +249,7 @@ describe('save errors', () => {
     expect(saveErrorKey(403, 'auth.banned')).toBe('auth.errors.banned');
     expect(saveErrorKey(422, 'profile.underage')).toBe('onboarding.errors.underage');
     expect(saveErrorKey(503, 'upstream.unavailable')).toBe('onboarding.errors.notOpen');
+    expect(saveErrorKey(503, 'auth.unavailable')).toBe('auth.errors.unavailable');
     expect(saveErrorKey(500)).toBe('onboarding.errors.generic');
   });
 });

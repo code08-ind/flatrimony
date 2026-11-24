@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /* eslint-disable no-console -- CLI script */
 /**
- * Generates local-development secrets shared by Supabase (supabase/.env) and the API
- * (apps/api/.env.local). Both files are git-ignored. Existing values are kept.
+ * Generates local-development secrets shared by Supabase (supabase/.env), the API
+ * (apps/api/.env.local), the web app (apps/web/.env.local) and the other apps. All are
+ * git-ignored. Existing values are kept.
  * Usage: pnpm dev:secrets
  */
 import { randomBytes } from 'node:crypto';
@@ -95,7 +96,23 @@ const c = upsert(mobileEnv, {
   EXPO_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
   ...(anonKey ? { EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey } : {}),
 });
+// The web app's server (apps/web): the API, Supabase Auth for the browser's OTP calls, and the
+// secret that lets the API rate-limit web users by their own IP (docs/05 §2).
+const webEnv = join(root, 'apps/web/.env.local');
+const proxySecret =
+  readEnv(webEnv).get('WEB_PROXY_SECRET') ??
+  readEnv(apiEnv).get('WEB_PROXY_SECRET') ??
+  randomBytes(32).toString('base64url');
+b.push(...upsert(apiEnv, { WEB_PROXY_SECRET: proxySecret }));
+const web = upsert(webEnv, {
+  APP_ENV: 'local',
+  API_URL: 'http://localhost:8080',
+  SUPABASE_URL: 'http://127.0.0.1:54321',
+  WEB_PROXY_SECRET: proxySecret,
+  ...(anonKey ? { SUPABASE_ANON_KEY: anonKey } : {}),
+});
 console.log(`supabase/.env: ${a.length ? `added ${a.join(', ')}` : 'unchanged'}`);
 console.log(`apps/api/.env.local: ${b.length ? `added ${b.join(', ')}` : 'unchanged'}`);
 console.log(`apps/mobile/.env.local: ${c.length ? `added ${c.join(', ')}` : 'unchanged'}`);
+console.log(`apps/web/.env.local: ${web.length ? `added ${web.join(', ')}` : 'unchanged'}`);
 console.log(`apps/worker/.env.local: ${w.length ? `added ${w.join(', ')}` : 'unchanged'}`);

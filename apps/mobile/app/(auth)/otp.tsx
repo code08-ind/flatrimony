@@ -3,13 +3,21 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowsClockwise, ChatCircleDots } from '../../src/ui/icons';
 import { config } from '../../src/config';
-import { fetchWithTimeout } from '../../src/net';
+import {
+  fetchWithTimeout,
+  formatCountdown,
+  secondsLeft,
+  requestErrorKey,
+  verifyErrorKey,
+  clearsCode,
+  requestOtp,
+  verifyOtp,
+  applyKey,
+  displayE164,
+  getPendingSignIn,
+  setPendingSignIn,
+} from '@flatrimony/client';
 import { getDeviceId } from '../../src/device';
-import { formatCountdown, secondsLeft } from '../../src/auth/countdown';
-import { requestErrorKey, verifyErrorKey } from '../../src/auth/messages';
-import { clearsCode, requestOtp, verifyOtp } from '../../src/auth/otp-flow';
-import { applyKey, displayE164 } from '../../src/auth/phone';
-import { getPendingSignIn, setPendingSignIn } from '../../src/auth/pending';
 import { supabase } from '../../src/supabase';
 import { textStyle, theme } from '../../src/theme';
 import { useT } from '../../src/useT';

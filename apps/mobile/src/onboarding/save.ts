@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { MessageKey } from '@flatrimony/i18n';
 import { Me } from '@flatrimony/shared';
 import { api, NetworkError, problemCode } from '../api';
-import { saveErrorKey } from './errors';
+import { saveErrorKey } from '@flatrimony/client';
 
 export type SaveResult =
   { ok: true; me: Me; etag?: string } | { ok: false; error: MessageKey; status?: number };

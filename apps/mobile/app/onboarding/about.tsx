@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { humanText, LIMITS } from '@flatrimony/shared';
 import { useMe } from '../../src/me';
 import { updateDraft, useDraft } from '../../src/onboarding/draft';
-import { parseDob, todayIst, type DobProblem } from '../../src/onboarding/logic';
+import { parseDob, todayIst, type DobProblem } from '@flatrimony/client';
 import { useGoOnce } from '../../src/onboarding/nav';
 import { saveMe, useSaving } from '../../src/onboarding/save';
 import { textStyle, theme } from '../../src/theme';

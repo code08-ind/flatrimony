@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { LIMITS } from '@flatrimony/shared';
 import { useMe } from '../../src/me';
 import { getDraft, updateDraft, useDraft } from '../../src/onboarding/draft';
-import { preferencesBody, stepNumber } from '../../src/onboarding/logic';
+import { preferencesBody, stepNumber } from '@flatrimony/client';
 import { saveMe, useSaving } from '../../src/onboarding/save';
 import { useT } from '../../src/useT';
 import { PrimaryButton } from '../../src/ui/buttons';

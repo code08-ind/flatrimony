@@ -10,8 +10,7 @@ import {
   type Preferences,
 } from '@flatrimony/shared';
 import type { MessageKey } from '@flatrimony/i18n';
-import { saveErrorKey } from '../onboarding/errors';
-import { BEDTIMES, WAKE_TIMES } from '../onboarding/logic';
+import { saveErrorKey, BEDTIMES, WAKE_TIMES } from '@flatrimony/client';
 
 /** Languages offered in the editor (ISO 639-1); the API accepts any valid code. */
 export const LANGUAGE_CODES = [

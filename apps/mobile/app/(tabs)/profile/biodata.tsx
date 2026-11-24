@@ -4,7 +4,7 @@ import { router, type Href } from 'expo-router';
 import { CommuteZone, type ImportanceMap } from '@flatrimony/shared';
 import { api } from '../../../src/api';
 import { useMe } from '../../../src/me';
-import { formatInr } from '../../../src/onboarding/logic';
+import { formatInr } from '@flatrimony/client';
 import { Avatar } from '../../../src/profile/Avatar';
 import { useUnsavedChangesGuard } from '../../../src/profile/EditScreen';
 import {

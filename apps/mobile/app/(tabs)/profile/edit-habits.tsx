@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import type { Lifestyle } from '@flatrimony/shared';
 import { useMe } from '../../../src/me';
-import { habitsComplete, type HabitAnswers } from '../../../src/onboarding/logic';
+import { habitsComplete, type HabitAnswers } from '@flatrimony/client';
 import { EditScreen } from '../../../src/profile/EditScreen';
 import { sameAnswers } from '../../../src/profile/logic';
 import { useProfileSave } from '../../../src/profile/save';

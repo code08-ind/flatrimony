@@ -8,20 +8,20 @@ import {
   isValidMobile,
   sanitiseNational,
   toE164,
-} from '../src/auth/phone';
-import { formatCountdown, secondsLeft } from '../src/auth/countdown';
-import { codeStillFresh } from '../src/auth/pending';
-import { fetchWithTimeout } from '../src/net';
-import {
+  formatCountdown,
+  secondsLeft,
+  codeStillFresh,
+  fetchWithTimeout,
   clearsCode,
   requestOtp,
   verifyOtp,
   type AuthClient,
   type AuthError,
   type FlowDeps,
-} from '../src/auth/otp-flow';
-import { requestErrorKey, verifyErrorKey } from '../src/auth/messages';
-import { parseRich } from '../src/rich-text';
+  requestErrorKey,
+  verifyErrorKey,
+  parseRich,
+} from '../src/index.js';
 
 describe('phone entry', () => {
   it('builds the number from keypad keys, capped at 10 digits', () => {

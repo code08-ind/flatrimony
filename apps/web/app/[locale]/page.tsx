@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLocale, t } from '@flatrimony/i18n';
 
-// Placeholder home for the M1 pipeline ("hello" page, docs/03 §19).
-// Real screens follow docs/designs/web (W01–W10).
+// Placeholder home (docs/03 §19) with the way in to sign-in; the real landing page is W01.
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
@@ -13,9 +12,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <h1 className="tagline">{t(locale, 'app.tagline')}</h1>
       <p className="lead">{t(locale, 'app.notDating')}</p>
       <p className="muted">{t(locale, 'app.promise')}</p>
+      <p>
+        <Link className="pill primary" href={`/${locale}/sign-in`} data-testid="get-started">
+          {t(locale, 'web.getStarted')}
+        </Link>
+      </p>
       <nav className="langs" aria-label={t(locale, 'language.choose')}>
         <Link
-          className="pill primary"
+          className="pill secondary"
           href="/en"
           hrefLang="en"
           aria-current={locale === 'en' ? 'page' : undefined}

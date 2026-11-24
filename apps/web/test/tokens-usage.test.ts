@@ -1,12 +1,18 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { cssVarName, flatTokens } from '@flatrimony/design-tokens';
 
-const css = readFileSync(join(import.meta.dirname, '../app/globals.css'), 'utf8');
+// Every stylesheet of the app (globals.css, ui.css, …).
+const appDir = join(import.meta.dirname, '../app');
+const css = readdirSync(appDir, { recursive: true })
+  .map(String)
+  .filter((f) => f.endsWith('.css'))
+  .map((f) => readFileSync(join(appDir, f), 'utf8'))
+  .join('\n');
 
 describe('web styles use design tokens only', () => {
-  it('every var(--…) referenced in globals.css exists in the tokens package (or is a next/font variable)', () => {
+  it('every var(--…) referenced in the app CSS exists in the tokens package (or is a next/font variable)', () => {
     const known = new Set(flatTokens.map((t) => cssVarName(t.path)));
     const used = [...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!);
     const unknown = used.filter(
