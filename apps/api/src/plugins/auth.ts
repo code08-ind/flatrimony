@@ -24,7 +24,7 @@ import type {
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
-import { ApiError } from './errors.js';
+import { ApiError, loggableError } from './errors.js';
 import type { SessionLookup } from '../modules/auth/sessions.js';
 
 export type AppRole = 'user' | 'moderator' | 'admin';
@@ -124,7 +124,7 @@ export const authPlugin = fp<AuthPluginOptions>(
   async (app: FastifyInstance, { verifier, sessions }) => {
     app.decorateRequest('user', null);
 
-    app.addHook('onRequest', async (req: FastifyRequest) => {
+    app.addHook('onRequest', async (req: FastifyRequest, reply: FastifyReply) => {
       const header = req.headers.authorization;
       if (!header || !verifier) return;
       const match = BEARER.exec(header);
@@ -145,7 +145,8 @@ export const authPlugin = fp<AuthPluginOptions>(
         try {
           active = await sessions(user.sessionId, user.id);
         } catch (err) {
-          req.log.warn({ err: (err as Error).message }, 'session check failed');
+          req.log.warn({ err: loggableError(err) }, 'session check failed');
+          reply.header('retry-after', 5);
           throw new ApiError('upstream.unavailable', {
             title: 'Sign-in check unavailable',
             detail: 'Try again in a moment.',

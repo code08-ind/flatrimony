@@ -74,14 +74,48 @@ describe('signed-out and revoked sessions (docs/05 §2)', () => {
     await app.close();
   });
 
-  it('an unreachable database is 503, not a sign-out', async () => {
+  it('an unreachable database is 503 with Retry-After, not a sign-out, on any route', async () => {
     const { app, get } = await setup(async () => {
       throw new Error('connection refused');
     });
-    const res = await get('/test/me', await token());
-    expect(res.statusCode).toBe(503);
-    expect(res.json().code).toBe('upstream.unavailable');
+    for (const url of ['/test/me', '/test/public']) {
+      const res = await get(url, await token());
+      expect(res.statusCode, url).toBe(503);
+      expect(res.json().code).toBe('upstream.unavailable');
+      expect(res.headers['retry-after']).toBe('5');
+    }
+    // Without a token nothing needs the database.
+    expect((await get('/test/public')).statusCode).toBe(200);
     await app.close();
+  });
+
+  it('a revoked moderator session loses admin routes too', async () => {
+    const { app, get } = await setup(async () => false);
+    app.get('/test/admin', { preHandler: app.requireRole('moderator', 'admin') }, async () => ({}));
+    const res = await get(
+      '/test/admin',
+      await token({ session_id: SESSION, app_metadata: { role: 'admin' } }),
+    );
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('outside local development the app refuses to run without the check', async () => {
+    await expect(
+      buildApp({
+        env: loadEnv({
+          NODE_ENV: 'test',
+          APP_ENV: 'staging',
+          DATABASE_URL: 'postgres://u:p@h:5432/d',
+          SUPABASE_JWT_ISSUER: ISSUER,
+          SUPABASE_JWT_SECRET: SECRET,
+          HASH_PEPPER: SECRET,
+          SUPABASE_URL: 'https://project.supabase.co',
+          SUPABASE_SERVICE_ROLE_KEY: SECRET,
+          SEND_SMS_HOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
+        }),
+      }),
+    ).rejects.toThrow(/session revocation check/);
   });
 
   it('without a lookup (no database, local only) the token alone decides', async () => {
@@ -122,20 +156,48 @@ describe('the session cache', () => {
     expect(await lookup('s', '00000000-0000-4000-8000-000000000000')).toBe(false);
   });
 
-  it('concurrent checks share one query; failures are not cached', async () => {
+  it('concurrent checks share one query; a failure is remembered for a few seconds', async () => {
+    let clock = 0;
     let calls = 0;
     let fail = true;
-    const lookup = cachedSessionLookup(async () => {
-      calls++;
-      await new Promise((r) => setTimeout(r, 5));
-      if (fail) throw new Error('db down');
-      return true;
-    });
+    const lookup = cachedSessionLookup(
+      async () => {
+        calls++;
+        await new Promise((r) => setTimeout(r, 5));
+        if (fail) throw new Error('db down');
+        return true;
+      },
+      { now: () => clock },
+    );
     const results = await Promise.allSettled([lookup('s', USER), lookup('s', USER)]);
     expect(results.map((r) => r.status)).toEqual(['rejected', 'rejected']);
     expect(calls).toBe(1);
     fail = false;
+    // Within the failure window: the same answer, no new query (an outage is not hammered).
+    await expect(lookup('other', USER)).rejects.toThrow('db down');
+    expect(calls).toBe(1);
+    clock += 5_001;
     expect(await lookup('s', USER)).toBe(true);
     expect(calls).toBe(2);
+  });
+
+  it('a stalled database fails the check after the timeout instead of holding requests', async () => {
+    const lookup = cachedSessionLookup(() => new Promise<boolean>(() => {}), { timeoutMs: 20 });
+    await expect(lookup('s', USER)).rejects.toThrow('timed out');
+  });
+
+  it('keeps at most maxEntries sessions, dropping the oldest', async () => {
+    const calls: string[] = [];
+    const lookup = cachedSessionLookup(
+      async (s) => {
+        calls.push(s);
+        return true;
+      },
+      { maxEntries: 2 },
+    );
+    for (const s of ['a', 'b', 'c']) await lookup(s, USER);
+    await lookup('c', USER); // cached
+    await lookup('a', USER); // dropped when c arrived: asked again
+    expect(calls).toEqual(['a', 'b', 'c', 'a']);
   });
 });

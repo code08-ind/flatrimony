@@ -41,6 +41,8 @@ async function setup(
   });
   const app = await buildApp({
     env,
+    // Outside local the app needs the session revocation check.
+    ...(opts.appEnv === 'staging' ? { sessionLookup: async () => true } : {}),
     smsProvider: opts.provider ?? outbox,
     now: () => (opts.now?.() ?? NOW) * 1000,
   });

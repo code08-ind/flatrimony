@@ -169,6 +169,10 @@ export async function buildApp({
     maxAge: 600,
   });
   const verifier = jwtVerifier ?? verifierFromEnv(env);
+  // Outside local development a signed-out token must stop working (docs/05 §2): no app without
+  // the session check (server.ts passes the Postgres one).
+  if (verifier && !sessionLookup && env.APP_ENV !== 'local')
+    throw new Error('the session revocation check is required outside local development');
   await app.register(authPlugin, {
     ...(verifier ? { verifier } : {}),
     ...(sessionLookup ? { sessions: sessionLookup } : {}),

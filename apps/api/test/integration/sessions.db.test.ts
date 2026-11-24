@@ -13,6 +13,11 @@ describe.skipIf(!url)('pgSessionLookup', () => {
   const other = randomUUID();
   const live = randomUUID();
   const ended = randomUUID();
+  const reused = randomUUID();
+  /** A refresh token row the way Supabase Auth writes it (classic refresh tokens). */
+  const refreshToken = (session: string, revoked: boolean) =>
+    sql`insert into auth.refresh_tokens (token, user_id, revoked, session_id, created_at, updated_at)
+        values (${randomUUID()}, ${user}, ${revoked}, ${session}, now(), now())`.execute(db);
   const phone = () => `9196${String(randomInt(0, 100_000_000)).padStart(8, '0')}`;
 
   beforeAll(async () => {
@@ -27,6 +32,16 @@ describe.skipIf(!url)('pgSessionLookup', () => {
     await sql`insert into auth.sessions (id, user_id, created_at, updated_at, not_after) values (${ended}, ${user}, now(), now(), now() - interval '1 minute')`.execute(
       db,
     );
+    await sql`insert into auth.sessions (id, user_id, created_at, updated_at) values (${reused}, ${user}, now(), now())`.execute(
+      db,
+    );
+    // Live: an earlier token was rotated (revoked), the current one is not.
+    await refreshToken(live, true);
+    await refreshToken(live, false);
+    await refreshToken(ended, false);
+    // Refresh-token reuse: Supabase Auth revokes the whole family and keeps the session row.
+    await refreshToken(reused, true);
+    await refreshToken(reused, true);
   });
   afterAll(async () => {
     await sql`delete from auth.users where id in (${user}, ${other})`.execute(db); // sessions cascade
@@ -35,6 +50,10 @@ describe.skipIf(!url)('pgSessionLookup', () => {
 
   it('a live session of this user is active', async () => {
     expect(await pgSessionLookup(db)(live, user)).toBe(true);
+  });
+
+  it('a session whose refresh tokens were all revoked (reuse detected) is not', async () => {
+    expect(await pgSessionLookup(db)(reused, user)).toBe(false);
   });
 
   it('a signed-out (deleted), timed-out or someone else’s session is not', async () => {
