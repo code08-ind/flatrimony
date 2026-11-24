@@ -3,33 +3,36 @@
   "intro": [
     {
       "t": "p",
-      "c": ["How we keep Flatrimony real, safe and broker-free across Delhi NCR."]
+      "c": [
+        "How we keep Flatrimony real, safe and broker-free across Delhi NCR."
+      ]
     },
     {
       "t": "p",
-      "c": ["Last updated: [DD Month YYYY]"]
+      "c": [
+        "Last updated: [DD Month YYYY]"
+      ]
     },
     {
       "t": "p",
-      "c": ["Effective immediately for all members"]
+      "c": [
+        "Effective immediately for all members"
+      ]
     },
     {
       "t": "p",
-      "c": ["Zero Brokerage Mandate"]
+      "c": [
+        "Zero Brokerage Mandate"
+      ]
+    },
+    {
+      "t": "p",
+      "c": [
+        "This document is pending final regulatory legal review and outlines our active operating principles, member code of conduct, and disciplinary actions enforced during our current Delhi NCR private beta."
+      ]
     }
   ],
   "sections": [
-    {
-      "title": "Draft — Operational Beta Policy",
-      "blocks": [
-        {
-          "t": "p",
-          "c": [
-            "This document is pending final regulatory legal review and outlines our active operating principles, member code of conduct, and disciplinary actions enforced during our current Delhi NCR private beta."
-          ]
-        }
-      ]
-    },
     {
       "title": "Be Real",
       "blocks": [
@@ -41,7 +44,9 @@
         },
         {
           "t": "p",
-          "c": ["DigiLocker Verification"]
+          "c": [
+            "DigiLocker Verification"
+          ]
         },
         {
           "t": "p",
@@ -51,7 +56,9 @@
         },
         {
           "t": "p",
-          "c": ["Recent, Unaltered Imagery"]
+          "c": [
+            "Recent, Unaltered Imagery"
+          ]
         },
         {
           "t": "p",
@@ -64,7 +71,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Privacy:"]
+              "c": [
+                "Privacy:"
+              ]
             },
             " Only your verified first name and verified lifestyle biodata are shown publicly. Surnames, phone numbers, and company affiliations remain masked until you mutually accept an introduction request. Burner accounts are subject to automatic permanent hardware blocks."
           ]
@@ -82,7 +91,9 @@
         },
         {
           "t": "p",
-          "c": ["Strictly Prohibited: Romantic or Sexual Solicitations"]
+          "c": [
+            "Strictly Prohibited: Romantic or Sexual Solicitations"
+          ]
         },
         {
           "t": "p",
@@ -96,7 +107,9 @@
             "If an exchange makes you feel uncomfortable or strays beyond flat logistics, house rules, and rent arrangements, use the in-thread ",
             {
               "t": "strong",
-              "c": ["\"Flag for Romance/Harassment\""]
+              "c": [
+                "\"Flag for Romance/Harassment\""
+              ]
             },
             " action. Trust moderators review flagged messages within 120 minutes."
           ]
@@ -114,11 +127,15 @@
         },
         {
           "t": "p",
-          "c": ["No brokers"]
+          "c": [
+            "No brokers"
+          ]
         },
         {
           "t": "p",
-          "c": ["Zero Fees"]
+          "c": [
+            "Zero Fees"
+          ]
         },
         {
           "t": "ul",
@@ -128,7 +145,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["No Brokerage Fees:"]
+                  "c": [
+                    "No Brokerage Fees:"
+                  ]
                 },
                 " You will never be asked to pay half a month’s rent, consultation charges, or document fees to anyone on Flatrimony."
               ]
@@ -139,7 +158,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["No Visiting Charges:"]
+                  "c": [
+                    "No Visiting Charges:"
+                  ]
                 },
                 " Demanding petrol fees, key-access fees, or security-gate entry passes prior to a flat tour is an immediate offense."
               ]
@@ -150,7 +171,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Residents Only:"]
+                  "c": [
+                    "Residents Only:"
+                  ]
                 },
                 " Listings may only be created by an active co-tenant vacating their own room or seeking an incoming flatmate for an ongoing lease."
               ]
@@ -176,7 +199,9 @@
         },
         {
           "t": "p",
-          "c": ["Automated Financial Guardrails"]
+          "c": [
+            "Automated Financial Guardrails"
+          ]
         },
         {
           "t": "p",
@@ -203,77 +228,105 @@
         },
         {
           "t": "p",
-          "c": ["Permitted Objective Preferences"]
+          "c": [
+            "Permitted Objective Preferences"
+          ]
         },
         {
           "t": "ul",
           "c": [
             {
               "t": "li",
-              "c": ["• Gender preference for safe shared spaces"]
+              "c": [
+                "Gender preference for safe shared spaces"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Kitchen policies (strictly vegetarian / vegan / non-veg permitted)"]
+              "c": [
+                "Kitchen policies (strictly vegetarian / vegan / non-veg permitted)"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Sleep routines (early birds vs. night-shift professionals)"]
+              "c": [
+                "Sleep routines (early birds vs. night-shift professionals)"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Smoking, alcohol, and house party policies"]
+              "c": [
+                "Smoking, alcohol, and house party policies"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Pet compatibility and verified allergies"]
+              "c": [
+                "Pet compatibility and verified allergies"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Work-from-home acoustic habits"]
+              "c": [
+                "Work-from-home acoustic habits"
+              ]
             }
           ]
         },
         {
           "t": "p",
-          "c": ["Strictly Prohibited Bias"]
+          "c": [
+            "Strictly Prohibited Bias"
+          ]
         },
         {
           "t": "ul",
           "c": [
             {
               "t": "li",
-              "c": ["• Religion or caste requirements"]
+              "c": [
+                "Religion or caste requirements"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• State, linguistic, or regional origin bias"]
+              "c": [
+                "State, linguistic, or regional origin bias"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Marital status prejudices"]
+              "c": [
+                "Marital status prejudices"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Sexual orientation or gender identity discrimination"]
+              "c": [
+                "Sexual orientation or gender identity discrimination"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Degrading remarks regarding a member's profession"]
+              "c": [
+                "Degrading remarks regarding a member's profession"
+              ]
             },
             " ",
             {
               "t": "li",
-              "c": ["• Verbal slurs, insults, or demeaning vocabulary"]
+              "c": [
+                "Verbal slurs, insults, or demeaning vocabulary"
+              ]
             }
           ]
         }
@@ -290,7 +343,9 @@
         },
         {
           "t": "h3",
-          "c": ["Women-Only Enclaves"]
+          "c": [
+            "Women-Only Enclaves"
+          ]
         },
         {
           "t": "p",
@@ -300,7 +355,9 @@
         },
         {
           "t": "h3",
-          "c": ["In-app live safety session"]
+          "c": [
+            "In-app live safety session"
+          ]
         },
         {
           "t": "p",
@@ -308,7 +365,9 @@
             "When scheduling an on-site room tour, activate ",
             {
               "t": "strong",
-              "c": ["safety session"]
+              "c": [
+                "safety session"
+              ]
             },
             ". The app creates a temporary live-location audit link shareable with your trusted emergency contacts and offers an instantaneous one-touch SOS beacon that triggers an alert to local support desks."
           ]
@@ -326,11 +385,15 @@
         },
         {
           "t": "p",
-          "c": ["Priority 1 · Safety Incident"]
+          "c": [
+            "Priority 1 · Safety Incident"
+          ]
         },
         {
           "t": "p",
-          "c": ["< 2 Hours Response"]
+          "c": [
+            "< 2 Hours Response"
+          ]
         },
         {
           "t": "p",
@@ -340,11 +403,15 @@
         },
         {
           "t": "p",
-          "c": ["Priority 2 · Commercial Spam"]
+          "c": [
+            "Priority 2 · Commercial Spam"
+          ]
         },
         {
           "t": "p",
-          "c": ["< 24 Hours Resolution"]
+          "c": [
+            "< 24 Hours Resolution"
+          ]
         },
         {
           "t": "p",
@@ -365,11 +432,15 @@
         },
         {
           "t": "p",
-          "c": ["Step 1"]
+          "c": [
+            "Step 1"
+          ]
         },
         {
           "t": "p",
-          "c": ["Formal Warning"]
+          "c": [
+            "Formal Warning"
+          ]
         },
         {
           "t": "p",
@@ -379,39 +450,57 @@
         },
         {
           "t": "p",
-          "c": ["Step 2"]
+          "c": [
+            "Step 2"
+          ]
         },
         {
           "t": "p",
-          "c": ["Content Removal"]
+          "c": [
+            "Content Removal"
+          ]
         },
         {
           "t": "p",
-          "c": ["Listing delisted, biodata masked from feed, and search shadow-ban activated."]
+          "c": [
+            "Listing delisted, biodata masked from feed, and search shadow-ban activated."
+          ]
         },
         {
           "t": "p",
-          "c": ["Step 3"]
+          "c": [
+            "Step 3"
+          ]
         },
         {
           "t": "p",
-          "c": ["7-Day Suspension"]
+          "c": [
+            "7-Day Suspension"
+          ]
         },
         {
           "t": "p",
-          "c": ["Complete platform freeze, instant chat lockout, and removal of pending visits."]
+          "c": [
+            "Complete platform freeze, instant chat lockout, and removal of pending visits."
+          ]
         },
         {
           "t": "p",
-          "c": ["Step 4"]
+          "c": [
+            "Step 4"
+          ]
         },
         {
           "t": "p",
-          "c": ["Permanent Ban"]
+          "c": [
+            "Permanent Ban"
+          ]
         },
         {
           "t": "p",
-          "c": ["Irreversible hardware hash, phone, and DigiLocker ID blacklist."]
+          "c": [
+            "Irreversible hardware hash, phone, and DigiLocker ID blacklist."
+          ]
         },
         {
           "t": "p",
@@ -432,7 +521,9 @@
         },
         {
           "t": "p",
-          "c": ["Independent Review Protocol"]
+          "c": [
+            "Independent Review Protocol"
+          ]
         },
         {
           "t": "p",
@@ -442,11 +533,15 @@
         },
         {
           "t": "p",
-          "c": ["Trust, Safety & Legal Grievance"]
+          "c": [
+            "Trust, Safety & Legal Grievance"
+          ]
         },
         {
           "t": "h3",
-          "c": ["Questions or Trust & Safety Concerns?"]
+          "c": [
+            "Questions or Trust & Safety Concerns?"
+          ]
         },
         {
           "t": "p",
@@ -460,13 +555,17 @@
             "Grievance Officer ",
             {
               "t": "strong",
-              "c": ["[Grievance Officer name]"]
+              "c": [
+                "[Grievance Officer name]"
+              ]
             }
           ]
         },
         {
           "t": "p",
-          "c": ["Direct Correspondence [grievance email] SLA: 24 to 48 business hours"]
+          "c": [
+            "Direct Correspondence [grievance email] SLA: 24 to 48 business hours"
+          ]
         }
       ]
     }

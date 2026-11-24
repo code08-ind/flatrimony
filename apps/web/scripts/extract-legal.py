@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Extracts the four legal pages (W07–W10) from the exported designs in docs/designs/web/<locale>/
-into content trees the web app renders (apps/web/content/legal/<page>.<locale>.json).
+into content trees (apps/web/content/legal/<page>.<locale>.json) for the legal review (T0.15).
+
+NOT PUBLISHED: the web app shows only a "being prepared" page for now (components/LegalPage.tsx),
+because the design tool's drafts invent statistics, certifications, security promises, prices and
+support hours, and contradict the product in places (see docs/07 T0.15 for the list). After the
+review, edit the exports (or these files), re-run, and render the trees on the legal pages.
 
 The text is the design's draft, pending legal review (founder task T0.15): nothing is rewritten.
 Only content elements survive (headings, paragraphs, lists, bold/italic, rules); the site chrome
@@ -155,6 +160,8 @@ def tidy(node, keep_lines=False):
             out.append(child)
     if out and isinstance(out[0], str):
         out[0] = out[0].lstrip()
+        if node["t"] == "li":  # the designs type their own bullet: the list draws one
+            out[0] = re.sub(r"^[•·]\s*", "", out[0])
     if out and isinstance(out[-1], str):
         out[-1] = out[-1].rstrip()
     out = [c for c in out if c != ""]
@@ -211,7 +218,12 @@ def extract(path):
     intro, sections, current = [], [], None
     for b in blocks:
         if b["t"] == "h2":
-            current = {"title": text_of(b).strip(), "blocks": []}
+            title = text_of(b).strip()
+            # Some designs mark their draft banner up as a heading: not a section.
+            if INTRO_DROP.search(title):
+                current = None
+                continue
+            current = {"title": title, "blocks": []}
             sections.append(current)
         elif current is None:
             if not INTRO_DROP.search(text_of(b).strip()):
@@ -231,7 +243,7 @@ def main():
             src = DESIGNS / locale / folder / "index.html"
             data = extract(src)
             dest = OUT / f"{page}.{locale}.json"
-            dest.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            dest.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             print(f"{dest.relative_to(ROOT)}: {data['title']!r}, {len(data['intro'])} intro blocks, "
                   f"{len(data['sections'])} sections")
 

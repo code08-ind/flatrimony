@@ -9,11 +9,15 @@
     },
     {
       "t": "p",
-      "c": ["Last updated: [DD Month YYYY]"]
+      "c": [
+        "Last updated: [DD Month YYYY]"
+      ]
     },
     {
       "t": "p",
-      "c": ["Applicable across Delhi, Gurugram, Noida & Greater Noida"]
+      "c": [
+        "Applicable across Delhi, Gurugram, Noida & Greater Noida"
+      ]
     }
   ],
   "sections": [
@@ -28,7 +32,9 @@
         },
         {
           "t": "p",
-          "c": ["Verified Walkthroughs"]
+          "c": [
+            "Verified Walkthroughs"
+          ]
         },
         {
           "t": "p",
@@ -38,7 +44,9 @@
         },
         {
           "t": "p",
-          "c": ["True Cost Transparency"]
+          "c": [
+            "True Cost Transparency"
+          ]
         },
         {
           "t": "p",
@@ -48,7 +56,9 @@
         },
         {
           "t": "p",
-          "c": ["RWA & House Rules"]
+          "c": [
+            "RWA & House Rules"
+          ]
         },
         {
           "t": "p",
@@ -67,14 +77,18 @@
             "The transition from digital compatibility to shared physical quarters requires disciplined caution. We advocate the mandatory ",
             {
               "t": "strong",
-              "c": ["\"Pehli Mulaqat\""]
+              "c": [
+                "\"Pehli Mulaqat\""
+              ]
             },
             " public interaction standard prior to entering private residential premises."
           ]
         },
         {
           "t": "h3",
-          "c": ["The Public Meetup Protocol"]
+          "c": [
+            "The Public Meetup Protocol"
+          ]
         },
         {
           "t": "ul",
@@ -84,7 +98,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["High-Footfall Public Rendezvous:"]
+                  "c": [
+                    "High-Footfall Public Rendezvous:"
+                  ]
                 },
                 " Always schedule the initial meetup in daylight at well-lit, public commercial spots — such as CyberHub (Gurgaon), Galleria Market (DLF Phase 4), Sector 18 Metro (Noida), or Hauz Khas Village/Metro Station."
               ]
@@ -95,7 +111,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["safety session Location Broadcast:"]
+                  "c": [
+                    "safety session Location Broadcast:"
+                  ]
                 },
                 " Tap \"Start safety session\" in the Flatrimony mobile view to securely transmit live location updates and visit duration timers to your designated emergency contact."
               ]
@@ -106,7 +124,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Zero Advance Transfer Rule:"]
+                  "c": [
+                    "Zero Advance Transfer Rule:"
+                  ]
                 },
                 " NEVER transfer money, token advances, gate passes, or \"room holding reserves\" via UPI or bank transfer before physically verifying the property and the registered owner."
               ]
@@ -124,18 +144,24 @@
             "In Delhi NCR, hidden co-living expenditures regularly exceed basic lease numbers by 25% to 40%. Flatrimony enforces the ",
             {
               "t": "strong",
-              "c": ["True Monthly Cost"]
+              "c": [
+                "True Monthly Cost"
+              ]
             },
             " model so you avoid end-of-month friction among flatmates."
           ]
         },
         {
           "t": "p",
-          "c": ["Sample Delhi NCR 3BHK Cost Matrix (Golf Course Road / Sector 137)"]
+          "c": [
+            "Sample Delhi NCR 3BHK Cost Matrix (Golf Course Road / Sector 137)"
+          ]
         },
         {
           "t": "p",
-          "c": ["Illustrative Split"]
+          "c": [
+            "Illustrative Split"
+          ]
         },
         {
           "t": "table",
@@ -148,17 +174,23 @@
                   "c": [
                     {
                       "t": "th",
-                      "c": ["Expense Category"]
+                      "c": [
+                        "Expense Category"
+                      ]
                     },
                     " ",
                     {
                       "t": "th",
-                      "c": ["Estimated Monthly Unit"]
+                      "c": [
+                        "Estimated Monthly Unit"
+                      ]
                     },
                     " ",
                     {
                       "t": "th",
-                      "c": ["Per Person Split (3 Co-tenants)"]
+                      "c": [
+                        "Per Person Split (3 Co-tenants)"
+                      ]
                     }
                   ]
                 }
@@ -173,17 +205,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["Base Apartment Rent"]
+                      "c": [
+                        "Base Apartment Rent"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹60,000"]
+                      "c": [
+                        "₹60,000"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹20,000"]
+                      "c": [
+                        "₹20,000"
+                      ]
                     }
                   ]
                 },
@@ -193,17 +231,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["Society Maintenance & Common Sinking Fund"]
+                      "c": [
+                        "Society Maintenance & Common Sinking Fund"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹6,000"]
+                      "c": [
+                        "₹6,000"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹2,000"]
+                      "c": [
+                        "₹2,000"
+                      ]
                     }
                   ]
                 },
@@ -213,17 +257,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["Electricity & Dual-Source DG Backup (Summer avg.)"]
+                      "c": [
+                        "Electricity & Dual-Source DG Backup (Summer avg.)"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹4,500"]
+                      "c": [
+                        "₹4,500"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹1,500"]
+                      "c": [
+                        "₹1,500"
+                      ]
                     }
                   ]
                 },
@@ -233,17 +283,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["High-Speed Optical Fiber Wi-Fi (300 Mbps)"]
+                      "c": [
+                        "High-Speed Optical Fiber Wi-Fi (300 Mbps)"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹1,200"]
+                      "c": [
+                        "₹1,200"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹400"]
+                      "c": [
+                        "₹400"
+                      ]
                     }
                   ]
                 },
@@ -253,17 +309,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["Dedicated Cook & Housekeeping Help"]
+                      "c": [
+                        "Dedicated Cook & Housekeeping Help"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹7,500"]
+                      "c": [
+                        "₹7,500"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹2,500"]
+                      "c": [
+                        "₹2,500"
+                      ]
                     }
                   ]
                 },
@@ -273,17 +335,23 @@
                   "c": [
                     {
                       "t": "td",
-                      "c": ["Total True Monthly Cost"]
+                      "c": [
+                        "Total True Monthly Cost"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹79,200"]
+                      "c": [
+                        "₹79,200"
+                      ]
                     },
                     " ",
                     {
                       "t": "td",
-                      "c": ["₹26,400 / month"]
+                      "c": [
+                        "₹26,400 / month"
+                      ]
                     }
                   ]
                 }
@@ -293,7 +361,9 @@
         },
         {
           "t": "p",
-          "c": ["Refundable Security Deposit Norms"]
+          "c": [
+            "Refundable Security Deposit Norms"
+          ]
         },
         {
           "t": "p",
@@ -301,7 +371,9 @@
             "Security deposits across Delhi NCR predominantly range from ",
             {
               "t": "strong",
-              "c": ["2 months' base rent"]
+              "c": [
+                "2 months' base rent"
+              ]
             },
             " (e.g., ₹40,000 per person in the above case). Treat this as a segregated capital outlay — never pool this money into unsecured personal accounts without clear co-signed documentation."
           ]
@@ -317,14 +389,18 @@
             "Most residential leases across Haryana, Delhi, and Uttar Pradesh are executed as an ",
             {
               "t": "strong",
-              "c": ["11-Month Leave and License Agreement"]
+              "c": [
+                "11-Month Leave and License Agreement"
+              ]
             },
             " to bypass protracted tenancy litigation under traditional Rent Control acts."
           ]
         },
         {
           "t": "p",
-          "c": ["Notice & Lock-in Periods"]
+          "c": [
+            "Notice & Lock-in Periods"
+          ]
         },
         {
           "t": "p",
@@ -334,7 +410,9 @@
         },
         {
           "t": "p",
-          "c": ["e-Stamping & Attestation"]
+          "c": [
+            "e-Stamping & Attestation"
+          ]
         },
         {
           "t": "p",
@@ -344,7 +422,9 @@
         },
         {
           "t": "p",
-          "c": ["Important Notice"]
+          "c": [
+            "Important Notice"
+          ]
         },
         {
           "t": "p",
@@ -365,15 +445,21 @@
         },
         {
           "t": "h3",
-          "c": ["The Day-1 Move-In Checklist:"]
+          "c": [
+            "The Day-1 Move-In Checklist:"
+          ]
         },
         {
           "t": "p",
-          "c": ["Timestamped 4K video walk of all skirting boards, window latches, and ceilings."]
+          "c": [
+            "Timestamped 4K video walk of all skirting boards, window latches, and ceilings."
+          ]
         },
         {
           "t": "p",
-          "c": ["Close-up photographs of pre-existing dampness, water seepage, or drill holes."]
+          "c": [
+            "Close-up photographs of pre-existing dampness, water seepage, or drill holes."
+          ]
         },
         {
           "t": "p",
@@ -383,7 +469,9 @@
         },
         {
           "t": "p",
-          "c": ["Written counter-sign by landlord/current tenants confirming deposit distribution."]
+          "c": [
+            "Written counter-sign by landlord/current tenants confirming deposit distribution."
+          ]
         }
       ]
     },
@@ -398,7 +486,9 @@
         },
         {
           "t": "p",
-          "c": ["Quiet Hours & WFH Respect"]
+          "c": [
+            "Quiet Hours & WFH Respect"
+          ]
         },
         {
           "t": "p",
@@ -408,7 +498,9 @@
         },
         {
           "t": "p",
-          "c": ["Overnight Guests & Advance Notice"]
+          "c": [
+            "Overnight Guests & Advance Notice"
+          ]
         },
         {
           "t": "p",
@@ -429,7 +521,9 @@
         },
         {
           "t": "p",
-          "c": ["Flatrimony Replacement Protocol"]
+          "c": [
+            "Flatrimony Replacement Protocol"
+          ]
         },
         {
           "t": "p",
@@ -437,7 +531,9 @@
             "Departing co-tenants should activate the ",
             {
               "t": "strong",
-              "c": ["Flatrimony Replacement Finder"]
+              "c": [
+                "Flatrimony Replacement Finder"
+              ]
             },
             " at least 30 days prior to their planned exit. The existing tenants retain absolute veto rights over lifestyle alignment, ensuring incoming housemates match the household's cleanliness, culinary, and social parameters before executing lease novation."
           ]
@@ -455,7 +551,9 @@
         },
         {
           "t": "p",
-          "c": ["Move-Out Audit"]
+          "c": [
+            "Move-Out Audit"
+          ]
         },
         {
           "t": "p",
@@ -465,7 +563,9 @@
         },
         {
           "t": "p",
-          "c": ["Utility Clearance"]
+          "c": [
+            "Utility Clearance"
+          ]
         },
         {
           "t": "p",
@@ -475,7 +575,9 @@
         },
         {
           "t": "p",
-          "c": ["Written Refund Timeline"]
+          "c": [
+            "Written Refund Timeline"
+          ]
         },
         {
           "t": "p",
@@ -496,7 +598,9 @@
         },
         {
           "t": "h3",
-          "c": ["National Emergency"]
+          "c": [
+            "National Emergency"
+          ]
         },
         {
           "t": "p",
@@ -506,7 +610,9 @@
         },
         {
           "t": "p",
-          "c": ["Grievance Redressal Officer"]
+          "c": [
+            "Grievance Redressal Officer"
+          ]
         },
         {
           "t": "p",
@@ -516,19 +622,27 @@
         },
         {
           "t": "p",
-          "c": ["Designated Officer [Grievance Officer name]"]
+          "c": [
+            "Designated Officer [Grievance Officer name]"
+          ]
         },
         {
           "t": "p",
-          "c": ["Grievance Email [grievance email]"]
+          "c": [
+            "Grievance Email [grievance email]"
+          ]
         },
         {
           "t": "p",
-          "c": ["Response SLA Initial acknowledgment within 24–48 business hours"]
+          "c": [
+            "Response SLA Initial acknowledgment within 24–48 business hours"
+          ]
         },
         {
           "t": "p",
-          "c": ["Jurisdiction New Delhi, Delhi NCR, India"]
+          "c": [
+            "Jurisdiction New Delhi, Delhi NCR, India"
+          ]
         }
       ]
     }

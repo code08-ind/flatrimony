@@ -9,7 +9,9 @@
     },
     {
       "t": "p",
-      "c": ["Last updated: [DD Month YYYY] · Effective immediately for all Delhi NCR cohorts"]
+      "c": [
+        "Last updated: [DD Month YYYY] · Effective immediately for all Delhi NCR cohorts"
+      ]
     }
   ],
   "sections": [
@@ -30,7 +32,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Minimum Age Requirement:"]
+                  "c": [
+                    "Minimum Age Requirement:"
+                  ]
                 },
                 " You must be at least 18 years of age to register, review shared flats, or message any cohort member."
               ]
@@ -41,7 +45,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Strict Intended Use:"]
+                  "c": [
+                    "Strict Intended Use:"
+                  ]
                 },
                 " Flatrimony is designed exclusively for verified flatmate matching, room-sharing logistics, and household co-tenancy compatibility. The platform is not a dating service, matrimonial portal, casual meetup network, or employment board. Soliciting personal romantic encounters or unverified commerce is grounds for immediate termination."
               ]
@@ -52,7 +58,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Bona Fide Residents Only:"]
+                  "c": [
+                    "Bona Fide Residents Only:"
+                  ]
                 },
                 " Eligibility is restricted entirely to individual bona fide prospective residents or current leaseholding tenants seeking roommate replacements in Delhi NCR."
               ]
@@ -64,7 +72,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Strict Zero-Broker Policy"]
+              "c": [
+                "Strict Zero-Broker Policy"
+              ]
             }
           ]
         },
@@ -93,7 +103,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Mandatory DigiLocker Verification:"]
+                  "c": [
+                    "Mandatory DigiLocker Verification:"
+                  ]
                 },
                 " Verification via government-sanctioned DigiLocker integration is mandatory prior to sending connection requests ('Rishtas') or unlocking mutual chat channels."
               ]
@@ -104,7 +116,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Minimal Data Retention Standard:"]
+                  "c": [
+                    "Minimal Data Retention Standard:"
+                  ]
                 },
                 " Flatrimony interfaces strictly through certified, audited verification partners. We retrieve and retain only verified legal full name, date of birth, gender, and a non-reversible cryptographic hash validating document authenticity. We never inspect, store, or warehouse raw national identity documents, biometrics, or identification numbers."
               ]
@@ -115,7 +129,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Single Identity Rule:"]
+                  "c": [
+                    "Single Identity Rule:"
+                  ]
                 },
                 " Flatrimony strictly enforces a 'One Person, One Account' governance rule. Maintaining burner accounts, creating parallel profiles using third-party credentials, or falsifying your employer or educational biodata will lead to immediate, irrevocable suspension across your device footprint."
               ]
@@ -141,7 +157,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["True monthly cost:"]
+                  "c": [
+                    "True monthly cost:"
+                  ]
                 },
                 " Every listing must publish the inclusive True Monthly Cost. This mandatory total must account for base room rent, society maintenance charges, regular shared cook and domestic staff dues, Wi-Fi subscriptions, estimated electricity splits, and mandatory clubhouse levies. Omitting fixed overheads or introducing surprise expenses during site visits is a breach of our Community Code."
               ]
@@ -152,7 +170,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Unedited Video Walkthroughs:"]
+                  "c": [
+                    "Unedited Video Walkthroughs:"
+                  ]
                 },
                 " Room vacancy postings require real, continuous, and unfiltered video walkthroughs documenting authentic bedroom natural daylight, bathroom water pressure, and true ambient street acoustic levels. Staged real-estate stock renders, architectural mockups, or heavily filtered promotional assets are flagged and purged."
               ]
@@ -163,7 +183,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Zero Tolerance on Brokerage:"]
+                  "c": [
+                    "Zero Tolerance on Brokerage:"
+                  ]
                 },
                 " No brokerage, finder's cut, sub-lease markup, or administrative fee may ever be demanded, levied, or settled through Flatrimony."
               ]
@@ -186,7 +208,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["'Pehli Mulaqat' Public Meeting Protocol"]
+              "c": [
+                "'Pehli Mulaqat' Public Meeting Protocol"
+              ]
             }
           ]
         },
@@ -204,7 +228,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Prohibition of Pre-Visit Financial Transfers:"]
+                  "c": [
+                    "Prohibition of Pre-Visit Financial Transfers:"
+                  ]
                 },
                 " NEVER send advance booking tokens, holding deposits, key reserves, or advance rental payments over UPI or bank wire before executing an in-person physical viewing and reviewing the landlord's registered title deed or primary tenancy agreement. Flatrimony will never prompt you to wire funds to secure a room queue."
               ]
@@ -215,7 +241,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Pure Matchmaking Intermediary Scope:"]
+                  "c": [
+                    "Pure Matchmaking Intermediary Scope:"
+                  ]
                 },
                 " [Company legal name] operates exclusively as a software matching intermediary. We do not act as an escrow agent, rent collector, landlord agent, or custodian of rental security deposits."
               ]
@@ -241,7 +269,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Optional Paid Services:"]
+                  "c": [
+                    "Optional Paid Services:"
+                  ]
                 },
                 " Users may acquire the 'Move Pass' (providing algorithmic compatibility rankings and lifestyle biodata matching) or optional Listing Spotlight Boosts for elevated visibility within target geographic hubs (e.g. DLF Phase 5, Noida Sector 137)."
               ]
@@ -252,7 +282,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Transparent Pricing & Taxes:"]
+                  "c": [
+                    "Transparent Pricing & Taxes:"
+                  ]
                 },
                 " All purchases are transacted in Indian National Rupees (INR). Prices shown include applicable taxes where required, itemized clearly prior to gateway checkout."
               ]
@@ -263,7 +295,9 @@
               "c": [
                 {
                   "t": "strong",
-                  "c": ["Refund Terms:"]
+                  "c": [
+                    "Refund Terms:"
+                  ]
                 },
                 " Once a Listing Boost or Move Pass matching cycle has commenced, it cannot be refunded or transferred. In the event of documented technical server outages that obstruct paid service delivery, prorated credit balances will be issued within 7 business days upon written audit."
               ]
@@ -283,7 +317,9 @@
         },
         {
           "t": "p",
-          "c": ["Level 1 · Warning"]
+          "c": [
+            "Level 1 · Warning"
+          ]
         },
         {
           "t": "p",
@@ -293,7 +329,9 @@
         },
         {
           "t": "p",
-          "c": ["Level 2 · Moderation"]
+          "c": [
+            "Level 2 · Moderation"
+          ]
         },
         {
           "t": "p",
@@ -303,7 +341,9 @@
         },
         {
           "t": "p",
-          "c": ["Level 3 · Suspension"]
+          "c": [
+            "Level 3 · Suspension"
+          ]
         },
         {
           "t": "p",
@@ -313,7 +353,9 @@
         },
         {
           "t": "p",
-          "c": ["Level 4 · Permanent Ban"]
+          "c": [
+            "Level 4 · Permanent Ban"
+          ]
         },
         {
           "t": "p",
@@ -386,7 +428,9 @@
             "You agree that the competent courts situated in ",
             {
               "t": "strong",
-              "c": ["New Delhi, India"]
+              "c": [
+                "New Delhi, India"
+              ]
             },
             " shall possess sole and exclusive jurisdiction over any claim, suit, controversy, or proceeding arising out of or related to these terms or use of Flatrimony."
           ]
@@ -407,7 +451,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Officer:"]
+              "c": [
+                "Officer:"
+              ]
             },
             " [Grievance Officer name]"
           ]
@@ -417,7 +463,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Designation:"]
+              "c": [
+                "Designation:"
+              ]
             },
             " Grievance Officer & Data Protection Officer, [Company legal name]"
           ]
@@ -427,7 +475,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Official Email:"]
+              "c": [
+                "Official Email:"
+              ]
             },
             " [grievance email]"
           ]
@@ -437,7 +487,9 @@
           "c": [
             {
               "t": "strong",
-              "c": ["Corporate Address:"]
+              "c": [
+                "Corporate Address:"
+              ]
             },
             " [Registered address]"
           ]
