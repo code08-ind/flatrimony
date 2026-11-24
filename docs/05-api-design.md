@@ -77,7 +77,7 @@
    - `supabase.auth.signInWithOtp({ phone: '+91XXXXXXXXXX' })`
    - `supabase.auth.verifyOtp({ phone, token, type: 'sms' })` → returns `access_token` (JWT, short-lived) and `refresh_token` (rotating).
    - Supabase's Send SMS hook calls our SMS provider (DLT-registered template). OTP rate limits are configured in Supabase Auth **and** enforced by `POST /v1/auth/otp-guard` (see below) for ban checks and device limits.
-2. **API calls** send `Authorization: Bearer <access_token>`. The API verifies signature, issuer, audience (`authenticated`), expiry, that the session was established by phone OTP (`amr` contains `otp`; T2.2), and that the session is not revoked (`sessions` check via Supabase admin API cache, 60 s).
+2. **API calls** send `Authorization: Bearer <access_token>`. The API verifies signature, issuer, audience (`authenticated`), expiry, that the session was established by phone OTP (`amr` contains `otp`; T2.2), and that the session is not revoked: the token's `session_id` must still have a row in `auth.sessions` for that user, not past its `not_after` (Postgres, answers cached 60 s per session; tokens without a `session_id` are refused). Signing out, signing out everywhere, refresh-token reuse and account deletion remove the row, so a signed-out token stops working within a minute instead of at its expiry. If the check cannot run (database unreachable) the request is `503 upstream.unavailable`, never `401`, so clients do not take an outage for a sign-out.
 3. **Token storage:** mobile in `expo-secure-store`; web in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie set by the Next.js server (web never stores tokens in `localStorage`).
 
    **Web session (apps/web):**
