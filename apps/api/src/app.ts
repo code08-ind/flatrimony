@@ -8,6 +8,7 @@ import {
 import { HEADERS, IDEMPOTENCY_TTL_MS } from '@flatrimony/shared';
 import type { Env } from './env.js';
 import { authPlugin, createJwtVerifier, type JwtVerifier } from './plugins/auth.js';
+import type { SessionLookup } from './modules/auth/sessions.js';
 import { errorsPlugin } from './plugins/errors.js';
 import { idempotencyPlugin } from './plugins/idempotency.js';
 import { rateLimitPlugin } from './plugins/rate-limit.js';
@@ -44,6 +45,8 @@ export interface BuildOptions {
   systemRepo?: SystemRepository;
   /** Overrides the verifier built from env (tests). */
   jwtVerifier?: JwtVerifier;
+  /** Session revocation check (Postgres auth.sessions in server.ts, cached; docs/05 §2). */
+  sessionLookup?: SessionLookup;
   rateLimitStore?: RateLimitStore;
   idempotencyStore?: IdempotencyStore;
   now?: () => number;
@@ -104,6 +107,7 @@ export async function buildApp({
   env,
   systemRepo,
   jwtVerifier,
+  sessionLookup,
   rateLimitStore,
   idempotencyStore,
   now,
@@ -165,7 +169,14 @@ export async function buildApp({
     maxAge: 600,
   });
   const verifier = jwtVerifier ?? verifierFromEnv(env);
-  await app.register(authPlugin, verifier ? { verifier } : {});
+  // Outside local development a signed-out token must stop working (docs/05 §2): no app without
+  // the session check (server.ts passes the Postgres one).
+  if (verifier && !sessionLookup && env.APP_ENV !== 'local')
+    throw new Error('the session revocation check is required outside local development');
+  await app.register(authPlugin, {
+    ...(verifier ? { verifier } : {}),
+    ...(sessionLookup ? { sessions: sessionLookup } : {}),
+  });
   const limiter = rateLimitStore ?? memoryRateLimitStore();
   await app.register(rateLimitPlugin, {
     store: limiter,

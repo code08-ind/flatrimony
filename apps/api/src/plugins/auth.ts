@@ -7,9 +7,13 @@
  * body validation, so a request without a session is 401, not 422) or `preHandler`
  * (or `app.requireRole('moderator', 'admin')`). Anything unverifiable fails closed with 401.
  *
- * Not yet here (needs a Supabase project): the 60 s cached session-revocation check. Deleted and
- * suspended accounts are refused per route from the profile (modules/me, T2.5: reads allowed,
- * writes `403 account.suspended`); later write routes reuse that check.
+ * With `sessions` (the server always passes it when it has a database), the token's session must
+ * still exist in `auth.sessions` (modules/auth/sessions.ts, cached 60 s): a signed-out or revoked
+ * session's token stops working at once rather than when it expires. Tokens without a
+ * `session_id` are then refused. If the check cannot run (database down) the request fails with
+ * 503, not 401, so clients do not take an outage for a sign-out. Deleted and suspended accounts
+ * are refused per route from the profile (modules/me, T2.5: reads allowed, writes
+ * `403 account.suspended`); later write routes reuse that check.
  */
 import type {
   FastifyInstance,
@@ -20,7 +24,8 @@ import type {
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
-import { ApiError } from './errors.js';
+import { ApiError, loggableError } from './errors.js';
+import type { SessionLookup } from '../modules/auth/sessions.js';
 
 export type AppRole = 'user' | 'moderator' | 'admin';
 
@@ -111,34 +116,62 @@ function unauthenticated(reply: FastifyReply): never {
 export interface AuthPluginOptions {
   /** Undefined means auth is not configured: every protected route answers 401. */
   verifier?: JwtVerifier;
+  /** Is the token's session still alive? (cached; see modules/auth/sessions.ts) */
+  sessions?: SessionLookup;
 }
 
-export const authPlugin = fp<AuthPluginOptions>(async (app: FastifyInstance, { verifier }) => {
-  app.decorateRequest('user', null);
+export const authPlugin = fp<AuthPluginOptions>(
+  async (app: FastifyInstance, { verifier, sessions }) => {
+    app.decorateRequest('user', null);
 
-  app.addHook('onRequest', async (req: FastifyRequest) => {
-    const header = req.headers.authorization;
-    if (!header || !verifier) return;
-    const match = BEARER.exec(header);
-    if (!match) return; // malformed header: treated as anonymous; protected routes return 401
-    try {
-      req.user = await verifier(match[1]!);
-    } catch (err) {
-      req.log.info({ reason: (err as Error).name }, 'access token rejected');
-    }
-  });
+    app.addHook('onRequest', async (req: FastifyRequest, reply: FastifyReply) => {
+      const header = req.headers.authorization;
+      if (!header || !verifier) return;
+      const match = BEARER.exec(header);
+      if (!match) return; // malformed header: treated as anonymous; protected routes return 401
+      let user: AuthUser;
+      try {
+        user = await verifier(match[1]!);
+      } catch (err) {
+        req.log.info({ reason: (err as Error).name }, 'access token rejected');
+        return;
+      }
+      if (sessions) {
+        if (!user.sessionId) {
+          req.log.info({ reason: 'no_session_id' }, 'access token rejected');
+          return;
+        }
+        let active: boolean;
+        try {
+          active = await sessions(user.sessionId, user.id);
+        } catch (err) {
+          req.log.warn({ err: loggableError(err) }, 'session check failed');
+          reply.header('retry-after', 5);
+          throw new ApiError('upstream.unavailable', {
+            title: 'Sign-in check unavailable',
+            detail: 'Try again in a moment.',
+          });
+        }
+        if (!active) {
+          req.log.info({ reason: 'session_revoked' }, 'access token rejected');
+          return;
+        }
+      }
+      req.user = user;
+    });
 
-  const requireUser: preHandlerAsyncHookHandler = async (req, reply) => {
-    if (!req.user) unauthenticated(reply);
-  };
-
-  app.decorate('requireUser', requireUser);
-  app.decorate('requireRole', (...roles: AppRole[]): preHandlerAsyncHookHandler => {
-    return async (req, reply) => {
+    const requireUser: preHandlerAsyncHookHandler = async (req, reply) => {
       if (!req.user) unauthenticated(reply);
-      // Admin surfaces are hidden from everyone else (docs/05 §3 rule 1): 404, not 403.
-      if (!roles.includes(req.user.appRole))
-        throw new ApiError('not_found', { title: 'Not found' });
     };
-  });
-});
+
+    app.decorate('requireUser', requireUser);
+    app.decorate('requireRole', (...roles: AppRole[]): preHandlerAsyncHookHandler => {
+      return async (req, reply) => {
+        if (!req.user) unauthenticated(reply);
+        // Admin surfaces are hidden from everyone else (docs/05 §3 rule 1): 404, not 403.
+        if (!roles.includes(req.user.appRole))
+          throw new ApiError('not_found', { title: 'Not found' });
+      };
+    });
+  },
+);
