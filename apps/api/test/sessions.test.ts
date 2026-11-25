@@ -112,6 +112,8 @@ describe('signed-out and revoked sessions (docs/05 §2)', () => {
           HASH_PEPPER: SECRET,
           SUPABASE_URL: 'https://project.supabase.co',
           SUPABASE_SERVICE_ROLE_KEY: SECRET,
+          FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
+          DIGILOCKER_WEBHOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
           SEND_SMS_HOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
         }),
       }),

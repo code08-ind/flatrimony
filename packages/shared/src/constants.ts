@@ -89,6 +89,8 @@ export const RATE_LIMITS = {
   commutePreview: { limit: 30, windowMs: 60_000 },
   /** Place search keystrokes (each may be a paid Places request). */
   places: { limit: 60, windowMs: 60_000 },
+  /** Starting DigiLocker verification (each start is a paid provider session). */
+  verificationStart: { limit: 5, windowMs: 60 * 60_000 },
 } as const;
 
 /** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */

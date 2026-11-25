@@ -512,7 +512,16 @@ sequenceDiagram
   API-->>App: { status: "verified" }
 ```
 
-Failure codes: `name_mismatch`, `underage`, `identity_in_use` (DigiLocker identity already linked to another account), `banned`, `provider_error`, `user_cancelled`, `expired`.
+Failure codes: `name_mismatch`, `underage`, `identity_in_use` (DigiLocker identity already linked to another account), `banned`, `provider_error`, `user_cancelled`; an abandoned attempt becomes status `expired`.
+
+Implementation notes (T3.1):
+
+- **Start** `POST /verifications/digilocker` takes `{ consentVersion }`: the current `identity_verification` policy version (`ref.app_config` `legal.versions`), which is recorded as a consent (DigiLocker and provider terms require explicit consent). An older version is `422` (`body.consentVersion`, `outdated_version`); none published is `503`. Already verified is `409 conflict`; no profile `409 profile.incomplete`; deleted `401`, suspended `403 account.suspended`. A new start replaces an unfinished one (one pending attempt per user). 5 starts per hour per user (each is a paid provider session). `201 { verificationId, redirectUrl, expiresAt }`.
+- **Webhook** `POST /webhooks/digilocker` uses Standard Webhooks signatures (`webhook-id`, `webhook-timestamp`, `webhook-signature`; secrets `DIGILOCKER_WEBHOOK_SECRETS`, 5-minute tolerance) over a body naming the provider reference `{ "providerRef": "…" }`. The API then fetches the result from the provider and never trusts the webhook body. Bad signature `401`; unknown or already decided references `200` (so the provider stops retrying); provider unreachable `503` (it retries).
+- **Decision order** (so the answer reveals as little as possible): banned identity → under 18 on today's date in India → identity already on another account → first name does not match. First-name match (FR-VER-03): the display name's first word equals a word of the DigiLocker name, or one starts with the other with at least 3 letters ("Abhi" for "Abhishek"); case and Latin accents ignored, Devanagari compared as is.
+- **Verified**: one transaction writes `private.identity_records` and sets `is_identity_verified`, `verified_gender` and `date_of_birth` (DigiLocker's), recomputes completion (+5) and bumps the profile version. A `women_only` profile with a non-female result becomes `professional`, and a `female_only` flatmate preference becomes `any` (FR-VER-06). Two accounts finishing with one identity at once: the second fails `identity_in_use`.
+- **Status** `GET /verifications/{id}` (owner only, else `404`) and `GET /verifications` (newest first) return `{ id, type, status, failureCode, startedAt, completedAt, expiresAt }`, never identity data. A pending attempt past `expiresAt` reads as `expired`.
+- **Mock provider** (`DIGILOCKER_PROVIDER=mock`, refused in production): `redirectUrl` is a test consent page on the API (`/dev/digilocker/:ref`) where a tester enters the name, DOB, gender and DigiLocker id DigiLocker would return, or denies; the page then sends a signed webhook like a provider. Notifications (`verification.completed` / `verification.failed`, §11) come with the notifications work.
 
 ### 8.5 Areas and commute
 

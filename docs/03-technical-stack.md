@@ -303,10 +303,13 @@ Until decided, staging uses the default `run.app` URLs.
 | `SUPABASE_URL` | No | Project URL |
 | `SUPABASE_JWT_ISSUER` / `SUPABASE_JWKS_URL` | No | To verify access tokens (prefer asymmetric JWT signing keys if enabled; else `SUPABASE_JWT_SECRET`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Only for Storage admin operations; never sent to clients |
-| `FIELD_ENCRYPTION_KEY` | Yes | 32-byte key for application-level encryption (AES-256-GCM), versioned (`v1:`) |
+| `FIELD_ENCRYPTION_KEY` | Yes | 32-byte key for application-level encryption (AES-256-GCM), as `v1:<base64>`; required outside local (the DigiLocker verified name, T3.1). Local development without it uses a throwaway key |
 | `HASH_PEPPER` | Yes | Pepper for HMAC-SHA-256 of phone numbers and identity identifiers |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Yes | Video storage |
-| `DIGILOCKER_PROVIDER_CLIENT_ID`, `DIGILOCKER_PROVIDER_SECRET`, `DIGILOCKER_WEBHOOK_SECRET` | Yes | ID verification |
+| `DIGILOCKER_PROVIDER` | No | `mock` (default; refused in production) until the provider is chosen (T0.7, OQ-02). The mock serves a test consent page at `/dev/digilocker/:ref` |
+| `DIGILOCKER_WEBHOOK_SECRETS` | Yes | Standard Webhooks secret(s) the provider signs `POST /webhooks/digilocker` with, `v1,whsec_<base64>`; required outside local |
+| `PUBLIC_API_URL` | No | The API's public base URL, for links it hands to clients (the mock consent page); default `http://localhost:8080` |
+| `DIGILOCKER_PROVIDER_CLIENT_ID`, `DIGILOCKER_PROVIDER_SECRET` | Yes | ID verification |
 | `RAZORPAY_KEY_ID` | No | Public key id |
 | `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Yes | Payments |
 | `EXPO_ACCESS_TOKEN` | Yes | Push notifications (enhanced security) |

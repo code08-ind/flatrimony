@@ -46,6 +46,8 @@ variable "secret_ids" {
     "GOOGLE_PLACES_API_KEY",
     # Shared by the web app's server and the API: the API rate-limits web users by their own IP.
     "WEB_PROXY_SECRET",
+    # Standard Webhooks secret(s) the DigiLocker provider signs its webhooks with (T3.1).
+    "DIGILOCKER_WEBHOOK_SECRETS",
   ]
 }
 

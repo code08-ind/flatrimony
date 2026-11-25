@@ -221,7 +221,7 @@ function consentRecord(row: {
 }
 
 /** Recomputes profiles.biodata_completion from what is stored (docs/05 §8.2: on every write). */
-async function recomputeCompletion(db: Database, userId: string): Promise<void> {
+export async function recomputeCompletion(db: Database, userId: string): Promise<void> {
   const row = await sql<{
     basics: boolean;
     preferences: boolean;
@@ -297,7 +297,11 @@ const VERSION_SQL = sql<string>`(extract(epoch from updated_at) * 1000000)::bigi
  * Locks the profile row for the rest of the transaction and bumps updated_at (the ETag). With
  * `ifVersion`, only when the profile is still at that version. False when nothing matched.
  */
-async function lockAndTouch(tx: Database, userId: string, ifVersion?: string): Promise<boolean> {
+export async function lockAndTouch(
+  tx: Database,
+  userId: string,
+  ifVersion?: string,
+): Promise<boolean> {
   const res = await tx
     .updateTable('profiles')
     .set({ updated_at: sql`now()` })

@@ -4,6 +4,7 @@
  * none are ever committed (see .env.example).
  */
 import { z } from 'zod';
+import { parseFieldKey } from './lib/field-crypto.js';
 import { parseWebhookSecrets } from './lib/standard-webhooks.js';
 
 const csv = z
@@ -54,6 +55,40 @@ export const EnvSchema = z.object({
         ctx.addIssue({ code: 'custom', message: (err as Error).message });
       }
     }),
+  /** AES-256-GCM key for encrypted fields (verified names; docs/04 §13): `v1:<base64 of 32 bytes>`. */
+  FIELD_ENCRYPTION_KEY: z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined) return;
+      try {
+        parseFieldKey(v);
+      } catch (err) {
+        ctx.addIssue({ code: 'custom', message: (err as Error).message });
+      }
+    }),
+  /**
+   * DigiLocker identity provider (T3.1). Only `mock` exists until the founder picks a licensed
+   * provider (T0.7, OQ-02); refused in production.
+   */
+  DIGILOCKER_PROVIDER: z.enum(['mock']).default('mock'),
+  /** Standard Webhooks secret(s) the provider signs its webhooks with: `v1,whsec_<base64>`. */
+  DIGILOCKER_WEBHOOK_SECRETS: z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined) return;
+      try {
+        parseWebhookSecrets(v);
+      } catch (err) {
+        ctx.addIssue({ code: 'custom', message: (err as Error).message });
+      }
+    }),
+  /**
+   * The API's public base URL, for links the API hands to clients (the mock DigiLocker consent
+   * page). Local default: http://localhost:8080.
+   */
+  PUBLIC_API_URL: z.url().default('http://localhost:8080'),
   /** Pepper for HMAC lookup hashes of phones, devices, DigiLocker ids (docs/04 §13). Never rotate casually: bans and uniqueness depend on it. */
   HASH_PEPPER: z.string().min(32).optional(),
   /** OTP SMS provider. Only 'mock' exists until DLT registration (T0.6); refused in production. */
@@ -110,6 +145,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (env.APP_ENV === 'production' && env.PLACES_PROVIDER === 'mock') {
     throw new Error('PLACES_PROVIDER=mock is not allowed in production');
   }
+  if (env.APP_ENV === 'production' && env.DIGILOCKER_PROVIDER === 'mock') {
+    throw new Error('DIGILOCKER_PROVIDER=mock is not allowed in production');
+  }
   if (env.APP_ENV === 'production' && env.SMS_PROVIDER === 'mock') {
     throw new Error('SMS_PROVIDER=mock is not allowed in production');
   }
@@ -124,6 +162,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       throw new Error('SEND_SMS_HOOK_SECRETS is required outside local development');
     }
     if (!env.HASH_PEPPER) throw new Error('HASH_PEPPER is required outside local development');
+    if (!env.FIELD_ENCRYPTION_KEY)
+      throw new Error('FIELD_ENCRYPTION_KEY is required outside local development');
+    if (!env.DIGILOCKER_WEBHOOK_SECRETS)
+      throw new Error('DIGILOCKER_WEBHOOK_SECRETS is required outside local development');
     // Profile photos (T2.10): without Storage the photo routes answer 503 and nobody can finish
     // their profile, so a deploy without it is a misconfiguration.
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
