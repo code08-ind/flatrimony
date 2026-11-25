@@ -47,6 +47,7 @@ import {
   REQUIRED_CONSENTS,
   type FieldError,
 } from '@flatrimony/shared';
+import { firstNameMatches } from '../verification/outcome.js';
 import { ApiError } from '../../plugins/errors.js';
 import type { IdentifierHasher } from '../../lib/hashing.js';
 import type { BansRepository } from '../auth/bans.js';
@@ -70,6 +71,8 @@ export interface MeRoutesOptions {
   photos?: PhotoStorage;
   /** Commute zone previews (T2.9); without it previews are the radius approximation. */
   commutePreview?: CommutePreview;
+  /** The DigiLocker verified name (T3.1): a verified user's new display name must still match it. */
+  verifiedName?: (userId: string) => Promise<string | null>;
   now?: () => number;
 }
 
@@ -375,6 +378,19 @@ export const meRoutes: FastifyPluginAsyncZod<MeRoutesOptions> = async (app, opts
         throw new ApiError('profile.category_not_allowed', {
           title: 'Women-only needs a verified female identity',
         });
+
+      // FR-VER-03 holds after verification too: a new display name must match the verified name.
+      if (patch.displayName !== undefined && state.isIdentityVerified && opts.verifiedName) {
+        const verified = await opts.verifiedName(userId);
+        if (verified && !firstNameMatches(patch.displayName, verified))
+          throw invalid([
+            {
+              path: 'body.displayName',
+              code: 'name_mismatch',
+              message: 'Use your first name as it is on DigiLocker',
+            },
+          ]);
+      }
 
       const category = patch.category ?? state.category;
       const update: ProfileUpdate = { ...patch };

@@ -16,9 +16,9 @@
 
 | Item | Status |
 | --- | --- |
-| Overall phase | **M2 — Onboarding and Flat Biodata** done in code once web sign-in and onboarding merges (T2.1–T2.12 merged; web onboarding in review). M1 code merged; staging blocked on founder accounts |
+| Overall phase | **M3 — Verification + Listings** started: T3.1 DigiLocker verification API in review (mock provider until T0.7). M1 and M2 code merged, including web sign-in and onboarding (#36); staging blocked on founder accounts |
 | Overall health | 🟢 On track (M1 and M2 code merged to `main` with CI green, including E2E journey 1 on web and Android; staging blocked on founder accounts) |
-| Next milestone | M2 complete with web sign-in and onboarding (in review); then M3 — Verification + Listings (DigiLocker provider, T0.7) |
+| Next milestone | M3 — Verification + Listings: T3.2 verification screens next, then listings (T3.4–T3.9); the real DigiLocker provider waits on T0.7 |
 | Biggest risk right now | External dependencies with lead time: DLT SMS registration, DigiLocker provider onboarding, Razorpay KYC, Play developer account |
 | Decisions pending | ADR-0007 (custom domains), ADR-0008 (metro/transit commute data), ADR-0012 (Android billing), name clearance, Google Places key and map tile host (T2.8), commute approximation speeds (T2.9) |
 
@@ -42,8 +42,8 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | P0 | Validation + setup | Landing page live (EN/HI); waitlist target set by founder reached; vendor sign-ups started | In progress | Founder to set |
 | M1 | Foundations | Monorepo, CI, staging deploy pipeline green; Supabase + GCP staging; design tokens package; ADRs written | In progress | Founder to set |
-| M2 | Onboarding + Flat Biodata | FR-AUTH-*, FR-BIO-* P0 done on Android + web; E2E journey 1 passing | In progress (T2.1–T2.12 done, E2E journey 1 passing on web and Android; web sign-in and onboarding on the Next.js app in review) | — |
-| M3 | Verification + Listings | FR-VER-* P0, FR-LST-* P0 done; video walkthrough upload; E2E journey 2 passing | Not started | — |
+| M2 | Onboarding + Flat Biodata | FR-AUTH-*, FR-BIO-* P0 done on Android + web; E2E journey 1 passing | Done in code (T2.1–T2.12, web sign-in and onboarding #36; E2E journey 1 on web and Android); staging blocked on founder accounts | — |
+| M3 | Verification + Listings | FR-VER-* P0, FR-LST-* P0 done; video walkthrough upload; E2E journey 2 passing | In progress (T3.1 DigiLocker verification API in review, mock provider) | — |
 | M4 | Discovery + Matching | FR-DISC-* P0; commute zones; deck p95 within budget | Not started | — |
 | M5 | Chat + Meet + Safety | FR-CHAT-*, FR-MEET-*, FR-SAFE-* P0; E2E journeys 3–6 passing | Not started | — |
 | M6 | Admin + Hardening | FR-ADM-* P0; security checklist; load test; privacy flows | Not started | — |
@@ -118,7 +118,7 @@ Ticket IDs (`FLT-n`) are assigned when GitHub Issues are created; until then tas
 
 | ID | Task | FR | Status |
 | --- | --- | --- | --- |
-| T3.1 | DigiLocker provider integration: start, webhook, result handling, identity records, uniqueness | FR-VER-01..03, 06, 07 | Not started |
+| T3.1 | DigiLocker provider integration: start, webhook, result handling, identity records, uniqueness | FR-VER-01..03, 06, 07 | In review — **API**: `POST /v1/verifications/digilocker` (with the current `identity_verification` consent version, recorded; 5 starts/hour; a new start replaces an unfinished one), `GET /v1/verifications/:id` and `GET /v1/verifications` (status and failure code only), `POST /webhooks/digilocker` (Standard Webhooks signature; the result is fetched from the provider, never taken from the webhook). Checks in order: banned identity → under 18 (India date) → identity on another account → first-name match (FR-VER-03: a word of the DigiLocker name, or a ≥3-letter short form; case/accents ignored). Verified: `private.identity_records` (name AES-256-GCM with `FIELD_ENCRYPTION_KEY`, DOB, gender, DigiLocker id HMAC) and the profile's verified flag, gender and DigiLocker DOB in one transaction; women-only with a non-female result moves to professional and any flatmate (FR-VER-06); completion +5. Migration 0010 allows the `banned` failure code. **Mock provider** with a test consent page (`/dev/digilocker/:ref`) that sends a real signed webhook; checked on the local stack (sign-in → profile → start → approve → verified; a second start is 409; nothing identifying in the logs). Tests: 31 unit, 8 Postgres integration, pgTAP for 0010. **Founder decisions (review):** (1) names: DigiLocker returns Latin-script names, so a display name typed in Devanagari (or another Indian script) never matches — transliterate before comparing, ask for the name in English, or send mismatches to manual review? Today it fails with `name_mismatch`; titles, initials and common spellings are handled, and any word of the DigiLocker name counts (so a surname alone as display name passes). (2) A `banned` or `underage` result only fails the attempt; should it also suspend the account or ban its phone/device (FR-AUTH-08)? (3) Staging with the mock: the consent page is off unless `DIGILOCKER_MOCK_CONSENT_PAGE=true`, which lets testers verify as anyone — keep staging to test data. (4) After a non-female result moves a women-only profile to professional, the flatmate preference is reset to `any`, but `PUT /me/preferences` can set `female_only` again: allowed (any member may prefer women flatmates) or refused? (5) The real provider's reference format must pass the database's Aadhaar-pattern check on `provider_ref` (12-digit runs are refused). **Blocked:** the real provider (T0.7, OQ-02: provider, sandbox, price) — the interface (`start`, `result`) and webhook are ready for it; staging needs `FIELD_ENCRYPTION_KEY` and `DIGILOCKER_WEBHOOK_SECRETS` values (secrets in Terraform). **Later:** the app screens (T3.2), notifications on completion (with the notifications work), selfie liveness (FR-VER-04, P1) |
 | T3.2 | Verification gate UI + status polling + failure states | FR-VER-01, 07, 08 | Not started |
 | T3.3 | Work/college email verification | FR-VER-05 | Not started |
 | T3.4 | Migration 0006 (listings, rules, costs, media) + triggers | DB §6.4 | Not started |

@@ -18,6 +18,10 @@ export function createIdentifierHasher(pepper: string): IdentifierHasher {
       const canonical = normaliseIndianMobile(value);
       if (!canonical) throw new Error('Not an Indian mobile number');
       input = canonical;
+    } else if (kind === 'digilocker') {
+      // One identity, one hash, however a provider formats the id (case, width, spaces): the
+      // one-account rule and DigiLocker bans depend on it (T3.1 review).
+      input = value.normalize('NFKC').trim().toLowerCase();
     }
     return createHmac('sha256', pepper).update(`${kind}:`).update(input).digest();
   };

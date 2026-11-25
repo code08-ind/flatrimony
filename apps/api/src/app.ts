@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import {
@@ -29,6 +30,21 @@ import { createSendSmsGate, otpGuardRoutes } from './modules/auth/otp-guard.js';
 import { memorySlidingWindowStore, type SlidingWindowStore } from './lib/sliding-window.js';
 import { inMemorySystemRepository, type SystemRepository } from './modules/system/repository.js';
 import { meRoutes } from './modules/me/routes.js';
+import {
+  createFieldCipher,
+  ephemeralFieldKey,
+  parseFieldKey,
+  type FieldCipher,
+} from './lib/field-crypto.js';
+import type { IdentifierHasher } from './lib/hashing.js';
+import { devDigiLockerRoutes } from './modules/verification/dev-routes.js';
+import {
+  mockDigiLockerProvider,
+  type DigiLockerProvider,
+  type MockDigiLocker,
+} from './modules/verification/provider.js';
+import type { VerificationRepository } from './modules/verification/repository.js';
+import { digilockerWebhookRoutes, verificationRoutes } from './modules/verification/routes.js';
 import type { MeRepository } from './modules/me/repository.js';
 import type { PhotoStorage } from './lib/photo-storage.js';
 import { cachedIdToken } from '@flatrimony/routing';
@@ -58,6 +74,16 @@ export interface BuildOptions {
   otpStore?: SlidingWindowStore;
   /** Profiles and consents (Postgres in server.ts). Without it the /v1/me routes are not served. */
   meRepo?: MeRepository;
+  /**
+   * DigiLocker verifications (Postgres in server.ts), built with the app's identifier hasher and
+   * field cipher. Without it (or meRepo) the verification routes are not served.
+   */
+  verificationRepo?: (deps: {
+    hasher: IdentifierHasher;
+    cipher: FieldCipher;
+  }) => VerificationRepository;
+  /** DigiLocker provider (default: from DIGILOCKER_PROVIDER; tests inject their own). */
+  digilocker?: DigiLockerProvider;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
   photoStorage?: PhotoStorage;
   /** Place search (default: from PLACES_PROVIDER; tests inject their own). */
@@ -115,6 +141,8 @@ export async function buildApp({
   bansRepo,
   otpStore,
   meRepo,
+  verificationRepo,
+  digilocker,
   photoStorage,
   commutePreview,
   placesProvider,
@@ -206,11 +234,29 @@ export async function buildApp({
   });
 
   // Account and consents (T2.5). Needs Postgres: the rules live in database constraints.
+  // DigiLocker identity verification (T3.1). The verified name is encrypted with
+  // FIELD_ENCRYPTION_KEY (required outside local; a throwaway key in local development).
+  const cipher = createFieldCipher(
+    env.FIELD_ENCRYPTION_KEY ? parseFieldKey(env.FIELD_ENCRYPTION_KEY) : ephemeralFieldKey(),
+  );
+  const dlProvider: DigiLockerProvider =
+    digilocker ??
+    mockDigiLockerProvider({
+      publicApiUrl: env.PUBLIC_API_URL ?? 'http://localhost:8080',
+      ...(now ? { now } : {}),
+    });
+  // Webhook keys (required outside local); locally a throwaway one that only the mock knows.
+  const dlKeys = env.DIGILOCKER_WEBHOOK_SECRETS
+    ? parseWebhookSecrets(env.DIGILOCKER_WEBHOOK_SECRETS)
+    : [randomBytes(32)];
+  const verifications = meRepo && verificationRepo ? verificationRepo({ hasher, cipher }) : null;
+
   if (meRepo) {
     await app.register(meRoutes, {
       prefix: '/v1',
       repo: meRepo,
       ...(photoStorage ? { photos: photoStorage } : {}),
+      ...(verifications ? { verifiedName: (id: string) => verifications.verifiedName(id) } : {}),
       commutePreview:
         commutePreview ??
         createCommutePreview({
@@ -227,6 +273,34 @@ export async function buildApp({
       hasher,
       ...(now ? { now } : {}),
     });
+  }
+
+  if (meRepo && verifications) {
+    await app.register(verificationRoutes, {
+      prefix: '/v1',
+      repo: verifications,
+      me: meRepo,
+      provider: dlProvider,
+      ...(now ? { now } : {}),
+    });
+    await app.register(digilockerWebhookRoutes, {
+      repo: verifications,
+      provider: dlProvider,
+      keys: dlKeys,
+      ...(now ? { now } : {}),
+    });
+    // The mock's consent page: local development, or an explicit opt-in on a test environment
+    // (production refuses the mock provider).
+    if (
+      isMockDigiLocker(dlProvider) &&
+      env.APP_ENV !== 'production' &&
+      (env.APP_ENV === 'local' || env.DIGILOCKER_MOCK_CONSENT_PAGE === 'true')
+    )
+      await app.register(devDigiLockerRoutes, {
+        mock: dlProvider,
+        key: dlKeys[0]!,
+        ...(now ? { now } : {}),
+      });
   }
 
   // Place search for the office/college picker (T2.8): the vendor key stays server-side.
@@ -252,3 +326,6 @@ export async function buildApp({
 
   return app;
 }
+
+const isMockDigiLocker = (p: DigiLockerProvider): p is MockDigiLocker =>
+  'complete' in p && typeof (p as MockDigiLocker).complete === 'function';

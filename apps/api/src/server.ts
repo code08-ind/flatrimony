@@ -5,6 +5,7 @@ import { pgSystemRepository } from './modules/system/pg-repository.js';
 import { pgBansRepository } from './modules/auth/bans.js';
 import { cachedSessionLookup, pgSessionLookup } from './modules/auth/sessions.js';
 import { pgMeRepository } from './modules/me/repository.js';
+import { pgVerificationRepository } from './modules/verification/repository.js';
 import { supabasePhotoStorage } from './lib/photo-storage.js';
 import { restrictImageDecoders } from './lib/image.js';
 
@@ -23,6 +24,7 @@ const app = await buildApp({
         // A signed-out or revoked session's token stops working (docs/05 §2).
         sessionLookup: cachedSessionLookup(pgSessionLookup(db)),
         meRepo: pgMeRepository(db),
+        verificationRepo: (deps) => pgVerificationRepository(db, deps),
       }
     : {}),
   ...(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY

@@ -8,3 +8,4 @@ export * from './schemas/listing.js';
 export * from './schemas/rishta.js';
 export * from './schemas/system.js';
 export * from './schemas/commute.js';
+export * from './schemas/verification.js';

@@ -221,7 +221,7 @@ function consentRecord(row: {
 }
 
 /** Recomputes profiles.biodata_completion from what is stored (docs/05 §8.2: on every write). */
-async function recomputeCompletion(db: Database, userId: string): Promise<void> {
+export async function recomputeCompletion(db: Database, userId: string): Promise<void> {
   const row = await sql<{
     basics: boolean;
     preferences: boolean;
@@ -297,7 +297,11 @@ const VERSION_SQL = sql<string>`(extract(epoch from updated_at) * 1000000)::bigi
  * Locks the profile row for the rest of the transaction and bumps updated_at (the ETag). With
  * `ifVersion`, only when the profile is still at that version. False when nothing matched.
  */
-async function lockAndTouch(tx: Database, userId: string, ifVersion?: string): Promise<boolean> {
+export async function lockAndTouch(
+  tx: Database,
+  userId: string,
+  ifVersion?: string,
+): Promise<boolean> {
   const res = await tx
     .updateTable('profiles')
     .set({ updated_at: sql`now()` })
@@ -989,14 +993,26 @@ export function pgMeRepository(db: Database): MeRepository {
     },
 
     async withdrawConsent(userId, purpose) {
-      const res = await db
-        .updateTable('consents')
-        .set({ withdrawn_at: sql`now()` })
-        .where('user_id', '=', userId)
-        .where('purpose', '=', purpose)
-        .where('withdrawn_at', 'is', null)
-        .executeTakeFirst();
-      return Number(res.numUpdatedRows) > 0;
+      return db.transaction().execute(async (tx) => {
+        const res = await tx
+          .updateTable('consents')
+          .set({ withdrawn_at: sql`now()` })
+          .where('user_id', '=', userId)
+          .where('purpose', '=', purpose)
+          .where('withdrawn_at', 'is', null)
+          .executeTakeFirst();
+        // Without consent to identity verification, an unfinished DigiLocker attempt stops
+        // (its result is refused too: modules/verification/repository.ts).
+        if (purpose === 'identity_verification')
+          await tx
+            .updateTable('verifications')
+            .set({ status: 'expired', completed_at: sql`now()` })
+            .where('user_id', '=', userId)
+            .where('type', '=', 'digilocker')
+            .where('status', '=', 'pending')
+            .execute();
+        return Number(res.numUpdatedRows) > 0;
+      });
     },
   };
 }
