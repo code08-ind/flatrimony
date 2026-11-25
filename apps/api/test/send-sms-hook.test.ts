@@ -38,6 +38,7 @@ async function setup(
           SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
           FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
           DIGILOCKER_WEBHOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
+          PUBLIC_API_URL: 'https://api.staging.test',
         }
       : {}),
   });

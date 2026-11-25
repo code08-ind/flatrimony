@@ -234,11 +234,29 @@ export async function buildApp({
   });
 
   // Account and consents (T2.5). Needs Postgres: the rules live in database constraints.
+  // DigiLocker identity verification (T3.1). The verified name is encrypted with
+  // FIELD_ENCRYPTION_KEY (required outside local; a throwaway key in local development).
+  const cipher = createFieldCipher(
+    env.FIELD_ENCRYPTION_KEY ? parseFieldKey(env.FIELD_ENCRYPTION_KEY) : ephemeralFieldKey(),
+  );
+  const dlProvider: DigiLockerProvider =
+    digilocker ??
+    mockDigiLockerProvider({
+      publicApiUrl: env.PUBLIC_API_URL ?? 'http://localhost:8080',
+      ...(now ? { now } : {}),
+    });
+  // Webhook keys (required outside local); locally a throwaway one that only the mock knows.
+  const dlKeys = env.DIGILOCKER_WEBHOOK_SECRETS
+    ? parseWebhookSecrets(env.DIGILOCKER_WEBHOOK_SECRETS)
+    : [randomBytes(32)];
+  const verifications = meRepo && verificationRepo ? verificationRepo({ hasher, cipher }) : null;
+
   if (meRepo) {
     await app.register(meRoutes, {
       prefix: '/v1',
       repo: meRepo,
       ...(photoStorage ? { photos: photoStorage } : {}),
+      ...(verifications ? { verifiedName: (id: string) => verifications.verifiedName(id) } : {}),
       commutePreview:
         commutePreview ??
         createCommutePreview({
@@ -257,20 +275,7 @@ export async function buildApp({
     });
   }
 
-  // DigiLocker identity verification (T3.1). The verified name is encrypted with
-  // FIELD_ENCRYPTION_KEY (required outside local; a throwaway key in local development).
-  const cipher = createFieldCipher(
-    env.FIELD_ENCRYPTION_KEY ? parseFieldKey(env.FIELD_ENCRYPTION_KEY) : ephemeralFieldKey(),
-  );
-  const dlProvider: DigiLockerProvider =
-    digilocker ??
-    mockDigiLockerProvider({ publicApiUrl: env.PUBLIC_API_URL, ...(now ? { now } : {}) });
-  // Webhook keys (required outside local); locally a throwaway one that only the mock knows.
-  const dlKeys = env.DIGILOCKER_WEBHOOK_SECRETS
-    ? parseWebhookSecrets(env.DIGILOCKER_WEBHOOK_SECRETS)
-    : [randomBytes(32)];
-  if (meRepo && verificationRepo) {
-    const verifications = verificationRepo({ hasher, cipher });
+  if (meRepo && verifications) {
     await app.register(verificationRoutes, {
       prefix: '/v1',
       repo: verifications,
@@ -284,8 +289,13 @@ export async function buildApp({
       keys: dlKeys,
       ...(now ? { now } : {}),
     });
-    // The mock's consent page (production refuses the mock provider).
-    if (env.APP_ENV !== 'production' && isMockDigiLocker(dlProvider))
+    // The mock's consent page: local development, or an explicit opt-in on a test environment
+    // (production refuses the mock provider).
+    if (
+      isMockDigiLocker(dlProvider) &&
+      env.APP_ENV !== 'production' &&
+      (env.APP_ENV === 'local' || env.DIGILOCKER_MOCK_CONSENT_PAGE === 'true')
+    )
       await app.register(devDigiLockerRoutes, {
         mock: dlProvider,
         key: dlKeys[0]!,

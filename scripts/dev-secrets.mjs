@@ -49,8 +49,8 @@ const a = upsert(supabaseEnv, { SEND_SMS_HOOK_SECRETS: hookSecret });
 const b = upsert(apiEnv, {
   SEND_SMS_HOOK_SECRETS: hookSecret,
   HASH_PEPPER: randomBytes(32).toString('base64'),
-  // Verified names (DigiLocker, T3.1) are encrypted with this; the mock provider signs its
-  // webhooks with the second one.
+  // FIELD_ENCRYPTION_KEY encrypts verified names (DigiLocker, T3.1); the mock provider signs its
+  // webhooks with DIGILOCKER_WEBHOOK_SECRETS (its first key).
   FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
   DIGILOCKER_WEBHOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
   APP_ENV: 'local',

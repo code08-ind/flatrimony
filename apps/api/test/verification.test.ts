@@ -6,16 +6,22 @@ import { loadEnv } from '../src/env.js';
 import { createFieldCipher, parseFieldKey } from '../src/lib/field-crypto.js';
 import { signWebhook } from '../src/lib/standard-webhooks.js';
 import type { ProfileState } from '../src/modules/me/repository.js';
-import { decideOutcome, firstNameMatches } from '../src/modules/verification/outcome.js';
+import {
+  decideOutcome,
+  firstNameMatches,
+  isCalendarDate,
+} from '../src/modules/verification/outcome.js';
+import { createIdentifierHasher } from '../src/lib/hashing.js';
 import {
   DigiLockerUnavailable,
   mockDigiLockerProvider,
   type DigiLockerIdentity,
   type DigiLockerProvider,
 } from '../src/modules/verification/provider.js';
-import type {
-  CompleteOutcome,
-  VerificationRepository,
+import {
+  StartInProgress,
+  type CompleteOutcome,
+  type VerificationRepository,
 } from '../src/modules/verification/repository.js';
 
 const USER = '2b7e4c1a-9d3f-4e5a-8b6c-0d1e2f3a4b5c';
@@ -27,18 +33,36 @@ const SECRET = `v1,whsec_${KEY.toString('base64')}`;
 describe('first name match (FR-VER-03)', () => {
   it.each([
     ['Asha', 'ASHA RANI SHARMA', true],
-    ['asha', 'Sharma Asha', true], // any word of the DigiLocker name
+    ['asha', 'SHARMA ASHA', true], // surname first on some records
+    ['Ramesh', 'K. RAMESH', true], // an initial first
     ['Abhi', 'ABHISHEK KUMAR', true], // a short form of at least 3 letters
     ['Priyanka', 'PRIYA SINGH', true],
     ['Renée', 'RENEE DSOUZA', true], // Latin accents ignored
-    ['आशा', 'आशा शर्मा', true], // Devanagari kept whole
-    ['Raj', 'RAJESH', true],
+    ['Dr. Anil', 'ANIL GUPTA', true], // titles skipped
+    ['A. Sharma', 'ANITA SHARMA', true], // initials skipped
+    ['Smt Lakshmi', 'LAXMI DEVI', true],
+    ['Mohammed', 'MOHD ASIF', true], // the spellings of Mohammad
+    ['Mohammad', 'MOHAMMED ASIF', true],
+    ['Pooja', 'PUJA RANI', true],
+    ['Deepak', 'DIPAK SINGH', true],
+    ['Bhavna', 'BHAWNA JOSHI', true],
     ['Al', 'ALOK VERMA', false], // too short to be a short form
     ['Meera', 'ASHA SHARMA', false],
+    ['प्रिया', 'PRIYA SHARMA', false], // Devanagari vs DigiLocker's Latin (founder decision)
+    ['Dr.', 'ANIL GUPTA', false], // nothing but a title
     ['', 'ASHA', false],
     ['Asha', '', false],
   ])('%s vs %s → %s', (display, verified, ok) => {
     expect(firstNameMatches(display, verified)).toBe(ok);
+  });
+});
+
+describe('calendar dates', () => {
+  it('only real dates', () => {
+    expect(isCalendarDate('1998-08-15')).toBe(true);
+    expect(isCalendarDate('2000-02-29')).toBe(true);
+    for (const bad of ['1990-02-30', '2001-02-29', '1998-13-01', '1998-8-15', 'x'])
+      expect(isCalendarDate(bad)).toBe(false);
   });
 });
 
@@ -74,7 +98,7 @@ describe('deciding a result', () => {
     expect(decideOutcome({ ...base, dateOfBirth: '2008-11-25' })).toBe('underage');
   });
   it('a nonsense date is a provider error', () => {
-    for (const dateOfBirth of ['1890-01-01', '15/08/1998', ''])
+    for (const dateOfBirth of ['1890-01-01', '15/08/1998', '', '1998-02-30'])
       expect(decideOutcome({ ...base, dateOfBirth })).toBe('provider_error');
   });
 });
@@ -99,11 +123,27 @@ describe('field encryption', () => {
     v2[0] = 2;
     expect(() => cipher.decrypt(v2)).toThrow(/format/);
   });
+  it('a value bound to one user does not decrypt as another’s', () => {
+    const stored = cipher.encrypt('ASHA SHARMA', 'user-a');
+    expect(cipher.decrypt(stored, 'user-a')).toBe('ASHA SHARMA');
+    expect(() => cipher.decrypt(stored, 'user-b')).toThrow();
+    expect(() => cipher.decrypt(stored)).toThrow();
+  });
   it('keys are v1:<base64 of 32 bytes>', () => {
     const raw = randomBytes(32).toString('base64');
     expect(parseFieldKey(`v1:${raw}`).length).toBe(32);
     for (const bad of [raw, `v2:${raw}`, `v1:${randomBytes(16).toString('base64')}`, 'v1:%%%'])
       expect(() => parseFieldKey(bad)).toThrow();
+  });
+});
+
+describe('DigiLocker id hashes', () => {
+  it('one identity, one hash, however the provider formats the id', () => {
+    const hash = createIdentifierHasher(randomBytes(32).toString('base64'));
+    const a = hash('digilocker', 'DL-1234-abcd');
+    for (const same of [' dl-1234-ABCD ', 'DL-1234-ABCD', 'ＤＬ-1234-abcd'])
+      expect(hash('digilocker', same).equals(a)).toBe(true);
+    expect(hash('digilocker', 'DL-1234-abce').equals(a)).toBe(false);
   });
 });
 
@@ -149,8 +189,10 @@ function memoryRepo() {
   const completed: { id: string; identity: DigiLockerIdentity; today: string }[] = [];
   const consents: { userId: string; version: string }[] = [];
   let outcome: CompleteOutcome = { status: 'verified', categoryChanged: false };
+  let startConflict = false;
   const repo: VerificationRepository = {
     async start(userId, w) {
+      if (startConflict) throw new StartInProgress();
       consents.push({ userId, version: w.consentVersion });
       for (const r of rows.values())
         if (r.userId === userId && r.status === 'pending') r.status = 'expired';
@@ -186,6 +228,9 @@ function memoryRepo() {
       Object.assign(r, { status: 'failed', failureCode: code });
       return true;
     },
+    async verifiedName() {
+      return null;
+    },
     async complete(id, given, { today }) {
       completed.push({ id, identity: given, today });
       const r = rows.get(id)!;
@@ -201,6 +246,7 @@ function memoryRepo() {
     completed,
     consents,
     setOutcome: (o: CompleteOutcome) => (outcome = o),
+    raceStart: () => (startConflict = true),
   };
 }
 
@@ -315,6 +361,15 @@ describe('POST /v1/verifications/digilocker', () => {
       payload: { consentVersion: 'iv1' },
     });
     expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('409 when a concurrent start for the same user got there first', async () => {
+    const { app, mem, start } = await setup();
+    mem.raceStart();
+    const res = await start();
+    expect(res.statusCode).toBe(409);
+    expect(res.json().code).toBe('conflict');
     await app.close();
   });
 
@@ -501,6 +556,44 @@ describe('the mock consent page (local and test environments only)', () => {
   });
 });
 
+describe('the consent page outside local development', () => {
+  const stagingEnv = (extra: Record<string, string> = {}) =>
+    loadEnv({
+      NODE_ENV: 'test',
+      APP_ENV: 'staging',
+      DATABASE_URL: 'postgres://u:p@h:5432/d',
+      SUPABASE_JWT_ISSUER: 'https://x.supabase.co/auth/v1',
+      SUPABASE_JWT_SECRET: randomBytes(32).toString('hex'),
+      SEND_SMS_HOOK_SECRETS: SECRET,
+      HASH_PEPPER: randomBytes(32).toString('base64'),
+      SUPABASE_URL: 'https://x.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
+      FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
+      DIGILOCKER_WEBHOOK_SECRETS: SECRET,
+      PUBLIC_API_URL: 'https://api.staging.test',
+      ...extra,
+    });
+  const build = async (env: ReturnType<typeof loadEnv>) =>
+    buildApp({
+      env,
+      jwtVerifier: async () => ({ id: USER, appRole: 'user' }),
+      sessionLookup: async () => true,
+      meRepo: { profileState: async () => null, legalVersions: async () => null } as never,
+      verificationRepo: () => memoryRepo().repo,
+    });
+  it('is off on staging unless DIGILOCKER_MOCK_CONSENT_PAGE=true', async () => {
+    const off = await build(stagingEnv());
+    expect((await off.inject({ method: 'GET', url: '/dev/digilocker/mock_x' })).statusCode).toBe(
+      404,
+    );
+    expect(off.printRoutes()).not.toContain('digilocker/');
+    await off.close();
+    const on = await build(stagingEnv({ DIGILOCKER_MOCK_CONSENT_PAGE: 'true' }));
+    expect(on.printRoutes()).toContain('digilocker/');
+    await on.close();
+  });
+});
+
 describe('configuration', () => {
   it('production refuses the mock; staging needs the encryption key and webhook secrets', () => {
     const staging = {
@@ -512,8 +605,15 @@ describe('configuration', () => {
       HASH_PEPPER: randomBytes(32).toString('base64'),
       SUPABASE_URL: 'https://x.supabase.co',
       SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
+      PUBLIC_API_URL: 'https://api.staging.test',
     };
     const key = `v1:${randomBytes(32).toString('base64')}`;
+    const noUrl = Object.fromEntries(
+      Object.entries(staging).filter(([k]) => k !== 'PUBLIC_API_URL'),
+    );
+    expect(() =>
+      loadEnv({ ...noUrl, FIELD_ENCRYPTION_KEY: key, DIGILOCKER_WEBHOOK_SECRETS: SECRET }),
+    ).toThrow(/PUBLIC_API_URL/);
     expect(() => loadEnv({ ...staging, DIGILOCKER_WEBHOOK_SECRETS: SECRET })).toThrow(
       /FIELD_ENCRYPTION_KEY/,
     );
@@ -533,6 +633,7 @@ describe('configuration', () => {
         CORS_ALLOWED_ORIGINS: 'https://flatrimony.in',
         FIELD_ENCRYPTION_KEY: key,
         DIGILOCKER_WEBHOOK_SECRETS: SECRET,
+        PUBLIC_API_URL: 'https://api.staging.test',
       }),
     ).toThrow(/DIGILOCKER_PROVIDER=mock/);
   });

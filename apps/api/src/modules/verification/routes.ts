@@ -24,7 +24,7 @@ import { ApiError } from '../../plugins/errors.js';
 import type { MeRepository } from '../me/repository.js';
 import { istToday } from '../me/routes.js';
 import { DigiLockerUnavailable, type DigiLockerProvider } from './provider.js';
-import type { VerificationRepository } from './repository.js';
+import { StartInProgress, type VerificationRepository } from './repository.js';
 
 export interface VerificationRoutesOptions {
   repo: VerificationRepository;
@@ -99,13 +99,19 @@ export const verificationRoutes: FastifyPluginAsyncZod<VerificationRoutesOptions
         }
         throw err;
       }
-      await repo.start(userId, {
-        id,
-        provider: provider.name,
-        providerRef: session.providerRef,
-        expiresAt: session.expiresAt,
-        consentVersion: current,
-      });
+      try {
+        await repo.start(userId, {
+          id,
+          provider: provider.name,
+          providerRef: session.providerRef,
+          expiresAt: session.expiresAt,
+          consentVersion: current,
+        });
+      } catch (err) {
+        if (err instanceof StartInProgress)
+          throw new ApiError('conflict', { title: 'A verification is already starting' });
+        throw err;
+      }
       reply.code(201);
       return {
         verificationId: id,
@@ -157,7 +163,9 @@ export const digilockerWebhookRoutes: FastifyPluginAsync<DigiLockerWebhookOption
     (_req, body, done) => done(null, body),
   );
 
-  app.post('/webhooks/digilocker', async (req, reply) => {
+  // The provider's deliveries are not throttled with user traffic (as the Send SMS hook); the
+  // signature check comes first and bounds the work an unsigned request causes.
+  app.post('/webhooks/digilocker', { config: { rateLimit: false } }, async (req, reply) => {
     const raw = req.body as Buffer;
     const verdict = verifyWebhook(req.headers, raw, opts.keys, Math.floor(now() / 1000));
     if (!verdict.ok) {

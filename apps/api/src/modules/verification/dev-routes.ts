@@ -67,13 +67,12 @@ export const devDigiLockerRoutes: FastifyPluginAsync<DevDigiLockerOptions> = asy
       return reply
         .code(404)
         .send(page('Not found', '<h1>This verification link has expired.</h1>'));
-    const ref = escape(req.params.ref);
     return page(
       'DigiLocker (test)',
       `<h1>DigiLocker (test)</h1>
 <p class="note">Test page: no real DigiLocker. Enter the identity DigiLocker would return.</p>
 <p>Flatrimony asks for your <strong>name, date of birth and gender</strong>.</p>
-<form method="post" action="/dev/digilocker/${ref}">
+<form method="post">
 <label for="name">Name on the documents</label><input id="name" name="name" required maxlength="120">
 <label for="dateOfBirth">Date of birth</label><input id="dateOfBirth" name="dateOfBirth" type="date" required>
 <label for="gender">Gender</label><select id="gender" name="gender">
@@ -91,7 +90,7 @@ export const devDigiLockerRoutes: FastifyPluginAsync<DevDigiLockerOptions> = asy
       reply.type('text/html; charset=utf-8').header('cache-control', 'no-store');
       const ref = req.params.ref;
       const session = opts.mock.session(ref);
-      if (!session || session.done)
+      if (!session || session.done || session.expiresAt.getTime() < now())
         return reply
           .code(404)
           .send(page('Not found', '<h1>This verification link has expired.</h1>'));

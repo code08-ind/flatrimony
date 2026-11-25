@@ -9,7 +9,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from '../../src/lib/db.js';
 import { createFieldCipher } from '../../src/lib/field-crypto.js';
 import { createIdentifierHasher } from '../../src/lib/hashing.js';
-import { pgVerificationRepository } from '../../src/modules/verification/repository.js';
+import {
+  pgVerificationRepository,
+  StartInProgress,
+} from '../../src/modules/verification/repository.js';
 import type { DigiLockerIdentity } from '../../src/modules/verification/provider.js';
 
 const url = process.env.DATABASE_URL;
@@ -124,7 +127,10 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
       .selectAll()
       .where('user_id', '=', u)
       .executeTakeFirstOrThrow();
-    expect(cipher.decrypt(rec.verified_name_enc as Buffer)).toBe('ASHA SHARMA');
+    // Bound to its owner (AES-GCM additional data): it only decrypts for this user.
+    expect(cipher.decrypt(rec.verified_name_enc as Buffer, u)).toBe('ASHA SHARMA');
+    expect(() => cipher.decrypt(rec.verified_name_enc as Buffer, randomUUID())).toThrow();
+    expect(await repo.verifiedName(u)).toBe('ASHA SHARMA');
     expect((rec.verified_name_enc as Buffer).includes(Buffer.from('ASHA'))).toBe(false);
     expect((rec.digilocker_id_hash as Buffer).equals(hasher('digilocker', who.digilockerId))).toBe(
       true,
@@ -231,5 +237,77 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
       consentVersion: 'dev-draft',
     });
     expect(await repo.get(u, id)).toMatchObject({ status: 'expired', failureCode: null });
+  });
+
+  it('a result after expiry does not count: the attempt is over', async () => {
+    const u = await user();
+    const id = randomUUID();
+    const ref = `mock_${randomUUID()}`;
+    await repo.start(u, {
+      id,
+      provider: 'mock_digilocker',
+      providerRef: ref,
+      expiresAt: new Date(Date.now() - 1_000),
+      consentVersion: 'dev-draft',
+    });
+    expect(await repo.findPending('mock_digilocker', ref)).toBeNull();
+    expect(await repo.complete(id, identity(), { today: TODAY })).toEqual({
+      status: 'not_pending',
+    });
+    expect((await profileOf(u)).is_identity_verified).toBe(false);
+    const row = await sql<{
+      status: string;
+    }>`select status::text from public.verifications where id = ${id}`.execute(db);
+    expect(row.rows[0]!.status).toBe('expired');
+  });
+
+  it('a deleted account is not verified by a late result', async () => {
+    const u = await user();
+    const id = await started(u);
+    await sql`update public.profiles set deleted_at = now() where id = ${u}`.execute(db);
+    expect(await repo.complete(id, identity(), { today: TODAY })).toEqual({
+      status: 'not_pending',
+    });
+    expect((await profileOf(u)).is_identity_verified).toBe(false);
+  });
+
+  it('a failed attempt leaves the profile version (ETag) alone; a verified one changes it', async () => {
+    const version = async (id: string) =>
+      (
+        await sql<{
+          v: string;
+        }>`select updated_at::text as v from public.profiles where id = ${id}`.execute(db)
+      ).rows[0]!.v;
+    const u = await user({ name: 'Meera' });
+    const before = await version(u);
+    await repo.complete(await started(u), identity(), { today: TODAY }); // name mismatch
+    expect(await version(u)).toBe(before);
+    const ok = await user();
+    const okBefore = await version(ok);
+    await repo.complete(await started(ok), identity(), { today: TODAY });
+    expect(await version(ok)).not.toBe(okBefore);
+  });
+
+  it('two starts at once: one wins, the other is StartInProgress (not a 500)', async () => {
+    const u = await user();
+    const results = await Promise.allSettled(
+      Array.from({ length: 4 }, () =>
+        repo.start(u, {
+          id: randomUUID(),
+          provider: 'mock_digilocker',
+          providerRef: `mock_${randomUUID()}`,
+          expiresAt: new Date(Date.now() + 60_000),
+          consentVersion: 'dev-draft',
+        }),
+      ),
+    );
+    const failures = results.filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
+    for (const f of failures) expect(f.reason).toBeInstanceOf(StartInProgress);
+    const pending = await sql<{
+      n: number;
+    }>`select count(*)::int as n from public.verifications where user_id = ${u} and status = 'pending'`.execute(
+      db,
+    );
+    expect(pending.rows[0]!.n).toBe(1);
   });
 });

@@ -308,7 +308,8 @@ Until decided, staging uses the default `run.app` URLs.
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Yes | Video storage |
 | `DIGILOCKER_PROVIDER` | No | `mock` (default; refused in production) until the provider is chosen (T0.7, OQ-02). The mock serves a test consent page at `/dev/digilocker/:ref` |
 | `DIGILOCKER_WEBHOOK_SECRETS` | Yes | Standard Webhooks secret(s) the provider signs `POST /webhooks/digilocker` with, `v1,whsec_<base64>`; required outside local |
-| `PUBLIC_API_URL` | No | The API's public base URL, for links it hands to clients (the mock consent page); default `http://localhost:8080` |
+| `PUBLIC_API_URL` | No | The API's public base URL, for links it hands to clients (the mock consent page); required outside local, default `http://localhost:8080` locally |
+| `DIGILOCKER_MOCK_CONSENT_PAGE` | No | `true` serves the mock consent page outside local development (anyone can then verify as any identity: test data and one API instance only); off by default |
 | `DIGILOCKER_PROVIDER_CLIENT_ID`, `DIGILOCKER_PROVIDER_SECRET` | Yes | ID verification |
 | `RAZORPAY_KEY_ID` | No | Public key id |
 | `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Yes | Payments |

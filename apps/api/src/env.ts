@@ -86,9 +86,15 @@ export const EnvSchema = z.object({
     }),
   /**
    * The API's public base URL, for links the API hands to clients (the mock DigiLocker consent
-   * page). Local default: http://localhost:8080.
+   * page). Required outside local; local default http://localhost:8080.
    */
-  PUBLIC_API_URL: z.url().default('http://localhost:8080'),
+  PUBLIC_API_URL: z.url().optional(),
+  /**
+   * Serve the mock DigiLocker consent page outside local development (staging testers). Anyone
+   * can then verify as any identity, women-only included: only for environments with test data
+   * and a single API instance (mock sessions live in memory). Default: only in local.
+   */
+  DIGILOCKER_MOCK_CONSENT_PAGE: z.enum(['true', 'false']).optional(),
   /** Pepper for HMAC lookup hashes of phones, devices, DigiLocker ids (docs/04 §13). Never rotate casually: bans and uniqueness depend on it. */
   HASH_PEPPER: z.string().min(32).optional(),
   /** OTP SMS provider. Only 'mock' exists until DLT registration (T0.6); refused in production. */
@@ -164,6 +170,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     if (!env.HASH_PEPPER) throw new Error('HASH_PEPPER is required outside local development');
     if (!env.FIELD_ENCRYPTION_KEY)
       throw new Error('FIELD_ENCRYPTION_KEY is required outside local development');
+    if (!env.PUBLIC_API_URL)
+      throw new Error('PUBLIC_API_URL is required outside local development');
     if (!env.DIGILOCKER_WEBHOOK_SECRETS)
       throw new Error('DIGILOCKER_WEBHOOK_SECRETS is required outside local development');
     // Profile photos (T2.10): without Storage the photo routes answer 503 and nobody can finish

@@ -37,6 +37,8 @@ const VERSIONS: LegalVersions = {
 };
 
 interface FakeState {
+  /** The DigiLocker verified name, when the test needs one (T3.1). */
+  verifiedName?: string;
   versions: LegalVersions | null;
   phone: string | null;
   profile: (ProfileState & { row: BootstrapWrite['profile'] & ProfileUpdate }) | null;
@@ -257,6 +259,9 @@ async function setup(
       return { id: USER, appRole: 'user' };
     },
     meRepo: fakeRepo(state),
+    ...(state.verifiedName
+      ? { verificationRepo: () => ({ verifiedName: async () => state.verifiedName! }) as never }
+      : {}),
     photoStorage: storage,
     bansRepo: memoryBansRepository(banned),
     now: () => nowMs,
@@ -568,6 +573,21 @@ describe('GET and PATCH /v1/me', () => {
     const res = await verifiedMale.call('PATCH', '/v1/me', { category: 'women_only' });
     expect(res.statusCode).toBe(403);
     expect(res.json().code).toBe('profile.category_not_allowed');
+  });
+
+  it('a verified user’s new display name must still match the DigiLocker name (FR-VER-03)', async () => {
+    const { call, state } = await setup({
+      profile: existing(
+        { isIdentityVerified: true, verifiedGender: 'female' },
+        { displayName: 'Asha' },
+      ),
+      verifiedName: 'ASHA RANI SHARMA',
+    });
+    const res = await call('PATCH', '/v1/me', { displayName: 'Rahul' });
+    expect(res.statusCode).toBe(422);
+    expect(res.json().errors[0]).toMatchObject({ path: 'body.displayName', code: 'name_mismatch' });
+    expect((await call('PATCH', '/v1/me', { displayName: 'Rani' })).statusCode).toBe(200);
+    expect(state.updates).toEqual([{ displayName: 'Rani' }]);
   });
 
   it('college fields only for students; leaving the student category clears them', async () => {

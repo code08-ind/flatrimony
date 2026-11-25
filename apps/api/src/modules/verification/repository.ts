@@ -33,13 +33,24 @@ export type CompleteOutcome =
   /** Already decided (a repeated webhook), or unknown. */
   | { status: 'not_pending' };
 
+/** Another start for the same user won the race (one pending attempt per user and type). */
+export class StartInProgress extends Error {
+  constructor() {
+    super('start_in_progress');
+    this.name = 'StartInProgress';
+  }
+}
+
 export interface VerificationRepository {
-  /** Records the consent, expires any pending DigiLocker attempt and opens a new one. */
+  /**
+   * Records the consent, expires any pending DigiLocker attempt and opens a new one. Throws
+   * StartInProgress when a concurrent start for the same user got there first.
+   */
   start(userId: string, write: StartWrite): Promise<void>;
-  /** The caller's attempt (pending ones past their expiry become expired first), or null. */
+  /** The caller's attempt (a pending one past its expiry reads as expired), or null. */
   get(userId: string, id: string): Promise<Verification | null>;
   list(userId: string): Promise<Verification[]>;
-  /** The pending attempt a provider reference belongs to. */
+  /** The pending, unexpired attempt a provider reference belongs to. */
   findPending(
     provider: string,
     providerRef: string,
@@ -50,6 +61,8 @@ export interface VerificationRepository {
     identity: DigiLockerIdentity,
     ctx: { today: string },
   ): Promise<CompleteOutcome>;
+  /** The verified name (decrypted), or null when the user is not verified. */
+  verifiedName(userId: string): Promise<string | null>;
 }
 
 type Row = {
@@ -71,34 +84,35 @@ const toVerification = (r: Row): Verification => ({
   completedAt: r.completed_at ? iso(r.completed_at) : null,
   expiresAt: r.expires_at ? iso(r.expires_at) : null,
 });
+/** Expiry is computed on read (the app polls every 2 s; reads must not write). */
 const COLUMNS = [
   'id',
   'type',
-  'status',
+  sql<Verification['status']>`case when status = 'pending' and expires_at <= now()
+    then 'expired' else status::text end`.as('status'),
   'failure_code',
   'started_at',
   'completed_at',
   'expires_at',
 ] as const;
 
-/** Postgres unique violation of the one-identity-per-account rule. */
-const identityTaken = (err: unknown) => {
+const uniqueViolation = (err: unknown, constraint: string) => {
   const e = err as { code?: string; constraint?: string } | null;
-  return e?.code === '23505' && e.constraint === 'identity_records_digilocker_id_hash_key';
+  return e?.code === '23505' && e.constraint === constraint;
 };
+/** Postgres unique violation of the one-identity-per-account rule. */
+const identityTaken = (err: unknown) =>
+  uniqueViolation(err, 'identity_records_digilocker_id_hash_key');
 
 export function pgVerificationRepository(
   db: Database,
   deps: { hasher: IdentifierHasher; cipher: FieldCipher },
 ): VerificationRepository {
-  /** Pending attempts of this user that have run out become expired. */
-  const expireStale = (tx: Database, userId: string) =>
+  const expire = (tx: Database, id: string) =>
     tx
       .updateTable('verifications')
       .set({ status: 'expired', completed_at: sql`now()` })
-      .where('user_id', '=', userId)
-      .where('status', '=', 'pending')
-      .where('expires_at', '<', sql<Date>`now()`)
+      .where('id', '=', id)
       .execute();
 
   async function markFailed(id: string, code: VerificationFailureCode): Promise<boolean> {
@@ -111,48 +125,55 @@ export function pgVerificationRepository(
     return Number(res.numUpdatedRows) > 0;
   }
 
+  const startTx = (userId: string, write: StartWrite) =>
+    db.transaction().execute(async (tx) => {
+      await tx
+        .insertInto('consents')
+        .values({
+          user_id: userId,
+          purpose: 'identity_verification',
+          version: write.consentVersion,
+        })
+        .onConflict((oc) =>
+          oc
+            .columns(['user_id', 'purpose', 'version'])
+            .where('withdrawn_at', 'is', null)
+            .doNothing(),
+        )
+        .execute();
+      // One pending attempt per user and type (verifications_one_pending_idx): a new start
+      // replaces an unfinished one.
+      await tx
+        .updateTable('verifications')
+        .set({ status: 'expired', completed_at: sql`now()` })
+        .where('user_id', '=', userId)
+        .where('type', '=', 'digilocker')
+        .where('status', '=', 'pending')
+        .execute();
+      await tx
+        .insertInto('verifications')
+        .values({
+          id: write.id,
+          user_id: userId,
+          type: 'digilocker',
+          provider: write.provider,
+          provider_ref: write.providerRef,
+          expires_at: write.expiresAt,
+        })
+        .execute();
+    });
+
   return {
     async start(userId, write) {
-      await db.transaction().execute(async (tx) => {
-        await tx
-          .insertInto('consents')
-          .values({
-            user_id: userId,
-            purpose: 'identity_verification',
-            version: write.consentVersion,
-          })
-          .onConflict((oc) =>
-            oc
-              .columns(['user_id', 'purpose', 'version'])
-              .where('withdrawn_at', 'is', null)
-              .doNothing(),
-          )
-          .execute();
-        // One pending attempt per user and type (verifications_one_pending_idx): a new start
-        // replaces an unfinished one.
-        await tx
-          .updateTable('verifications')
-          .set({ status: 'expired', completed_at: sql`now()` })
-          .where('user_id', '=', userId)
-          .where('type', '=', 'digilocker')
-          .where('status', '=', 'pending')
-          .execute();
-        await tx
-          .insertInto('verifications')
-          .values({
-            id: write.id,
-            user_id: userId,
-            type: 'digilocker',
-            provider: write.provider,
-            provider_ref: write.providerRef,
-            expires_at: write.expiresAt,
-          })
-          .execute();
-      });
+      try {
+        await startTx(userId, write);
+      } catch (err) {
+        if (uniqueViolation(err, 'verifications_one_pending_idx')) throw new StartInProgress();
+        throw err;
+      }
     },
 
     async get(userId, id) {
-      await expireStale(db, userId);
       const row = await db
         .selectFrom('verifications')
         .select(COLUMNS)
@@ -163,7 +184,6 @@ export function pgVerificationRepository(
     },
 
     async list(userId) {
-      await expireStale(db, userId);
       const rows = await db
         .selectFrom('verifications')
         .select(COLUMNS)
@@ -181,6 +201,9 @@ export function pgVerificationRepository(
         .where('provider', '=', provider)
         .where('provider_ref', '=', providerRef)
         .where('status', '=', 'pending')
+        .where((eb) =>
+          eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql<Date>`now()`)]),
+        )
         .executeTakeFirst();
       return row ? { id: row.id, userId: row.user_id } : null;
     },
@@ -188,23 +211,39 @@ export function pgVerificationRepository(
     fail: markFailed,
 
     async complete(id, identity, { today }) {
-      const hash = deps.hasher('digilocker', identity.digilockerId.trim());
+      const hash = deps.hasher('digilocker', identity.digilockerId);
       try {
         return await db.transaction().execute(async (tx): Promise<CompleteOutcome> => {
           const attempt = await tx
             .selectFrom('verifications')
-            .select(['user_id', 'status'])
+            .select([
+              'user_id',
+              'status',
+              sql<boolean>`expires_at is not null and expires_at <= now()`.as('expired'),
+            ])
             .where('id', '=', id)
             .forUpdate()
             .executeTakeFirst();
           if (!attempt || attempt.status !== 'pending') return { status: 'not_pending' };
+          // One rule for late results: past its expiry the attempt is over (it already reads as
+          // expired to the app), whatever arrives afterwards.
+          if (attempt.expired) {
+            await expire(tx, id);
+            return { status: 'not_pending' };
+          }
           const userId = attempt.user_id;
-          if (!(await lockAndTouch(tx, userId))) return { status: 'not_pending' };
+          // Locked without touching: a failed attempt must not change the profile version (ETag).
           const profile = await tx
             .selectFrom('profiles')
-            .select(['display_name', 'category', 'is_identity_verified'])
+            .select(['display_name', 'category', 'is_identity_verified', 'deleted_at'])
             .where('id', '=', userId)
-            .executeTakeFirstOrThrow();
+            .forUpdate()
+            .executeTakeFirst();
+          // Deleted meanwhile, or verified meanwhile (starting is refused once verified).
+          if (!profile || profile.deleted_at !== null || profile.is_identity_verified) {
+            await expire(tx, id);
+            return { status: 'not_pending' };
+          }
           const banned = await tx
             .selectFrom('private.banned_identities')
             .select(sql<number>`1`.as('one'))
@@ -215,15 +254,6 @@ export function pgVerificationRepository(
             .select('user_id')
             .where('digilocker_id_hash', '=', hash)
             .executeTakeFirst();
-          if (profile.is_identity_verified) {
-            // Verified meanwhile (starting is refused once verified): this attempt is moot.
-            await tx
-              .updateTable('verifications')
-              .set({ status: 'expired', completed_at: sql`now()` })
-              .where('id', '=', id)
-              .execute();
-            return { status: 'not_pending' };
-          }
           const failure = decideOutcome({
             displayName: profile.display_name,
             verifiedName: identity.name,
@@ -241,11 +271,13 @@ export function pgVerificationRepository(
             return { status: 'failed', failureCode: failure };
           }
 
+          await lockAndTouch(tx, userId); // the profile changes: new version (ETag)
           await tx
             .insertInto('private.identity_records')
             .values({
               user_id: userId,
-              verified_name_enc: deps.cipher.encrypt(identity.name.trim()),
+              // Bound to its owner: copied to another row it no longer decrypts.
+              verified_name_enc: deps.cipher.encrypt(identity.name.trim(), userId),
               verified_dob: identity.dateOfBirth,
               verified_gender: identity.gender,
               digilocker_id_hash: hash,
@@ -287,6 +319,15 @@ export function pgVerificationRepository(
             : { status: 'not_pending' };
         throw err;
       }
+    },
+
+    async verifiedName(userId) {
+      const row = await db
+        .selectFrom('private.identity_records')
+        .select('verified_name_enc')
+        .where('user_id', '=', userId)
+        .executeTakeFirst();
+      return row ? deps.cipher.decrypt(row.verified_name_enc as Buffer, userId) : null;
     },
   };
 }
