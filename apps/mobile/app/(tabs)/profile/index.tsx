@@ -113,16 +113,23 @@ export default function ProfileTab() {
             {t('profile.tiles.biodataSub')}
           </Text>
         </Pressable>
-        <View
+        <Pressable
           style={styles.tile}
-          accessible
+          testID="verification-tile"
+          accessibilityRole={me.isIdentityVerified ? 'text' : 'button'}
           accessibilityLabel={[
             t('profile.tiles.verification'),
             me.isIdentityVerified ? t('profile.tiles.verified') : t('profile.tiles.notVerified'),
-            ...(me.isIdentityVerified ? [] : [t('profile.tiles.verificationSoon')]),
+            ...(me.isIdentityVerified ? [] : [t('profile.tiles.verifySub')]),
           ].join('. ')}
+          disabled={me.isIdentityVerified}
+          onPress={() => router.push('/profile/verify')}
         >
-          <ShieldCheck size={28} color={theme.color.brand.primary} />
+          <ShieldCheck
+            size={28}
+            color={theme.color.brand.primary}
+            weight={me.isIdentityVerified ? 'fill' : 'regular'}
+          />
           <Text style={[textStyle('h2', locale), { color: theme.color.text.primary }]}>
             {t('profile.tiles.verification')}
           </Text>
@@ -130,11 +137,11 @@ export default function ProfileTab() {
             {me.isIdentityVerified ? t('profile.tiles.verified') : t('profile.tiles.notVerified')}
           </Text>
           {!me.isIdentityVerified && (
-            <Text style={[textStyle('caption', locale), { color: theme.color.text.secondary }]}>
-              {t('profile.tiles.verificationSoon')}
+            <Text style={[textStyle('label', locale), { color: theme.color.brand.primary }]}>
+              {t('verification.start')}
             </Text>
           )}
-        </View>
+        </Pressable>
       </View>
 
       <PauseRow />

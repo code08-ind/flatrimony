@@ -269,7 +269,7 @@
       "verificationSub": "DigiLocker identity check",
       "verified": "Verified",
       "notVerified": "Not verified",
-      "verificationSoon": "DigiLocker verification is coming soon."
+      "verifySub": "Verify with DigiLocker to start chatting."
     },
     "pause": {
       "title": "Pause my profile",
@@ -460,6 +460,84 @@
         "community-standards": "Community Standards",
         "tenancy-guidelines": "Tenancy Guidelines"
       }
+    }
+  },
+  "verification": {
+    "gate": {
+      "overline": "Identity check",
+      "title": "Verify to start chatting",
+      "body": "Everyone you chat with on Flatrimony is verified with DigiLocker.",
+      "minute": "Takes about a minute",
+      "minuteSub": "A quick digital check with your official identity records.",
+      "privacy": "Only name, age and gender",
+      "privacySub": "We check your name, age and gender. Your documents are never stored.",
+      "badge": "Unlocks the Verified badge",
+      "badgeSub": "Verified profiles earn trust before sharing a home.",
+      "consent": "By continuing, you agree that Flatrimony gets your name, date of birth and gender from DigiLocker to verify you.",
+      "start": "Verify with DigiLocker",
+      "notNow": "Not now",
+      "poweredBy": "Through a licensed DigiLocker partner"
+    },
+    "waiting": {
+      "title": "Finish in DigiLocker",
+      "body": "Allow Flatrimony in the DigiLocker window, then come back here.",
+      "open": "Open DigiLocker again"
+    },
+    "checking": {
+      "title": "Checking your details with DigiLocker…",
+      "body": "This usually takes less than a minute."
+    },
+    "verified": {
+      "title": "You’re verified",
+      "body": "Name, age and gender confirmed. Your Verified badge now shows on your Flat Biodata."
+    },
+    "failed": {
+      "nameMismatch": {
+        "title": "Your display name doesn’t match your ID",
+        "body": "Use your first name as it is on DigiLocker, so people know you’re real.",
+        "label": "Display name",
+        "retry": "Update and retry"
+      },
+      "underage": {
+        "title": "You need to be 18 or older",
+        "body": "Flatrimony is for adults. Your DigiLocker date of birth shows you’re under 18."
+      },
+      "identityInUse": {
+        "title": "This identity is on another account",
+        "body": "Each person can have one Flatrimony account. Sign in with the number you used before."
+      },
+      "banned": {
+        "title": "We can’t verify this identity",
+        "body": "This identity can’t be used on Flatrimony."
+      },
+      "cancelled": {
+        "title": "Verification cancelled",
+        "body": "You can verify whenever you’re ready."
+      },
+      "providerError": {
+        "title": "DigiLocker didn’t answer",
+        "body": "Something went wrong on DigiLocker’s side. Please try again."
+      }
+    },
+    "expired": {
+      "title": "Verification timed out",
+      "body": "The DigiLocker link has expired. Please start again."
+    },
+    "timeout": {
+      "title": "Still checking",
+      "body": "DigiLocker is taking longer than usual. Check again in a moment.",
+      "check": "Check again"
+    },
+    "tryAgain": "Try again",
+    "done": "Done",
+    "start": "Verify now",
+    "errors": {
+      "network": "Couldn’t start. Check your connection and try again.",
+      "inProgress": "A verification is already starting. Try again in a moment.",
+      "tooMany": "Too many attempts. Please try again later.",
+      "notOpen": "Verification isn’t open yet. Please try again later.",
+      "generic": "Something went wrong. Please try again.",
+      "status": "Couldn’t check the status. Check your connection."
     }
   }
 }

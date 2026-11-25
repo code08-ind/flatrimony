@@ -9,3 +9,4 @@ export * from './net.js';
 export * from './onboarding/errors.js';
 export * from './onboarding/logic.js';
 export * from './rich-text.js';
+export * from './verification.js';
