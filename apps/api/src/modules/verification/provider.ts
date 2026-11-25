@@ -50,8 +50,14 @@ export class DigiLockerUnavailable extends Error {
   }
 }
 
-/** A provider reference: opaque, URL-safe, no personal data. */
-const REF = /^mock_[0-9a-f-]{36}$/;
+/**
+ * A provider reference: opaque, URL-safe, no personal data, and no digits at all, so it can never
+ * look like an Aadhaar number (the database refuses references with 12-digit runs, migration 0005).
+ */
+const REF = /^mock_[g-v-]{36}$/;
+/** A UUID with its hex digits moved to letters g–v. */
+export const mockRef = () =>
+  `mock_${randomUUID().replace(/[0-9a-f]/g, (c) => String.fromCharCode(103 + parseInt(c, 16)))}`;
 
 export interface MockDigiLocker extends DigiLockerProvider {
   /** The pending session for a reference (for the consent page), or null. */
@@ -83,7 +89,7 @@ export function mockDigiLockerProvider({
       // Forget old sessions so the map cannot grow without bound in a long local run.
       for (const [ref, s] of sessions)
         if (s.expiresAt.getTime() < now() - ttlMs) sessions.delete(ref);
-      const providerRef = `mock_${randomUUID()}`;
+      const providerRef = mockRef();
       const expiresAt = new Date(now() + ttlMs);
       sessions.set(providerRef, { verificationId, expiresAt, result: { state: 'pending' } });
       return { providerRef, redirectUrl: `${base}/dev/digilocker/${providerRef}`, expiresAt };

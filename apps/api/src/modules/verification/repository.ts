@@ -15,7 +15,7 @@ import type { Database } from '../../lib/db.js';
 import type { FieldCipher } from '../../lib/field-crypto.js';
 import type { IdentifierHasher } from '../../lib/hashing.js';
 import { lockAndTouch, recomputeCompletion } from '../me/repository.js';
-import { decideOutcome } from './outcome.js';
+import { decideOutcome, looksLikeAadhaar } from './outcome.js';
 import type { DigiLockerIdentity } from './provider.js';
 
 export interface StartWrite {
@@ -211,6 +211,11 @@ export function pgVerificationRepository(
     fail: markFailed,
 
     async complete(id, identity, { today }) {
+      // Never Aadhaar: an Aadhaar-shaped id is a provider error, refused before it is even hashed.
+      if (looksLikeAadhaar(identity.digilockerId))
+        return (await markFailed(id, 'provider_error'))
+          ? { status: 'failed', failureCode: 'provider_error' }
+          : { status: 'not_pending' };
       const hash = deps.hasher('digilocker', identity.digilockerId);
       try {
         return await db.transaction().execute(async (tx): Promise<CompleteOutcome> => {
@@ -239,8 +244,17 @@ export function pgVerificationRepository(
             .where('id', '=', userId)
             .forUpdate()
             .executeTakeFirst();
-          // Deleted meanwhile, or verified meanwhile (starting is refused once verified).
-          if (!profile || profile.deleted_at !== null || profile.is_identity_verified) {
+          // The user still consents to identity verification (they can withdraw it meanwhile).
+          const consent = await tx
+            .selectFrom('consents')
+            .select(sql<number>`1`.as('one'))
+            .where('user_id', '=', userId)
+            .where('purpose', '=', 'identity_verification')
+            .where('withdrawn_at', 'is', null)
+            .executeTakeFirst();
+          // Deleted meanwhile, verified meanwhile (starting is refused once verified), or the
+          // consent withdrawn.
+          if (!profile || profile.deleted_at !== null || profile.is_identity_verified || !consent) {
             await expire(tx, id);
             return { status: 'not_pending' };
           }

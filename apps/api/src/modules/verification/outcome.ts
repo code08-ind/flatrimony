@@ -91,6 +91,12 @@ export interface OutcomeInput {
 }
 
 /** null: verified. Otherwise the failure code to store and show. */
+/**
+ * An Aadhaar number (12 digits, maybe grouped by 4) where the DigiLocker id should be: never
+ * accepted or stored, not even hashed (founder rule: DigiLocker only, never Aadhaar).
+ */
+export const looksLikeAadhaar = (id: string) => /^\s*\d{4}[\s-]?\d{4}[\s-]?\d{4}\s*$/.test(id);
+
 export function decideOutcome(input: OutcomeInput): VerificationFailureCode | null {
   if (input.banned) return 'banned';
   if (!isCalendarDate(input.dateOfBirth) || input.dateOfBirth < '1900-01-01')

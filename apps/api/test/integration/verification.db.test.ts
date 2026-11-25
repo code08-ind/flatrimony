@@ -9,11 +9,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from '../../src/lib/db.js';
 import { createFieldCipher } from '../../src/lib/field-crypto.js';
 import { createIdentifierHasher } from '../../src/lib/hashing.js';
+import { pgMeRepository } from '../../src/modules/me/repository.js';
 import {
   pgVerificationRepository,
   StartInProgress,
 } from '../../src/modules/verification/repository.js';
-import type { DigiLockerIdentity } from '../../src/modules/verification/provider.js';
+import { mockRef, type DigiLockerIdentity } from '../../src/modules/verification/provider.js';
 
 const url = process.env.DATABASE_URL;
 const TODAY = '2026-11-25';
@@ -50,7 +51,7 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
     await repo.start(userId, {
       id,
       provider: 'mock_digilocker',
-      providerRef: `mock_${randomUUID()}`,
+      providerRef: mockRef(),
       expiresAt: new Date(Date.now() + 10 * 60_000),
       consentVersion: 'dev-draft',
     });
@@ -210,7 +211,7 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
 
   it('a cancelled consent fails the attempt once; the provider reference finds pending attempts only', async () => {
     const u = await user();
-    const ref = `mock_${randomUUID()}`;
+    const ref = mockRef();
     const id = randomUUID();
     await repo.start(u, {
       id,
@@ -232,7 +233,7 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
     await repo.start(u, {
       id,
       provider: 'mock_digilocker',
-      providerRef: `mock_${randomUUID()}`,
+      providerRef: mockRef(),
       expiresAt: new Date(Date.now() - 1_000),
       consentVersion: 'dev-draft',
     });
@@ -242,7 +243,7 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
   it('a result after expiry does not count: the attempt is over', async () => {
     const u = await user();
     const id = randomUUID();
-    const ref = `mock_${randomUUID()}`;
+    const ref = mockRef();
     await repo.start(u, {
       id,
       provider: 'mock_digilocker',
@@ -295,7 +296,7 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
         repo.start(u, {
           id: randomUUID(),
           provider: 'mock_digilocker',
-          providerRef: `mock_${randomUUID()}`,
+          providerRef: mockRef(),
           expiresAt: new Date(Date.now() + 60_000),
           consentVersion: 'dev-draft',
         }),
@@ -309,5 +310,28 @@ describe.skipIf(!url)('pgVerificationRepository', () => {
       db,
     );
     expect(pending.rows[0]!.n).toBe(1);
+  });
+
+  it('an Aadhaar-shaped DigiLocker id is refused (provider error) and never stored, not even hashed', async () => {
+    const u = await user();
+    const id = await started(u);
+    expect(
+      await repo.complete(id, identity({ digilockerId: '1234 5678 9012' }), { today: TODAY }),
+    ).toEqual({ status: 'failed', failureCode: 'provider_error' });
+    const rec = await sql<{
+      n: number;
+    }>`select count(*)::int as n from private.identity_records where user_id = ${u}`.execute(db);
+    expect(rec.rows[0]!.n).toBe(0);
+  });
+
+  it('withdrawing the identity verification consent stops a pending attempt', async () => {
+    const u = await user();
+    const id = await started(u);
+    expect(await pgMeRepository(db).withdrawConsent(u, 'identity_verification')).toBe(true);
+    expect((await repo.get(u, id))!.status).toBe('expired'); // stopped at once
+    expect(await repo.complete(id, identity(), { today: TODAY })).toEqual({
+      status: 'not_pending',
+    });
+    expect((await profileOf(u)).is_identity_verified).toBe(false);
   });
 });

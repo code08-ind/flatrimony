@@ -151,7 +151,7 @@ describe('the mock provider', () => {
   it('starts a session with an opaque reference and returns the tester’s choice', async () => {
     const mock = mockDigiLockerProvider({ publicApiUrl: 'http://localhost:8080/', now: () => NOW });
     const s = await mock.start({ verificationId: 'v1' });
-    expect(s.providerRef).toMatch(/^mock_[0-9a-f-]{36}$/);
+    expect(s.providerRef).toMatch(/^mock_[g-v-]{36}$/); // no digits: never Aadhaar-like
     expect(s.redirectUrl).toBe(`http://localhost:8080/dev/digilocker/${s.providerRef}`);
     expect(s.expiresAt.getTime()).toBe(NOW + 10 * 60_000);
     expect(await mock.result(s.providerRef)).toEqual({ state: 'pending' });
@@ -506,6 +506,8 @@ describe('the mock consent page (local and test environments only)', () => {
     expect(pageRes.statusCode).toBe(200);
     expect(pageRes.headers['content-type']).toContain('text/html');
     expect(pageRes.body).toContain('DigiLocker (test)');
+    expect(pageRes.headers['content-security-policy']).toContain("default-src 'none'");
+    expect(pageRes.headers['x-frame-options']).toBe('DENY');
     const form = new URLSearchParams({
       action: 'approve',
       name: identity.name,

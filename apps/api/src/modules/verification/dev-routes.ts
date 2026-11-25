@@ -34,7 +34,7 @@ input,select{width:100%;padding:.6rem;font:inherit;box-sizing:border-box}
 button{flex:1;padding:.8rem;font:inherit;font-weight:700;border-radius:999px;border:1px solid #5b3fd6}
 .approve{background:#5b3fd6;color:#fff}.cancel{background:#fff;color:#5b3fd6}
 .note{background:#fff4d6;padding:.75rem;border-radius:8px}
-</style></head><body>${body}</body></html>`;
+</style></head><body><main>${body}</main></body></html>`;
 }
 
 /** The identity entered on the form, or why not. */
@@ -54,6 +54,14 @@ export const devDigiLockerRoutes: FastifyPluginAsync<DevDigiLockerOptions> = asy
   opts,
 ) => {
   const now = opts.now ?? Date.now;
+  // A test page, but still: no scripts, no framing, no outside resources.
+  app.addHook('onSend', async (_req, reply) => {
+    reply.header(
+      'content-security-policy',
+      "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+    );
+    reply.header('x-frame-options', 'DENY');
+  });
   app.addContentTypeParser(
     'application/x-www-form-urlencoded',
     { parseAs: 'string', bodyLimit: 4 * 1024 },
@@ -75,8 +83,8 @@ export const devDigiLockerRoutes: FastifyPluginAsync<DevDigiLockerOptions> = asy
 <form method="post">
 <label for="name">Name on the documents</label><input id="name" name="name" required maxlength="120">
 <label for="dateOfBirth">Date of birth</label><input id="dateOfBirth" name="dateOfBirth" type="date" required>
-<label for="gender">Gender</label><select id="gender" name="gender">
-<option value="female">Female</option><option value="male">Male</option><option value="transgender">Transgender</option></select>
+<label for="gender">Gender</label><select id="gender" name="gender" required>
+<option value="" selected disabled>Choose</option><option value="female">Female</option><option value="male">Male</option><option value="transgender">Transgender</option></select>
 <label for="digilockerId">DigiLocker id</label><input id="digilockerId" name="digilockerId" value="${escape(`DL-${randomUUID().slice(0, 13)}`)}" required>
 <div class="actions"><button class="approve" name="action" value="approve">Allow</button>
 <button class="cancel" name="action" value="cancel" formnovalidate>Deny</button></div>

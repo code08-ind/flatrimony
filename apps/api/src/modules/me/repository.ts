@@ -993,14 +993,26 @@ export function pgMeRepository(db: Database): MeRepository {
     },
 
     async withdrawConsent(userId, purpose) {
-      const res = await db
-        .updateTable('consents')
-        .set({ withdrawn_at: sql`now()` })
-        .where('user_id', '=', userId)
-        .where('purpose', '=', purpose)
-        .where('withdrawn_at', 'is', null)
-        .executeTakeFirst();
-      return Number(res.numUpdatedRows) > 0;
+      return db.transaction().execute(async (tx) => {
+        const res = await tx
+          .updateTable('consents')
+          .set({ withdrawn_at: sql`now()` })
+          .where('user_id', '=', userId)
+          .where('purpose', '=', purpose)
+          .where('withdrawn_at', 'is', null)
+          .executeTakeFirst();
+        // Without consent to identity verification, an unfinished DigiLocker attempt stops
+        // (its result is refused too: modules/verification/repository.ts).
+        if (purpose === 'identity_verification')
+          await tx
+            .updateTable('verifications')
+            .set({ status: 'expired', completed_at: sql`now()` })
+            .where('user_id', '=', userId)
+            .where('type', '=', 'digilocker')
+            .where('status', '=', 'pending')
+            .execute();
+        return Number(res.numUpdatedRows) > 0;
+      });
     },
   };
 }
