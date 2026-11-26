@@ -1,5 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { outcomeCopy, resumeFrom } from '@flatrimony/client';
+import { VerificationList } from '@flatrimony/shared';
+import { api } from '../../../src/api';
 import { useMe } from '../../../src/me';
 import { Avatar } from '../../../src/profile/Avatar';
 import { PauseRow } from '../../../src/profile/PauseRow';
@@ -24,7 +28,32 @@ const CATEGORY_LABEL = {
  */
 export default function ProfileTab() {
   const { t, locale } = useT();
-  const { me } = useMe();
+  const { me, refresh } = useMe();
+  const { locale: lang } = useT();
+  // After a final failure (under 18, identity on another account, banned) there is nothing to
+  // start: the tile says so instead of "Verify now" (it still opens that result).
+  const [cantVerify, setCantVerify] = useState(false);
+  // Back on the tab: the profile may have changed elsewhere (a verification that finished after
+  // the verify screen was left, say).
+  useFocusEffect(
+    useCallback(() => {
+      void refresh({ quiet: true });
+      let live = true;
+      void api('/verifications', { locale: lang })
+        .then((res) => {
+          const parsed = VerificationList.safeParse(res.body);
+          const resume = parsed.success ? resumeFrom(parsed.data.verifications, Date.now()) : null;
+          if (live)
+            setCantVerify(
+              !!resume && 'outcome' in resume && outcomeCopy(resume.outcome).action === 'none',
+            );
+        })
+        .catch(() => undefined);
+      return () => {
+        live = false;
+      };
+    }, [refresh, lang]),
+  );
   if (!me) return null;
   const percent = me.biodataCompletion;
   const answered = me.scenarioAnswers?.length ?? 0;
@@ -113,16 +142,25 @@ export default function ProfileTab() {
             {t('profile.tiles.biodataSub')}
           </Text>
         </Pressable>
-        <View
+        <Pressable
           style={styles.tile}
-          accessible
+          testID="verification-tile"
+          accessibilityRole={me.isIdentityVerified ? 'text' : 'button'}
           accessibilityLabel={[
             t('profile.tiles.verification'),
             me.isIdentityVerified ? t('profile.tiles.verified') : t('profile.tiles.notVerified'),
-            ...(me.isIdentityVerified ? [] : [t('profile.tiles.verificationSoon')]),
+            ...(me.isIdentityVerified
+              ? []
+              : [cantVerify ? t('profile.tiles.cantVerify') : t('profile.tiles.verifySub')]),
           ].join('. ')}
+          disabled={me.isIdentityVerified}
+          onPress={() => router.push('/profile/verify')}
         >
-          <ShieldCheck size={28} color={theme.color.brand.primary} />
+          <ShieldCheck
+            size={28}
+            color={theme.color.brand.primary}
+            weight={me.isIdentityVerified ? 'fill' : 'regular'}
+          />
           <Text style={[textStyle('h2', locale), { color: theme.color.text.primary }]}>
             {t('profile.tiles.verification')}
           </Text>
@@ -130,11 +168,11 @@ export default function ProfileTab() {
             {me.isIdentityVerified ? t('profile.tiles.verified') : t('profile.tiles.notVerified')}
           </Text>
           {!me.isIdentityVerified && (
-            <Text style={[textStyle('caption', locale), { color: theme.color.text.secondary }]}>
-              {t('profile.tiles.verificationSoon')}
+            <Text style={[textStyle('label', locale), { color: theme.color.brand.primary }]}>
+              {cantVerify ? t('profile.tiles.cantVerify') : t('verification.start')}
             </Text>
           )}
-        </View>
+        </Pressable>
       </View>
 
       <PauseRow />
