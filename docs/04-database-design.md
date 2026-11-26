@@ -1407,6 +1407,35 @@ Migration 0008 pulls `public.consents` and `public.devices` (§6.10) forward fro
 
 0010 adds `banned` to `verifications_failure_code_values_chk` (docs/05 §8.4 lists it: the DigiLocker identity is on `private.banned_identities`). `expired` stays a status, not a failure code. The verification flow itself uses the 0005 tables unchanged: `public.verifications` (one pending attempt per user and type), `private.identity_records` (verified name encrypted with `FIELD_ENCRYPTION_KEY`, DOB, gender, the DigiLocker id's HMAC with `HASH_PEPPER`, unique per identity) and the deferred triggers that keep a verified profile's DOB and gender equal to its identity record.
 
+### 15.6 Listings (T3.4, migration file 0011)
+
+0011 creates `listings`, `listing_rules`, `listing_costs` and `listing_media` (§6.4, planned as 0006). Keep these when editing the DDL above:
+
+- **Public location** (§8.2): `location_public` is a stored generated column (the 500 m snap in EPSG:32643), not a trigger, so nothing can write the exact pin into it. Pins must be inside Delhi NCR with margin (longitude 76.5–78.0, latitude 27.8–29.2), the only area where the UTM 43N grid is meaningful.
+- **Listing checks:**
+  - title 5–80 visible characters (`is_human_text`); description 1–1,000 characters; review notes ≤ 2,000;
+  - `current_flatmates < total_flatmates`; `available_from` between 2026 and 2100;
+  - `address_enc` has the AES-256-GCM envelope shape (`version 1 ‖ iv ‖ ct ‖ tag`, as `identity_records`);
+  - `active`/`paused`/`expired` need `published_at`; `active` needs `expires_at`.
+- **Who can list** (FR-LST-01): a trigger refuses a listing whose owner is not `have_room`.
+  - When an owner's `intent` leaves `have_room` or `is_identity_verified` becomes false, their active listings become `paused` and listings in review go back to `draft` (trigger `profiles_listing_owner_changed`).
+- **Costs:**
+  - `brokerage_inr` must be 0;
+  - one-time costs are a list of at most 10 `{label, amount_inr}` items: label 1–40 visible characters, whole rupees 0–1,000,000, and no label naming a broker, dalal, commission, agent or finder;
+  - recurring costs are capped at ₹1,00,000 each; `recurring_costs_per_person_inr` is `not null`.
+- **Media:**
+  - photos are in `listing-photos` as `<listing_id>/<uuid>.webp`; walkthrough videos in `r2-walkthroughs` as `<listing_id>/<uuid>.mp4`;
+  - `sha256` is 32 bytes;
+  - a walkthrough video is 30–90 s, `recorded_in_app`, with `captured_at` and a Play Integrity verdict (FR-LST-05);
+  - `(listing_id, kind, position)` is unique, with photo positions 0–11 and the video at 0. That caps a listing at 12 photos and one video. Replacing a file is an upsert on that key.
+- **Completeness** (§8.4): a deferred constraint trigger, checked at commit, so the API can write the parts in any order in one transaction. A listing entering `pending_review` or `active` needs:
+  - rules and costs;
+  - 3+ photos and exactly one video, not counting rejected media;
+  - a DigiLocker-verified `have_room` owner.
+
+  While a listing is in review or live, removing, moving or rejecting a part re-runs the media and parts checks (the owner check is not repeated). Moderation that rejects a needed photo or video must pause the listing in the same transaction. Other updates, such as expiry, risk score or confirming, are not blocked.
+- **Access:** all four tables have RLS on and no grants (API only). `location_exact` and `address_enc` are plain columns: the API must select listing columns explicitly, never `selectAll()`, so the pin and address are not leaked (FR-LST-06).
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:
