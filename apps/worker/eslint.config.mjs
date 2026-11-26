@@ -1,3 +1,3 @@
-import { appBoundaries, base } from '@flatrimony/config/eslint';
+import { appBoundaries, base, database } from '@flatrimony/config/eslint';
 
-export default [...base, ...appBoundaries];
+export default [...base, ...appBoundaries, ...database];

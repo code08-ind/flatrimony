@@ -1434,7 +1434,7 @@ Migration 0008 pulls `public.consents` and `public.devices` (§6.10) forward fro
   - a DigiLocker-verified `have_room` owner.
 
   While a listing is in review or live, removing, moving or rejecting a part re-runs the media and parts checks (the owner check is not repeated). Moderation that rejects a needed photo or video must pause the listing in the same transaction. Other updates, such as expiry, risk score or confirming, are not blocked.
-- **Access:** all four tables have RLS on and no grants (API only). `location_exact` and `address_enc` are plain columns: the API must select listing columns explicitly, never `selectAll()`, so the pin and address are not leaked (FR-LST-06).
+- **Access:** all four tables have RLS on and no grants (API only). `location_exact` and `address_enc` are plain columns: the API must select listing columns explicitly, never `selectAll()`, so the pin and address are not leaked (FR-LST-06); ESLint enforces this in the API and worker.
 
 ## 16. Testing the database
 

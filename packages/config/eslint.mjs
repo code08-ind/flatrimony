@@ -69,6 +69,27 @@ export const appBoundaries = [
   },
 ];
 
+/**
+ * Server code that queries the database (api, worker). A listing row holds the exact pin and the
+ * encrypted address (FR-LST-06, docs/04 §15.6), so listing queries name their columns: no
+ * `selectAll()` / `returningAll()` on a query over `listings`.
+ */
+export const database = [
+  {
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(selectAll|returningAll)$/]:has(CallExpression[callee.property.name=/^(selectFrom|insertInto|updateTable|deleteFrom|innerJoin|leftJoin)$/] > Literal[value=/^(public\\.)?listings( |$)/])',
+          message:
+            'Name the listing columns: a listing row holds the exact location and the address (docs/04 §15.6).',
+        },
+      ],
+    },
+  },
+];
+
 /** React apps (mobile, web, admin): rules of hooks and effect dependencies. */
 export const react = [
   {
