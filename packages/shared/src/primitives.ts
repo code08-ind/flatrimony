@@ -56,6 +56,29 @@ export function humanText(max: number) {
     );
 }
 
+/**
+ * Zero-width joiners between two visible characters (ZWJ U+200D, ZWNJ U+200C). They shape Indic
+ * conjuncts and join emoji sequences (a family emoji), so text people write for others (a
+ * listing title, a cost label) keeps them; names do not (humanText). Mirrors the database's
+ * public.is_display_text().
+ */
+const JOINER_BETWEEN = /(?<=\S)[\u200C\u200D](?=\S)/gu;
+
+/** humanText that also allows joiners between visible characters (titles, labels). */
+export function displayText(max: number) {
+  return z
+    .string()
+    .trim()
+    .refine((s) => {
+      const length = [...s].length;
+      return length >= 1 && length <= max;
+    }, `Must be 1 to ${max} characters`)
+    .refine((s) => {
+      const bare = s.replace(JOINER_BETWEEN, '');
+      return !INVISIBLE.test(bare) && /\S/u.test(bare) && isWellFormedText(s);
+    }, 'Must contain only visible characters');
+}
+
 /** ISO 639-1 language code, e.g. 'hi', 'en'. */
 export const LanguageCode = z.string().regex(/^[a-z]{2}$/, 'Expected an ISO 639-1 code');
 

@@ -154,13 +154,6 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
     '/listings',
     {
       onRequest: app.requireUser,
-      config: {
-        rateLimit: {
-          bucket: 'listing-create',
-          limit: RATE_LIMITS.listingCreate.limit,
-          windowMs: RATE_LIMITS.listingCreate.windowMs,
-        },
-      },
       schema: { body: CreateListingRequest, response: { 201: OwnerListing } },
     },
     async (req, reply) => {
@@ -173,6 +166,13 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
         });
       if (!(await repo.areaIsActive(req.body.areaId)))
         throw invalid([{ path: 'body.areaId', code: 'invalid', message: 'Unknown area' }]);
+      // Drafts actually created count, so a refused request never uses up the day's allowance.
+      const { limit, windowMs } = RATE_LIMITS.listingCreate;
+      if ((await repo.createdSince(userId, windowMs)) >= limit)
+        throw new ApiError('rate_limited', {
+          title: 'Too many new listings today',
+          detail: `You can start up to ${limit} listings a day.`,
+        });
       let id: string;
       try {
         id = await repo.create(userId, req.body);

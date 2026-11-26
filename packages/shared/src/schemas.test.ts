@@ -333,6 +333,18 @@ describe('listings', () => {
     );
   });
 
+  it('titles may join emoji and conjuncts; names may not', () => {
+    const zwj = String.fromCodePoint(0x200d);
+    const family = ['👨', '👩', '👧'].join(zwj);
+    expect(CreateListingRequest.safeParse({ ...draft, title: `Flat ${family}` }).success).toBe(
+      true,
+    );
+    expect(CreateListingRequest.safeParse({ ...draft, title: `Room ${zwj} view` }).success).toBe(
+      false,
+    );
+    expect(humanText(40).safeParse(`Flat ${family}`).success).toBe(false);
+  });
+
   it('a patch changes something, and keeps the flatmates consistent when it names both', () => {
     expect(ListingPatch.safeParse({}).success).toBe(false);
     expect(ListingPatch.safeParse({ description: null }).success).toBe(true);

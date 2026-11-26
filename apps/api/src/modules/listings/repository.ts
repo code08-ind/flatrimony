@@ -51,6 +51,8 @@ export interface ListingRepository {
   /** True when the area exists and is active (ref.areas). */
   areaIsActive(areaId: number): Promise<boolean>;
   create(userId: string, input: CreateListingRequest): Promise<string>;
+  /** Listings the user created in the last `windowMs`, deleted ones included. */
+  createdSince(userId: string, windowMs: number): Promise<number>;
   /** The caller's listing (not deleted), with its ETag version; null otherwise. */
   get(userId: string, id: string): Promise<{ listing: OwnerListing; version: string } | null>;
   /** The caller's listings, newest first (at most 50: an owner lists a room, rarely a few). */
@@ -365,6 +367,16 @@ export function pgListingRepository(
           .execute(),
       );
       return id;
+    },
+
+    async createdSince(userId, windowMs) {
+      const row = await db
+        .selectFrom('listings')
+        .select((eb) => eb.fn.countAll<string>().as('n'))
+        .where('owner_id', '=', userId)
+        .where('created_at', '>', sql<Date>`now() - make_interval(secs => ${windowMs / 1000})`)
+        .executeTakeFirstOrThrow();
+      return Number(row.n);
     },
 
     async get(userId, id) {
