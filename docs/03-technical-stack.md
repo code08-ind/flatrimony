@@ -145,7 +145,7 @@ flowchart TB
 | Monorepo build | Turborepo | Latest stable | Task caching, affected-only builds in CI. |
 | Mobile | React Native with Expo (managed workflow + config plugins), Expo Router | Latest Expo SDK at project start; upgrade each SDK within 3 months | Android first, iOS later from the same code; EAS Build/Update/Submit. |
 | Mobile UI motion | react-native-reanimated, react-native-gesture-handler | Bundled with Expo SDK | 60 fps swipe deck on the UI thread. |
-| Mobile camera | react-native-vision-camera (with config plugin) | Latest stable | Reliable in-app video recording; no gallery picker for walkthroughs. |
+| Mobile camera | expo-camera (Expo SDK; config plugin, no microphone) | SDK version | In-app walkthrough recording at 720p, 2 Mbit/s, no sound (the compression happens at capture, no separate transcode); no gallery picker for walkthroughs. Chosen over react-native-vision-camera in T3.7: the Expo module covers recording with a duration/size cap and needs no extra native setup; revisit if frame processing is ever needed. |
 | Mobile storage | expo-secure-store (tokens), react-native-mmkv (cache) | — | Secure token storage; fast cache. |
 | Web | Next.js (App Router), React Server Components | Latest stable | SEO for area pages; shared code with admin. |
 | Web styling | Tailwind CSS + shadcn/ui (Radix primitives) | Latest stable | Accessible primitives; design tokens map to Tailwind theme. |

@@ -549,5 +549,70 @@
       "status": "Couldn’t check the status. Check your connection."
     },
     "close": "Close"
+  },
+  "listing": {
+    "video": {
+      "overline": "Walkthrough video",
+      "title": "Show your flat as it is",
+      "body": "Walk slowly through the flat with the back camera. Flatmates trust a walkthrough more than any photo.",
+      "show": "Show the room, kitchen, bathroom and balcony",
+      "length": "30 to 90 seconds, recorded here in the app",
+      "noSound": "No sound is recorded",
+      "start": "Start recording",
+      "stop": "Stop",
+      "stopIn": "You can stop in {seconds} s",
+      "recording": "Recording",
+      "permission": {
+        "body": "The walkthrough is recorded in the app, so a video from your gallery cannot be used.",
+        "allow": "Allow camera",
+        "settings": "Open settings",
+        "denied": "Camera access is off. Turn it on in Settings to record the walkthrough."
+      },
+      "preview": {
+        "title": "Check your walkthrough",
+        "seconds": "{seconds} seconds",
+        "use": "Use this video",
+        "retake": "Record again",
+        "tooShort": "This take is shorter than 30 seconds. Record again.",
+        "tooLong": "This take is longer than 90 seconds. Record again.",
+        "label": "Your walkthrough video"
+      },
+      "uploading": "Uploading your walkthrough…",
+      "done": {
+        "title": "Walkthrough added",
+        "body": "Your walkthrough is part of the listing now.",
+        "back": "Done"
+      },
+      "web": {
+        "title": "Record on your Android phone",
+        "body": "Walkthroughs are recorded in the Flatrimony Android app, so everyone sees the flat as it is today. Open this listing on your phone to record it."
+      },
+      "errors": {
+        "camera": "The camera stopped. Try recording again.",
+        "upload": "The upload did not finish. Try again.",
+        "network": "No connection. Check your internet and try again.",
+        "old": "This recording is older than 24 hours. Record it again.",
+        "duration": "Walkthroughs are 30 to 90 seconds long. Record it again.",
+        "tooLarge": "This video is too large. Record a shorter walkthrough.",
+        "invalid": "This video cannot be used. Record it again.",
+        "integrity": "We could not confirm this video was recorded in the Flatrimony app on a genuine Android phone, so walkthroughs cannot be added from this phone. Try recording on another Android phone.",
+        "notFound": "This listing is no longer available.",
+        "notEditable": "This listing cannot be changed right now.",
+        "tooMany": "Too many uploads. Try again in a while.",
+        "unavailable": "Uploads are not available right now. Try again in a moment.",
+        "generic": "Something went wrong. Try again.",
+        "interrupted": "Recording stopped because you left the app. Record the walkthrough again.",
+        "notAvailable": "Walkthrough uploads are not available in this version of the app yet."
+      },
+      "stopNow": "You can stop now",
+      "close": "Close camera",
+      "uploadingPercent": "Uploading your walkthrough… {percent}%",
+      "discard": {
+        "title": "Discard this walkthrough?",
+        "body": "The video you just recorded will be deleted.",
+        "confirm": "Discard",
+        "cancel": "Keep it"
+      }
+    }
   }
 }

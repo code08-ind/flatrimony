@@ -42,9 +42,21 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-localization',
     'expo-secure-store',
-    // Photos come from the system photo picker (no storage permission on Android 13+); the camera
-    // is not used (T2.11).
+    // Photos come from the system photo picker (no storage permission on Android 13+); the picker
+    // never opens the camera (T2.11).
     ['expo-image-picker', { cameraPermission: false, microphonePermission: false }],
+    // The listing walkthrough is recorded in the app (T3.7; FR-LST-05), without sound: camera
+    // permission only, no microphone.
+    [
+      'expo-camera',
+      {
+        cameraPermission:
+          'Flatrimony uses the camera to record the walkthrough video of your flat.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    'expo-video',
   ],
   experiments: { typedRoutes: true },
   extra: {
@@ -55,6 +67,8 @@ const config: ExpoConfig = {
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
     sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
     posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '',
+    // Play Integrity standard requests (T3.6/T3.7); empty until the Play Console project exists.
+    playIntegrityCloudProject: process.env.EXPO_PUBLIC_PLAY_INTEGRITY_CLOUD_PROJECT ?? '',
     ...(process.env.EAS_PROJECT_ID ? { eas: { projectId: process.env.EAS_PROJECT_ID } } : {}),
   },
 };

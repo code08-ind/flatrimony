@@ -8,6 +8,8 @@ export interface AppConfig {
   supabaseAnonKey: string;
   appVersion: string;
   webUrl: string;
+  /** Google Cloud project number for Play Integrity (public; empty until the Play Console exists). */
+  playIntegrityCloudProject: string;
 }
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Partial<AppConfig>;
@@ -19,6 +21,7 @@ export const config: AppConfig = {
   supabaseAnonKey: extra.supabaseAnonKey ?? '',
   appVersion: Constants.expoConfig?.version ?? '0.0.0',
   webUrl: extra.webUrl ?? 'http://localhost:3000',
+  playIntegrityCloudProject: extra.playIntegrityCloudProject ?? '',
 };
 
 /** Legal pages live on the web app (drafts pending legal review, T0.15). */
