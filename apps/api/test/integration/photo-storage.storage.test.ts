@@ -64,4 +64,27 @@ describe.skipIf(!url || !key)('supabasePhotoStorage (local Storage)', () => {
     await store.remove([staging]);
     expect(await store.download(staging)).toBeNull();
   });
+
+  it('listing-photos takes a camera JPEG original (review T3.6), but not a PNG', async () => {
+    const listingStore = supabasePhotoStorage(url!, key!, 'listing-photos');
+    const listing = randomUUID();
+    const jpeg = await sharp({ create: { width: 64, height: 64, channels: 3, background: '#a64' } })
+      .jpeg()
+      .toBuffer();
+    const staged = `${listing}/uploads/${randomUUID()}`;
+    const put = await fetch(await listingStore.createUploadUrl(staged), {
+      method: 'PUT',
+      headers: { 'content-type': 'image/jpeg' },
+      body: new Uint8Array(jpeg),
+    });
+    expect(put.status).toBe(200);
+    const png = `${listing}/uploads/${randomUUID()}`;
+    const refused = await fetch(await listingStore.createUploadUrl(png), {
+      method: 'PUT',
+      headers: { 'content-type': 'image/png' },
+      body: new Uint8Array(await sharp(jpeg).png().toBuffer()),
+    });
+    expect(refused.ok).toBe(false);
+    await listingStore.remove([staged, png]);
+  });
 });

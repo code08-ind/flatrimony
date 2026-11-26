@@ -30,7 +30,14 @@ const app = await buildApp({
       }
     : {}),
   ...(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
-    ? { photoStorage: supabasePhotoStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY) }
+    ? {
+        photoStorage: supabasePhotoStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
+        listingPhotoStorage: supabasePhotoStorage(
+          env.SUPABASE_URL,
+          env.SUPABASE_SERVICE_ROLE_KEY,
+          'listing-photos',
+        ),
+      }
     : {}),
 });
 

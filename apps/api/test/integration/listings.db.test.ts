@@ -13,6 +13,11 @@ import { buildApp } from '../../src/app.js';
 import { loadEnv } from '../../src/env.js';
 import { createDatabase, type Database } from '../../src/lib/db.js';
 import { pgListingRepository } from '../../src/modules/listings/repository.js';
+import { memoryPhotoStorage } from '../../src/lib/photo-storage.js';
+import { mockIntegrityToken } from '../../src/lib/integrity.js';
+import { memoryVideoStorage, sha256 } from '../../src/lib/video-storage.js';
+import sharp from 'sharp';
+import { fakeMp4 } from '../helpers/mp4.js';
 
 const url = process.env.DATABASE_URL;
 const KEY = randomBytes(32);
@@ -22,6 +27,8 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
   let app: FastifyInstance;
   let areaId: number;
   const users: { id: string; token: string }[] = [];
+  const photoStore = memoryPhotoStorage();
+  const videoStore = memoryVideoStorage();
 
   async function newUser(intent: 'have_room' | 'need_room' = 'have_room') {
     const id = randomUUID();
@@ -131,6 +138,8 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
         return { id: user.id, appRole: 'user' };
       },
       listingRepo: (deps) => pgListingRepository(db, deps),
+      listingPhotoStorage: photoStore,
+      videoStorage: videoStore,
     });
   });
   afterAll(async () => {
@@ -469,5 +478,301 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
       )
     ).rows[0]!;
     expect(row).toEqual({ status: 'removed', deleted: true });
+  });
+
+  // ------------------------------------------------------------------ media (T3.6)
+  const android = { 'x-app-platform': 'android' };
+
+  /** A photo as the app sends it: a JPEG with GPS in its EXIF. */
+  const jpeg = (colour = '#6a4') =>
+    sharp({ create: { width: 900, height: 600, channels: 3, background: colour } })
+      .jpeg()
+      .withExif({ IFD0: { Make: 'TestPhone' }, IFD3: { GPSLatitudeRef: 'N' } })
+      .toBuffer();
+
+  async function uploadPhoto(owner: { token: string }, listingId: string, position: number) {
+    const url = await call(owner, 'POST', `/listings/${listingId}/media/upload-url`, {
+      kind: 'photo',
+      contentType: 'image/jpeg',
+      sizeBytes: 50_000,
+    });
+    expect(url.statusCode, url.body).toBe(200);
+    const { storageKey } = url.json() as { storageKey: string };
+    photoStore.objects.set(storageKey, await jpeg());
+    return call(owner, 'POST', `/listings/${listingId}/media`, {
+      kind: 'photo',
+      storageKey,
+      position,
+    });
+  }
+
+  async function uploadVideo(
+    owner: { token: string },
+    listingId: string,
+    over: { file?: Buffer; body?: object; token?: (hash: string) => string } = {},
+  ) {
+    const file = over.file ?? fakeMp4(45);
+    const url = await call(
+      owner,
+      'POST',
+      `/listings/${listingId}/media/upload-url`,
+      { kind: 'walkthrough_video', contentType: 'video/mp4', sizeBytes: file.length },
+      android,
+    );
+    expect(url.statusCode, url.body).toBe(200);
+    const { storageKey } = url.json() as { storageKey: string };
+    videoStore.objects.set(storageKey, file);
+    const hash = sha256(file).toString('hex');
+    const res = await call(
+      owner,
+      'POST',
+      `/listings/${listingId}/media`,
+      {
+        kind: 'walkthrough_video',
+        storageKey,
+        sha256: hash,
+        durationS: 45,
+        width: 1280,
+        height: 720,
+        capturedAt: new Date(Date.now() - 60_000).toISOString(),
+        recordedInApp: true,
+        integrityToken: (over.token ?? mockIntegrityToken)(hash),
+        ...over.body,
+      },
+      android,
+    );
+    return { res, storageKey };
+  }
+
+  it('photos: upload, re-encode without EXIF, replace in place, links for the owner', async () => {
+    const owner = await newUser();
+    const l = await created(owner);
+    const first = await uploadPhoto(owner, l.id, 0);
+    expect(first.statusCode, first.body).toBe(201);
+    const listing = OwnerListing.parse(first.json());
+    expect(listing.media).toHaveLength(1);
+    const photo = listing.media[0]!;
+    expect(photo).toMatchObject({ kind: 'photo', position: 0, moderationStatus: 'pending' });
+    expect(photo.url).toContain('https://storage.test/sign/');
+    // Only the processed WebP is kept, under the listing; the original (with GPS) is gone.
+    const keys = [...photoStore.objects.keys()].filter((k) => k.startsWith(l.id));
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).toMatch(new RegExp(`^${l.id}/[0-9a-f-]{36}[.]webp$`));
+    const meta = await sharp(photoStore.objects.get(keys[0]!)!).metadata();
+    expect(meta.format).toBe('webp');
+    expect(meta.exif).toBeUndefined();
+
+    // The same position again replaces the photo and deletes the old file.
+    const again = await uploadPhoto(owner, l.id, 0);
+    expect(again.json().media).toHaveLength(1);
+    expect(photoStore.objects.has(keys[0]!)).toBe(false);
+  });
+
+  it("photos: someone else's key, a missing upload or a non-image are refused", async () => {
+    const owner = await newUser();
+    const other = await newUser();
+    const l = await created(owner);
+    const mine = await created(other);
+    const foreign = await call(other, 'POST', `/listings/${mine.id}/media/upload-url`, {
+      kind: 'photo',
+      contentType: 'image/jpeg',
+      sizeBytes: 1000,
+    });
+    const steal = await call(owner, 'POST', `/listings/${l.id}/media`, {
+      kind: 'photo',
+      storageKey: foreign.json().storageKey,
+      position: 0,
+    });
+    expect(steal.json().errors[0].code).toBe('invalid_key');
+    const missing = await call(owner, 'POST', `/listings/${l.id}/media`, {
+      kind: 'photo',
+      storageKey: `${l.id}/uploads/${randomUUID()}`,
+      position: 0,
+    });
+    expect(missing.json().errors[0].code).toBe('upload_missing');
+    const url = await call(owner, 'POST', `/listings/${l.id}/media/upload-url`, {
+      kind: 'photo',
+      contentType: 'image/jpeg',
+      sizeBytes: 1000,
+    });
+    photoStore.objects.set(url.json().storageKey, Buffer.from('not a photo'));
+    const junk = await call(owner, 'POST', `/listings/${l.id}/media`, {
+      kind: 'photo',
+      storageKey: url.json().storageKey,
+      position: 0,
+    });
+    expect(junk.statusCode).toBe(422);
+    expect(photoStore.objects.has(url.json().storageKey)).toBe(false);
+    // Others cannot even ask for an upload URL.
+    const nope = await call(other, 'POST', `/listings/${l.id}/media/upload-url`, {
+      kind: 'photo',
+      contentType: 'image/jpeg',
+      sizeBytes: 1000,
+    });
+    expect(nope.statusCode).toBe(404);
+  });
+
+  it('video: checked against the file, moved under the listing, replaced as a whole', async () => {
+    const owner = await newUser();
+    const l = await created(owner);
+    const { res, storageKey } = await uploadVideo(owner, l.id);
+    expect(res.statusCode, res.body).toBe(201);
+    const video = OwnerListing.parse(res.json()).media.find((m) => m.kind === 'walkthrough_video')!;
+    expect(video).toMatchObject({ durationS: 45, position: 0 });
+    expect(video.url).toContain('https://video.test/view/');
+    expect(videoStore.objects.has(storageKey)).toBe(false);
+    const finalKeys = [...videoStore.objects.keys()].filter((k) => k.startsWith(`${l.id}/`));
+    expect(finalKeys).toHaveLength(1);
+    const row = (
+      await sql<{
+        verdict: string;
+        in_app: boolean;
+      }>`select integrity_verdict as verdict, recorded_in_app as in_app from public.listing_media where listing_id = ${l.id}`.execute(
+        db,
+      )
+    ).rows[0]!;
+    expect(row).toEqual({ verdict: 'meets_device_integrity', in_app: true });
+
+    const second = await uploadVideo(owner, l.id, { file: fakeMp4(60), body: { durationS: 60 } });
+    expect(second.res.statusCode, second.res.body).toBe(201);
+    expect(videoStore.objects.has(finalKeys[0]!)).toBe(false);
+  });
+
+  it('video: the web, a changed file, a wrong length, an old recording, a bad token are refused', async () => {
+    const owner = await newUser();
+    const l = await created(owner);
+    const web = await call(owner, 'POST', `/listings/${l.id}/media/upload-url`, {
+      kind: 'walkthrough_video',
+      contentType: 'video/mp4',
+      sizeBytes: 1000,
+    });
+    expect(web.statusCode).toBe(403);
+    expect(web.json().code).toBe('integrity.failed');
+
+    const cases: [string, Parameters<typeof uploadVideo>[2], string][] = [
+      ['hash', { body: { sha256: 'a'.repeat(64) } }, 'listing.video_invalid'],
+      ['length', { file: fakeMp4(20) }, 'listing.video_invalid'],
+      ['just short', { file: fakeMp4(29), body: { durationS: 30 } }, 'listing.video_invalid'],
+      ['just long', { file: fakeMp4(91), body: { durationS: 90 } }, 'listing.video_invalid'],
+      ['claimed length', { body: { durationS: 80 } }, 'listing.video_invalid'],
+      ['not mp4', { file: Buffer.alloc(5000, 1) }, 'listing.video_invalid'],
+      [
+        'old',
+        { body: { capturedAt: new Date(Date.now() - 25 * 3600_000).toISOString() } },
+        'listing.video_invalid',
+      ],
+      [
+        'token for another file',
+        { token: () => mockIntegrityToken('b'.repeat(64)) },
+        'integrity.failed',
+      ],
+      [
+        'basic integrity only',
+        { token: (h) => mockIntegrityToken(h, 'meets_basic_integrity') },
+        'integrity.failed',
+      ],
+    ];
+    for (const [name, over, code] of cases) {
+      const { res, storageKey } = await uploadVideo(owner, l.id, over);
+      expect(res.json().code, name).toBe(code);
+      // Nothing unchecked is kept (the upload is gone unless the request never reached the file).
+      if (name !== 'old') expect(videoStore.objects.has(storageKey), name).toBe(false);
+    }
+    expect((await call(owner, 'GET', `/listings/${l.id}`)).json().media).toEqual([]);
+  });
+
+  it('a listing made entirely through the API goes live; its files go when it is deleted', async () => {
+    const owner = await newUser();
+    await verify(owner.id);
+    const l = await created(owner);
+    await call(owner, 'PUT', `/listings/${l.id}/rules`, rules);
+    await call(owner, 'PUT', `/listings/${l.id}/costs`, costs);
+    for (const p of [0, 1, 2]) expect((await uploadPhoto(owner, l.id, p)).statusCode).toBe(201);
+    expect((await uploadVideo(owner, l.id)).res.statusCode).toBe(201);
+    const live = await call(owner, 'POST', `/listings/${l.id}/submit`);
+    expect(live.statusCode, live.body).toBe(200);
+
+    // Live: a photo cannot go below 3, but can be removed once a fourth is there.
+    const media = OwnerListing.parse(live.json()).media;
+    const firstPhoto = media.find((m) => m.kind === 'photo')!;
+    const blocked = await call(owner, 'DELETE', `/listings/${l.id}/media/${firstPhoto.id}`);
+    expect(blocked.statusCode).toBe(409);
+    expect((await uploadPhoto(owner, l.id, 3)).statusCode).toBe(201);
+    const removed = await call(owner, 'DELETE', `/listings/${l.id}/media/${firstPhoto.id}`);
+    expect(removed.statusCode).toBe(204);
+    expect(removed.headers.etag).toMatch(/^W/);
+    const unknown = await call(owner, 'DELETE', `/listings/${l.id}/media/${randomUUID()}`);
+    expect(unknown.statusCode).toBe(404);
+
+    const files = () =>
+      [...photoStore.objects.keys(), ...videoStore.objects.keys()].filter(
+        (k) => k.startsWith(`${l.id}/`) || k.startsWith(`uploads/${l.id}/`),
+      );
+    expect(files()).toHaveLength(4); // 3 photos + the video
+    expect((await call(owner, 'DELETE', `/listings/${l.id}`)).statusCode).toBe(204);
+    expect(files()).toEqual([]);
+  });
+
+  it("an old gallery file with a fresh capture time is refused (the file's own clock)", async () => {
+    const owner = await newUser();
+    const l = await created(owner);
+    const old = fakeMp4(45, { createdAt: Date.now() - 3 * 24 * 3600_000 });
+    const { res, storageKey } = await uploadVideo(owner, l.id, { file: old });
+    expect(res.json().code).toBe('listing.video_invalid');
+    expect(res.json().errors[0].code).toBe('old');
+    expect(videoStore.objects.has(storageKey)).toBe(false);
+    // A recorder that leaves the creation time empty is judged by the app's capture time.
+    const unknown = await uploadVideo(owner, l.id, { file: fakeMp4(45, { createdAt: null }) });
+    expect(unknown.res.statusCode, unknown.res.body).toBe(201);
+    // The stored length is the file's, not the app's claim.
+    const odd = await uploadVideo(owner, l.id, { file: fakeMp4(46.4), body: { durationS: 45 } });
+    expect(odd.res.statusCode, odd.res.body).toBe(201);
+    expect(
+      odd.res.json().media.find((m: { kind: string }) => m.kind === 'walkthrough_video').durationS,
+    ).toBe(46);
+  });
+
+  it('media writes honour If-Match under the lock; a deleted listing sweeps staged videos', async () => {
+    const owner = await newUser();
+    const l = await created(owner);
+    const etag = (await call(owner, 'GET', `/listings/${l.id}`)).headers.etag as string;
+    expect((await uploadPhoto(owner, l.id, 0)).statusCode).toBe(201); // changes the ETag
+    const url = await call(owner, 'POST', `/listings/${l.id}/media/upload-url`, {
+      kind: 'photo',
+      contentType: 'image/jpeg',
+      sizeBytes: 50_000,
+    });
+    photoStore.objects.set(url.json().storageKey, await jpeg());
+    const stale = await call(
+      owner,
+      'POST',
+      `/listings/${l.id}/media`,
+      { kind: 'photo', storageKey: url.json().storageKey, position: 1 },
+      { 'if-match': etag },
+    );
+    expect(stale.statusCode).toBe(412);
+    const photoId = (await call(owner, 'GET', `/listings/${l.id}`)).json().media[0].id;
+    const staleDelete = await call(
+      owner,
+      'DELETE',
+      `/listings/${l.id}/media/${photoId}`,
+      undefined,
+      {
+        'if-match': etag,
+      },
+    );
+    expect(staleDelete.statusCode).toBe(412);
+
+    // An upload that was never confirmed is removed with the listing.
+    const video = await call(
+      owner,
+      'POST',
+      `/listings/${l.id}/media/upload-url`,
+      { kind: 'walkthrough_video', contentType: 'video/mp4', sizeBytes: 5000 },
+      android,
+    );
+    videoStore.objects.set(video.json().storageKey, fakeMp4(45));
+    expect((await call(owner, 'DELETE', `/listings/${l.id}`)).statusCode).toBe(204);
+    expect(videoStore.objects.has(video.json().storageKey)).toBe(false);
   });
 });

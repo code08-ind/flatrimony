@@ -56,6 +56,8 @@ import {
 } from './modules/places/provider.js';
 import { placesRoutes } from './modules/places/routes.js';
 import type { ListingRepository } from './modules/listings/repository.js';
+import { mockIntegrityVerifier, type IntegrityVerifier } from './lib/integrity.js';
+import { s3VideoStorage, type VideoStorage } from './lib/video-storage.js';
 import { listingRoutes } from './modules/listings/routes.js';
 
 export interface BuildOptions {
@@ -86,6 +88,12 @@ export interface BuildOptions {
   }) => VerificationRepository;
   /** Listings (Postgres in server.ts), built with the field cipher (addresses). Not served without it. */
   listingRepo?: (deps: { cipher: FieldCipher }) => ListingRepository;
+  /** Listing photos (the `listing-photos` bucket; Supabase Storage in server.ts). */
+  listingPhotoStorage?: PhotoStorage;
+  /** Walkthrough videos (default: R2 from the R2_* settings, if set). */
+  videoStorage?: VideoStorage;
+  /** Play Integrity (default: from PLAY_INTEGRITY_PROVIDER). */
+  integrity?: IntegrityVerifier;
   /** DigiLocker provider (default: from DIGILOCKER_PROVIDER; tests inject their own). */
   digilocker?: DigiLockerProvider;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
@@ -147,6 +155,9 @@ export async function buildApp({
   meRepo,
   verificationRepo,
   listingRepo,
+  listingPhotoStorage,
+  videoStorage,
+  integrity,
   digilocker,
   photoStorage,
   commutePreview,
@@ -310,7 +321,26 @@ export async function buildApp({
 
   // Listings for their owners (T3.5). The address is encrypted with FIELD_ENCRYPTION_KEY.
   if (listingRepo) {
-    await app.register(listingRoutes, { prefix: '/v1', repo: listingRepo({ cipher }) });
+    const videos =
+      videoStorage ??
+      (env.R2_ENDPOINT && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY
+        ? s3VideoStorage({
+            endpoint: env.R2_ENDPOINT,
+            region: env.R2_REGION,
+            accessKeyId: env.R2_ACCESS_KEY_ID,
+            secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+            bucket: env.R2_BUCKET,
+          })
+        : undefined);
+    await app.register(listingRoutes, {
+      prefix: '/v1',
+      repo: listingRepo({ cipher }),
+      ...(listingPhotoStorage ? { photos: listingPhotoStorage } : {}),
+      ...(videos ? { videos } : {}),
+      // Only the mock exists until the Play Console project (env.ts refuses it in production).
+      integrity: integrity ?? mockIntegrityVerifier(now),
+      ...(now ? { now } : {}),
+    });
   }
 
   // Place search for the office/college picker (T2.8): the vendor key stays server-side.

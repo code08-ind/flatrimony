@@ -48,6 +48,9 @@ variable "secret_ids" {
     "WEB_PROXY_SECRET",
     # Standard Webhooks secret(s) the DigiLocker provider signs its webhooks with (T3.1).
     "DIGILOCKER_WEBHOOK_SECRETS",
+    # Cloudflare R2 API token (S3 access key pair) for walkthrough videos (T3.6; docs/runbooks/r2-walkthroughs.md).
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
   ]
 }
 
