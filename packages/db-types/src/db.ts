@@ -16,7 +16,11 @@ export type ConsentPurpose =
 
 export type FoodHabit = 'eggetarian' | 'non_veg' | 'veg' | 'vegan';
 
+export type FoodRule = 'any' | 'eggetarian_ok' | 'veg_only';
+
 export type FrequencyLevel = 'never' | 'often' | 'rarely' | 'sometimes';
+
+export type FurnishingLevel = 'furnished' | 'semi_furnished' | 'unfurnished';
 
 export type GenderPreference = 'any' | 'female_only' | 'male_only';
 
@@ -24,6 +28,8 @@ export type Generated<T> =
   T extends ColumnType<infer S, infer I, infer U>
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
+
+export type GuestsRule = 'allowed' | 'day_only' | 'not_allowed';
 
 export type ImportanceLevel = 'dealbreaker' | 'dont_care' | 'matters';
 
@@ -54,6 +60,11 @@ export type LifestyleAttribute =
   | 'wake_time'
   | 'work_mode';
 
+export type ListingStatus =
+  'active' | 'draft' | 'expired' | 'paused' | 'pending_review' | 'removed';
+
+export type MediaKind = 'photo' | 'walkthrough_video';
+
 export type ModerationStatus = 'approved' | 'pending' | 'rejected';
 
 export type PetAttitude = 'have' | 'love' | 'no' | 'ok';
@@ -61,6 +72,8 @@ export type PetAttitude = 'have' | 'love' | 'no' | 'ok';
 export type Platform = 'android' | 'ios' | 'web';
 
 export type ProductCode = 'listing_boost_7d' | 'move_pass_30d';
+
+export type RoomType = 'private' | 'shared';
 
 export type SmokingHabit = 'no' | 'outside_only' | 'yes';
 
@@ -141,6 +154,90 @@ export interface LifestyleImportance {
   attribute: LifestyleAttribute;
   importance: Generated<ImportanceLevel>;
   user_id: string;
+}
+
+export interface ListingCosts {
+  /**
+   * Always 0: Flatrimony is broker-free (FR-LST-03).
+   */
+  brokerage_inr: Generated<number>;
+  electricity_estimate_inr: Generated<number>;
+  help_inr: Generated<number>;
+  listing_id: string;
+  maintenance_inr: Generated<number>;
+  one_time_costs: Generated<Json>;
+  other_recurring_inr: Generated<number>;
+  recurring_costs_per_person_inr: Generated<number>;
+  wifi_inr: Generated<number>;
+}
+
+export interface ListingMedia {
+  captured_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  duration_s: number | null;
+  height: number | null;
+  id: Generated<string>;
+  integrity_verdict: string | null;
+  kind: MediaKind;
+  listing_id: string;
+  moderation_status: Generated<ModerationStatus>;
+  phash: string | null;
+  position: Generated<number>;
+  recorded_in_app: Generated<boolean>;
+  sha256: Buffer;
+  storage_bucket: string;
+  storage_key: string;
+  width: number | null;
+}
+
+export interface ListingRules {
+  bachelors_allowed: boolean;
+  food_rule: FoodRule;
+  gender_rule: GenderPreference;
+  guests_rule: GuestsRule;
+  listing_id: string;
+  pets_allowed: boolean;
+  smoking_allowed: boolean;
+}
+
+export interface Listings {
+  /**
+   * Full address, AES-256-GCM with FIELD_ENCRYPTION_KEY (bound to the listing id).
+   */
+  address_enc: Buffer | null;
+  area_id: number;
+  available_from: string;
+  bhk: number;
+  boost_until: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  current_flatmates: number;
+  deleted_at: Timestamp | null;
+  deposit_per_person_inr: number;
+  description: string | null;
+  expires_at: Timestamp | null;
+  furnishing: FurnishingLevel;
+  id: Generated<string>;
+  last_confirmed_at: Timestamp | null;
+  /**
+   * Private: never returned until both sides agree to share the address (FR-LST-06).
+   */
+  location_exact: string;
+  /**
+   * ~500 m grid point computed from location_exact (docs/04 §8.2); what discovery shows.
+   */
+  location_public: Generated<string>;
+  min_lease_months: Generated<number>;
+  offers_video_tour: Generated<boolean>;
+  owner_id: string;
+  published_at: Timestamp | null;
+  rent_per_person_inr: number;
+  review_notes: string | null;
+  risk_score: Generated<number>;
+  room_type: RoomType;
+  status: Generated<ListingStatus>;
+  title: string;
+  total_flatmates: number;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface PreferenceAreas {
@@ -336,6 +433,10 @@ export interface DB {
   devices: Devices;
   lifestyle: Lifestyle;
   lifestyle_importance: LifestyleImportance;
+  listing_costs: ListingCosts;
+  listing_media: ListingMedia;
+  listing_rules: ListingRules;
+  listings: Listings;
   preference_areas: PreferenceAreas;
   preferences: Preferences;
   'private.banned_identities': PrivateBannedIdentities;
