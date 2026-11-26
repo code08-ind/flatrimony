@@ -82,12 +82,14 @@ const IMAGE_ERROR_MESSAGE: Record<ImageError['reason'], string> = {
   too_large: 'Use a photo up to 8 MB and 50 megapixels',
 };
 
-const PHOTO_UPLOAD = (listingId: string) =>
-  new RegExp(`^${listingId}/uploads/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`);
-const VIDEO_UPLOAD = (listingId: string) =>
-  new RegExp(
-    `^uploads/${listingId}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.mp4$`,
-  );
+// Upload keys: fixed patterns, then the listing id compared as a string (no regex built from input).
+const PHOTO_UPLOAD_KEY = /^([0-9a-f-]{36})[/]uploads[/]([0-9a-f-]{36})$/;
+const VIDEO_UPLOAD_KEY = /^uploads[/]([0-9a-f-]{36})[/]([0-9a-f-]{36})[.]mp4$/;
+const UUID_ONLY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const isUploadKey = (pattern: RegExp, key: string, listingId: string) => {
+  const m = pattern.exec(key);
+  return !!m && m[1] === listingId && UUID_ONLY.test(m[2]!);
+};
 /** The app's duration and the file's may differ by rounding and container padding. */
 const DURATION_TOLERANCE_S = 2;
 /** A walkthrough must be recent: recorded in the last 24 hours (docs/05 §8.6). */
@@ -560,7 +562,7 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
       if (body.kind === 'photo') {
         const store = opts.photos;
         if (!store) throw storageDown();
-        if (!PHOTO_UPLOAD(id).test(body.storageKey))
+        if (!isUploadKey(PHOTO_UPLOAD_KEY, body.storageKey, id))
           throw invalid([
             {
               path: 'body.storageKey',
@@ -618,7 +620,7 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
       } else {
         const store = opts.videos;
         if (!store) throw storageDown();
-        if (!VIDEO_UPLOAD(id).test(body.storageKey))
+        if (!isUploadKey(VIDEO_UPLOAD_KEY, body.storageKey, id))
           throw invalid([
             {
               path: 'body.storageKey',
