@@ -76,7 +76,16 @@ try {
   anonKey = /^ANON_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
   serviceRoleKey = /^SERVICE_ROLE_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
   // Walkthrough videos (T3.6): the local stand-in for R2 is Storage's S3 endpoint.
-  const field = (name) => new RegExp(`^${name}="?([^"\\n]+)"?$`, 'm').exec(status)?.[1];
+  const fields = new Map(
+    status
+      .split('\n')
+      .filter((line) => line.includes('='))
+      .map((line) => [
+        line.slice(0, line.indexOf('=')),
+        line.slice(line.indexOf('=') + 1).replace(/^"|"$/g, ''),
+      ]),
+  );
+  const field = (name) => fields.get(name);
   const [endpoint, keyId, secret, region] = [
     'STORAGE_S3_URL',
     'S3_PROTOCOL_ACCESS_KEY_ID',
