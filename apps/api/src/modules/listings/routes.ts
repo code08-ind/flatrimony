@@ -344,7 +344,6 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
       const userId = req.user!.id;
       await owner(userId, { write: true });
       const v = ifMatch(req.headers['if-match']);
-      // TODO(T3.8): content edits on a live listing re-run the automatic checks (docs/05 §8.6).
       if (req.body.areaId !== undefined && !(await repo.areaIsActive(req.body.areaId)))
         throw invalid([{ path: 'body.areaId', code: 'invalid', message: 'Unknown area' }]);
       try {
@@ -352,6 +351,7 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
       } catch (err) {
         fromListingError(err);
       }
+      // Content edits on a live listing re-ran the automatic checks in the same transaction.
       return current(userId, req.params.listingId, reply);
     },
   );
@@ -432,6 +432,8 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
             throw incomplete(missing);
         }
         try {
+          // Going live, the automatic checks decide between `active` and the moderation queue
+          // (`pending_review`; FR-LST-08), inside the same transaction (repository.ts).
           settle(await repo.act(userId, id, action), verb);
         } catch (err) {
           fromListingError(err);

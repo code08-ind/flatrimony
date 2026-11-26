@@ -19,6 +19,7 @@ import {
   type OwnerListing,
 } from '@flatrimony/shared';
 import type { Database } from '../../lib/db.js';
+import { holds, riskScore, runChecks, type Flag } from './checks.js';
 import type { FieldCipher } from '../../lib/field-crypto.js';
 
 /** A rule of the database the request broke (mapped to an API error by the routes). */
@@ -73,6 +74,10 @@ export interface ListingRepository {
     costs: ListingCosts,
     ifVersion?: string,
   ): Promise<WriteResult>;
+  /**
+   * A status change. Going live runs the automatic checks under the row lock: a finding that holds
+   * sends the listing to `pending_review` instead, recorded for the moderator (FR-LST-08).
+   */
   act(userId: string, id: string, action: ListingAction): Promise<WriteResult>;
   /** Puts a processed photo at `position`, replacing (and returning) the one there. */
   putPhoto(
@@ -143,6 +148,113 @@ const toFile = (r: {
   storage_bucket: string;
   storage_key: string;
 }): MediaFile => ({ id: r.id, kind: r.kind, bucket: r.storage_bucket, key: r.storage_key });
+
+/** Photos whose perceptual hashes differ in at most this many of 64 bits are the same picture. */
+export const DUPLICATE_PHOTO_BITS = 6;
+
+/** Findings for the moderator (private.listing_flags): kinds, fields, ids; never matched text. */
+async function recordFlags(tx: Transaction<DB>, id: string, all: Flag[]) {
+  if (all.length === 0) return;
+  // A kind already waiting for the moderator is not recorded twice.
+  const open = await tx
+    .selectFrom('private.listing_flags')
+    .select('kind')
+    .where('listing_id', '=', id)
+    .where('resolved_at', 'is', null)
+    .execute();
+  const flags = all.filter((f) => !open.some((o) => o.kind === f.kind));
+  if (flags.length === 0) return;
+  await tx
+    .insertInto('private.listing_flags')
+    .values(
+      flags.map((f) => ({
+        listing_id: id,
+        kind: f.kind,
+        weight: f.weight,
+        details: JSON.stringify(f.details),
+      })),
+    )
+    .execute();
+}
+
+/**
+ * The automatic checks (checks.ts) on the listing as it is inside this transaction: its text, rent
+ * and cost labels, photos matching an older photo of another owner (deleted listings included, so a
+ * broker cannot launder photos; never a newer copy, so a copier cannot get the original held), the
+ * same photo twice, and the rents of comparable live listings.
+ */
+async function inspect(tx: Transaction<DB>, id: string): Promise<Flag[]> {
+  const l = await tx
+    .selectFrom('listings')
+    .select(['title', 'description', 'rent_per_person_inr'])
+    .where('id', '=', id)
+    .executeTakeFirstOrThrow();
+  const costs = await tx
+    .selectFrom('listing_costs')
+    .select('one_time_costs')
+    .where('listing_id', '=', id)
+    .executeTakeFirst();
+  // TODO(scale): an indexed near-duplicate search (hash bands) before the photo table grows large.
+  const others = await sql<{ listing_id: string }>`
+    select distinct o.listing_id
+      from public.listing_media m
+      join public.listings ml on ml.id = m.listing_id
+      join public.listing_media o on o.kind = 'photo' and o.listing_id <> m.listing_id
+           and o.phash is not null and o.created_at < m.created_at
+           and bit_count(m.phash # o.phash) <= ${DUPLICATE_PHOTO_BITS}
+      join public.listings ol on ol.id = o.listing_id and ol.owner_id <> ml.owner_id
+     where m.listing_id = ${id} and m.kind = 'photo' and m.phash is not null
+     limit 20`.execute(tx);
+  const repeated = await sql<{ n: number }>`
+    select count(*)::int as n
+      from public.listing_media a
+      join public.listing_media b on b.listing_id = a.listing_id and b.kind = 'photo' and b.id > a.id
+           and b.phash is not null and bit_count(a.phash # b.phash) <= ${DUPLICATE_PHOTO_BITS}
+     where a.listing_id = ${id} and a.kind = 'photo' and a.phash is not null`.execute(tx);
+  const rents = await sql<{ rent: number }>`
+    select c.rent_per_person_inr as rent
+      from public.listings l
+      join public.listings c on c.area_id = l.area_id and c.bhk = l.bhk and c.id <> l.id
+           and c.owner_id <> l.owner_id
+           and c.status = 'active' and c.deleted_at is null
+     where l.id = ${id}
+     limit 200`.execute(tx);
+  return runChecks(
+    {
+      title: l.title,
+      description: l.description,
+      rentPerPersonInr: l.rent_per_person_inr,
+      costLabels: ((costs?.one_time_costs ?? []) as { label: string }[]).map((c) => c.label),
+    },
+    {
+      photoMatchesOtherOwners: others.rows.map((r) => r.listing_id),
+      photoRepeatedInListing: (repeated.rows[0]?.n ?? 0) > 0,
+      comparableRents: rents.rows.map((r) => r.rent),
+    },
+  );
+}
+
+/**
+ * After an edit of a live listing (or one already waiting for review), in the same transaction:
+ * new findings are recorded, and a live listing with a finding that holds leaves discovery for
+ * review. If the checks fail, the edit fails with them (nothing unchecked goes live).
+ */
+async function reviewAfterEdit(tx: Transaction<DB>, id: string) {
+  const row = await tx
+    .selectFrom('listings')
+    .select('status')
+    .where('id', '=', id)
+    .executeTakeFirstOrThrow();
+  if (row.status !== 'active' && row.status !== 'pending_review') return;
+  const flags = await inspect(tx, id);
+  await recordFlags(tx, id, flags);
+  if (row.status === 'active' && holds(flags))
+    await tx
+      .updateTable('listings')
+      .set({ status: 'pending_review', risk_score: riskScore(flags) })
+      .where('id', '=', id)
+      .execute();
+}
 
 const VERSION_SQL = sql<string>`(extract(epoch from l.updated_at) * 1000000)::bigint::text`;
 const iso = (v: Date | string | null) => (v === null ? null : new Date(v).toISOString());
@@ -523,6 +635,7 @@ export function pgListingRepository(
             })
             .where('id', '=', id)
             .execute();
+          await reviewAfterEdit(tx, id);
           return 'ok' as const;
         }),
       );
@@ -573,6 +686,7 @@ export function pgListingRepository(
             .onConflict((oc) => oc.column('listing_id').doUpdateSet(row))
             .execute();
           await touch(tx, id);
+          await reviewAfterEdit(tx, id);
           return 'ok' as const;
         }),
       );
@@ -593,12 +707,30 @@ export function pgListingRepository(
           if (!row) return 'not_found' as const;
           if (!from.includes(row.status)) return 'wrong_status' as const;
           const days = LISTING_LIMITS.confirmDays;
+          // Going live (not confirming a live listing): the checks run on the locked row, so a
+          // concurrent edit cannot slip past them.
+          const goesLive = to === 'active' && row.status !== 'active';
+          const flags = goesLive ? await inspect(tx, id) : [];
+          await recordFlags(tx, id, flags);
+          if (goesLive && holds(flags)) {
+            await tx
+              .updateTable('listings')
+              .set({
+                status: 'pending_review',
+                last_confirmed_at: sql`now()`,
+                risk_score: riskScore(flags),
+              })
+              .where('id', '=', id)
+              .execute();
+            return 'ok' as const;
+          }
           await tx
             .updateTable('listings')
             .set(
               to === 'active'
                 ? {
                     status: 'active',
+                    ...(goesLive ? { risk_score: riskScore(flags) } : {}),
                     published_at: sql`coalesce(published_at, now())`,
                     last_confirmed_at: sql`now()`,
                     expires_at: sql`now() + make_interval(days => ${days})`,
@@ -640,6 +772,7 @@ export function pgListingRepository(
             })
             .execute();
           await touch(tx, id);
+          await reviewAfterEdit(tx, id);
           return { result: 'ok', replaced: old ? toFile(old) : null };
         }),
       );

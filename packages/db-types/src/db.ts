@@ -300,6 +300,16 @@ export interface PrivateJobs {
   run_after: Generated<Timestamp>;
 }
 
+export interface PrivateListingFlags {
+  created_at: Generated<Timestamp>;
+  details: Generated<Json>;
+  id: Generated<string>;
+  kind: string;
+  listing_id: string;
+  resolved_at: Timestamp | null;
+  weight: number;
+}
+
 export interface PrivateUserContact {
   phone_hash: Buffer;
   updated_at: Generated<Timestamp>;
@@ -443,6 +453,7 @@ export interface DB {
   'private.email_verifications': PrivateEmailVerifications;
   'private.identity_records': PrivateIdentityRecords;
   'private.jobs': PrivateJobs;
+  'private.listing_flags': PrivateListingFlags;
   'private.user_contact': PrivateUserContact;
   profile_photos: ProfilePhotos;
   profiles: Profiles;
