@@ -1436,6 +1436,10 @@ Migration 0008 pulls `public.consents` and `public.devices` (§6.10) forward fro
   While a listing is in review or live, removing, moving or rejecting a part re-runs the media and parts checks (the owner check is not repeated). Moderation that rejects a needed photo or video must pause the listing in the same transaction. Other updates, such as expiry, risk score or confirming, are not blocked.
 - **Access:** all four tables have RLS on and no grants (API only). `location_exact` and `address_enc` are plain columns: the API must select listing columns explicitly, never `selectAll()`, so the pin and address are not leaked (FR-LST-06); ESLint enforces this in the API and worker.
 
+### 15.7 Joiners in listing text (T3.5, migration file 0012)
+
+`public.is_display_text(t)` is `is_human_text` after removing a zero-width joiner (U+200D) or non-joiner (U+200C) that sits between two visible characters. They shape Hindi conjuncts and join emoji sequences. `listings_title_chk` and `valid_one_time_costs` use it; names keep `is_human_text`, which refuses every zero-width character. It mirrors `displayText()` in `@flatrimony/shared`.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:

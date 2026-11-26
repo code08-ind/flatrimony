@@ -183,6 +183,35 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
     expect(mine.json().listings.map((x: { id: string }) => x.id)).toEqual([l.id]);
   });
 
+  it('titles and labels may join emoji and Hindi conjuncts (QA T3.5)', async () => {
+    const owner = await newUser();
+    const zwj = String.fromCodePoint(0x200d);
+    const family = ['👨', '👩', '👧'].join(zwj);
+    const l = await created(owner, { title: `Family flat ${family}` });
+    expect(l.title).toBe(`Family flat ${family}`);
+    const conjunct = `क्${zwj}ष शुल्क`;
+    const res = await call(owner, 'PUT', `/listings/${l.id}/costs`, {
+      ...costs,
+      oneTimeCosts: [{ label: conjunct, amountInr: 500 }],
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    // A joiner on its own is still not a title.
+    const bare = await call(owner, 'POST', '/listings', draft({ title: `${zwj}Room with view` }));
+    expect(bare.statusCode).toBe(422);
+  });
+
+  it('ten new drafts a day; refused requests do not count', async () => {
+    const owner = await newUser();
+    for (let i = 0; i < 12; i++)
+      expect((await call(owner, 'POST', '/listings', draft({ areaId: 32000 }))).statusCode).toBe(
+        422,
+      );
+    for (let i = 0; i < 10; i++) await created(owner);
+    const over = await call(owner, 'POST', '/listings', draft());
+    expect(over.statusCode).toBe(429);
+    expect(over.json().code).toBe('rate_limited');
+  });
+
   it('refuses what the database would: outside NCR, unknown area, a full flat, brokerage', async () => {
     const owner = await newUser();
     const paths = async (res: Awaited<ReturnType<typeof call>>) => {

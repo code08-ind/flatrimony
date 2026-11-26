@@ -13,7 +13,14 @@ import {
   ModerationStatus,
   RoomType,
 } from '../enums.js';
-import { humanText, IsoDate, IsoDateTime, isWellFormedText, LatLng, Uuid } from '../primitives.js';
+import {
+  displayText,
+  IsoDate,
+  IsoDateTime,
+  isWellFormedText,
+  LatLng,
+  Uuid,
+} from '../primitives.js';
 
 /**
  * Words that put a broker on the platform (FR-LST-03; no landlords or brokers): a one-time cost may
@@ -110,7 +117,7 @@ export const LISTING_LIMITS = {
   confirmDays: 7,
 } as const;
 
-const ListingTitle = humanText(LISTING_LIMITS.titleMaxChars).refine(
+const ListingTitle = displayText(LISTING_LIMITS.titleMaxChars).refine(
   (s) => [...s].length >= LISTING_LIMITS.titleMinChars,
   `At least ${LISTING_LIMITS.titleMinChars} characters`,
 );
@@ -184,7 +191,7 @@ const MonthlyInr = z.number().int().min(0).max(100_000);
 export const OneTimeCost = z
   .object({
     /** Never a broker's fee: the API answers `listing.brokerage_not_allowed` (mentionsBrokerage). */
-    label: humanText(40),
+    label: displayText(40),
     amountInr: z.number().int().min(0).max(1_000_000),
   })
   .strict();
