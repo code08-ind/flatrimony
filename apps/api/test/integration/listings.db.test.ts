@@ -483,14 +483,23 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
   // ------------------------------------------------------------------ media (T3.6)
   const android = { 'x-app-platform': 'android' };
 
-  /** A photo as the app sends it: a JPEG with GPS in its EXIF. */
-  const jpeg = (colour = '#6a4') =>
-    sharp({ create: { width: 900, height: 600, channels: 3, background: colour } })
+  /**
+   * A photo as the app sends it: a JPEG with GPS in its EXIF. Each call makes a different picture
+   * (random blocks), unless `pattern` is given: the same pattern is the same picture (T3.8).
+   */
+  const jpeg = (pattern: Buffer = randomBytes(16 * 12 * 3)) =>
+    sharp(pattern, { raw: { width: 16, height: 12, channels: 3 } })
+      .resize(900, 600, { kernel: 'nearest' })
       .jpeg()
       .withExif({ IFD0: { Make: 'TestPhone' }, IFD3: { GPSLatitudeRef: 'N' } })
       .toBuffer();
 
-  async function uploadPhoto(owner: { token: string }, listingId: string, position: number) {
+  async function uploadPhoto(
+    owner: { token: string },
+    listingId: string,
+    position: number,
+    pattern?: Buffer,
+  ) {
     const url = await call(owner, 'POST', `/listings/${listingId}/media/upload-url`, {
       kind: 'photo',
       contentType: 'image/jpeg',
@@ -498,7 +507,7 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
     });
     expect(url.statusCode, url.body).toBe(200);
     const { storageKey } = url.json() as { storageKey: string };
-    photoStore.objects.set(storageKey, await jpeg());
+    photoStore.objects.set(storageKey, await jpeg(pattern));
     return call(owner, 'POST', `/listings/${listingId}/media`, {
       kind: 'photo',
       storageKey,
@@ -705,6 +714,7 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
     expect((await uploadVideo(owner, l.id)).res.statusCode).toBe(201);
     const live = await call(owner, 'POST', `/listings/${l.id}/submit`);
     expect(live.statusCode, live.body).toBe(200);
+    expect(live.json().status).toBe('active');
 
     // Live: a photo cannot go below 3, but can be removed once a fourth is there.
     const media = OwnerListing.parse(live.json()).media;
@@ -788,5 +798,130 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
     videoStore.objects.set(video.json().storageKey, fakeMp4(45));
     expect((await call(owner, 'DELETE', `/listings/${l.id}`)).statusCode).toBe(204);
     expect(videoStore.objects.has(video.json().storageKey)).toBe(false);
+  });
+
+  // ------------------------------------------------------------------ automatic checks (T3.8)
+  /** A verified owner's complete draft, photos uploaded through the API. */
+  async function readyDraft(over: object = {}, pattern?: Buffer) {
+    const owner = await newUser();
+    await verify(owner.id);
+    const l = await created(owner, over);
+    await call(owner, 'PUT', `/listings/${l.id}/rules`, rules);
+    await call(owner, 'PUT', `/listings/${l.id}/costs`, costs);
+    for (const p of [0, 1, 2])
+      expect((await uploadPhoto(owner, l.id, p, p === 0 ? pattern : undefined)).statusCode).toBe(
+        201,
+      );
+    expect((await uploadVideo(owner, l.id)).res.statusCode).toBe(201);
+    return { owner, l };
+  }
+  const flagsOf = async (id: string) =>
+    (
+      await sql<{
+        kind: string;
+        details: Record<string, unknown>;
+      }>`select kind, details from private.listing_flags where listing_id = ${id} order by kind`.execute(
+        db,
+      )
+    ).rows;
+
+  it('a phone number in the text sends the listing to review, not live (FR-LST-08)', async () => {
+    const { owner, l } = await readyDraft({
+      description: 'Quiet flat. Call nine eight seven six five 43210 after 6.',
+    });
+    const res = await call(owner, 'POST', `/listings/${l.id}/submit`);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toMatchObject({ status: 'pending_review', expiresAt: null });
+    const flags = await flagsOf(l.id);
+    expect(flags).toEqual([{ kind: 'contact_details', details: { phoneIn: 'description' } }]);
+    // The finding never holds the number itself.
+    expect(JSON.stringify(flags)).not.toMatch(/[0-9]{4}/);
+  });
+
+  it("another owner's photo sends the listing to review; the same photo of one owner does not", async () => {
+    const stolen = randomBytes(16 * 12 * 3);
+    const first = await readyDraft({}, stolen);
+    expect((await call(first.owner, 'POST', `/listings/${first.l.id}/submit`)).json().status).toBe(
+      'active',
+    );
+    const copy = await readyDraft({}, stolen);
+    const res = await call(copy.owner, 'POST', `/listings/${copy.l.id}/submit`);
+    expect(res.json().status).toBe('pending_review');
+    const [flag] = await flagsOf(copy.l.id);
+    expect(flag).toMatchObject({ kind: 'duplicate_photo', details: { otherListings: first.l.id } });
+  });
+
+  it('a live listing that gains a phone number or a copied photo leaves discovery for review', async () => {
+    const { owner, l } = await readyDraft();
+    expect((await call(owner, 'POST', `/listings/${l.id}/submit`)).json().status).toBe('active');
+    // Editing the rent alone keeps it live.
+    const rent = await call(owner, 'PATCH', `/listings/${l.id}`, { rentPerPersonInr: 18500 });
+    expect(rent.json().status).toBe('active');
+    const edited = await call(owner, 'PATCH', `/listings/${l.id}`, {
+      title: 'Room for rent, WhatsApp 98765 43210',
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    expect(edited.json().status).toBe('pending_review');
+    expect((await flagsOf(l.id)).map((f) => f.kind)).toEqual(['contact_details']);
+
+    // Another live listing gets a photo that is already someone else's.
+    const other = await readyDraft();
+    expect((await call(other.owner, 'POST', `/listings/${other.l.id}/submit`)).json().status).toBe(
+      'active',
+    );
+    const shared = randomBytes(16 * 12 * 3);
+    await uploadPhoto(owner, l.id, 5, shared);
+    const res = await uploadPhoto(other.owner, other.l.id, 5, shared);
+    expect(res.statusCode).toBe(201);
+    expect(res.json().status).toBe('pending_review');
+  });
+
+  it('honest text goes live: "no brokerage", prices and dates are not findings', async () => {
+    const { owner, l } = await readyDraft({
+      title: 'No brokerage, 3 BHK in Sector 62',
+      description: 'Rent 18000 / 36000 deposit. Available 2026-12-15. Zero brokerage.',
+    });
+    const res = await call(owner, 'POST', `/listings/${l.id}/submit`);
+    expect(res.json().status).toBe('active');
+    expect(await flagsOf(l.id)).toEqual([]);
+  });
+
+  it('a copier cannot get the original held; held listings collect new findings', async () => {
+    const original = randomBytes(16 * 12 * 3);
+    const honest = await readyDraft({}, original);
+    expect(
+      (await call(honest.owner, 'POST', `/listings/${honest.l.id}/submit`)).json().status,
+    ).toBe('active');
+    // Someone copies the photo into their own draft (and could delete it again).
+    const copier = await readyDraft({}, original);
+    expect(
+      (await call(copier.owner, 'POST', `/listings/${copier.l.id}/submit`)).json().status,
+    ).toBe('pending_review');
+    // The honest listing's next new photo, or a confirm, does not hold it: its photo is the older one.
+    const more = await uploadPhoto(honest.owner, honest.l.id, 4);
+    expect(more.json().status).toBe('active');
+
+    // The copier edits the held listing: a phone number is recorded too, for the moderator.
+    await call(copier.owner, 'PATCH', `/listings/${copier.l.id}`, {
+      description: 'Call 98765 43210 to see it',
+    });
+    expect((await flagsOf(copier.l.id)).map((f) => f.kind)).toEqual([
+      'contact_details',
+      'duplicate_photo',
+    ]);
+  });
+
+  it('a phone number in a cost label of a live listing holds it', async () => {
+    const { owner, l } = await readyDraft();
+    expect((await call(owner, 'POST', `/listings/${l.id}/submit`)).json().status).toBe('active');
+    const res = await call(owner, 'PUT', `/listings/${l.id}/costs`, {
+      ...costs,
+      oneTimeCosts: [{ label: 'Call 98765 43210', amountInr: 0 }],
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().status).toBe('pending_review');
+    expect(await flagsOf(l.id)).toEqual([
+      { kind: 'contact_details', details: { phoneIn: 'costs' } },
+    ]);
   });
 });

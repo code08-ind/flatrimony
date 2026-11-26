@@ -1440,6 +1440,15 @@ Migration 0008 pulls `public.consents` and `public.devices` (§6.10) forward fro
 
 `public.is_display_text(t)` is `is_human_text` after removing a zero-width joiner (U+200D) or non-joiner (U+200C) that sits between two visible characters. They shape Hindi conjuncts and join emoji sequences. `listings_title_chk` and `valid_one_time_costs` use it; names keep `is_human_text`, which refuses every zero-width character. It mirrors `displayText()` in `@flatrimony/shared`.
 
+### 15.8 Automatic listing check findings (T3.8, migration file 0013)
+
+`private.listing_flags` records why a listing went to `pending_review` instead of going live (FR-LST-08), for the moderator (T6).
+
+- **Columns:** `kind` (`broker_words`, `contact_details`, `duplicate_photo`, `price_anomaly`), `weight` (1–100; `listings.risk_score` is their capped sum), `details` (a JSON object of at most 2 KB) and `resolved_at` (set by a moderator).
+- **No personal data:** `details` holds only field names, the other listing's id or the area median, never the matched text such as a phone number.
+- **Access:** RLS is on, nothing is granted to clients, and findings are deleted with their listing.
+- **Duplicate photos:** two photos are the same picture when their 64-bit perceptual hashes differ in at most 6 bits (`bit_count(a.phash # b.phash)`). Photos of other owners' listings are compared, deleted listings included.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:

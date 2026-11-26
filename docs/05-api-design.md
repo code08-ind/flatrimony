@@ -598,7 +598,13 @@ Server checks: object exists with matching size/hash; `durationS` 30–90; `reco
 - **Going live:**
   - `submit` (from `draft`), `confirm-available` (from `active` or `expired`) and `resume` (from `paused` or `expired`) need a `have_room` owner (`403 listing.not_allowed_for_intent`), verified with DigiLocker (`403 verification.required`), and a complete listing (`409 listing.incomplete`, one error per missing part);
   - other starting statuses give `409 conflict`;
-  - `submit` goes straight to `active` until the automatic checks exist (T3.8);
+  - going live runs the automatic checks (T3.8, FR-LST-08). A finding sends the listing to `pending_review` instead of `active` (no `expiresAt`), for a moderator (T6). The checks:
+    - broker words in the title or description ("no brokerage" and similar are fine);
+    - contact details: a phone number in any written form (digits, spaced groups, +91, Devanagari digits, English or Hindi number words), e-mail, links, messaging apps;
+    - a photo that matches another owner's listing (perceptual hash), or the same photo twice;
+    - a rent far from the median of at least 5 comparable live listings (same area and BHK).
+
+    The same checks run when a live listing's title, description, rent, area or BHK is edited, or it gets a new photo; a finding moves it to `pending_review`. Findings are stored for moderators without the matched text, and the owner is not told which check fired;
   - going live sets `expiresAt` 7 days ahead.
 - **Suspended owners** can still read, pause and delete their listings.
 - **Removed listings:** a listing a moderator removed is shown to its owner but cannot be edited; it can be deleted. A deleted listing is `404` everywhere.
