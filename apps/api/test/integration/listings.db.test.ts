@@ -14,7 +14,7 @@ import { loadEnv } from '../../src/env.js';
 import { createDatabase, type Database } from '../../src/lib/db.js';
 import { pgListingRepository } from '../../src/modules/listings/repository.js';
 import { memoryPhotoStorage } from '../../src/lib/photo-storage.js';
-import { mockIntegrityToken } from '../../src/lib/integrity.js';
+import { mockIntegrityToken, walkthroughRequestHash } from '../../src/lib/integrity.js';
 import { memoryVideoStorage, sha256 } from '../../src/lib/video-storage.js';
 import sharp from 'sharp';
 import { fakeMp4 } from '../helpers/mp4.js';
@@ -509,7 +509,12 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
   async function uploadVideo(
     owner: { token: string },
     listingId: string,
-    over: { file?: Buffer; body?: object; token?: (hash: string) => string } = {},
+    over: {
+      file?: Buffer;
+      body?: object;
+      /** (the request hash the API expects, the file's SHA-256) → token */
+      token?: (requestHash: string, fileHash: string) => string;
+    } = {},
   ) {
     const file = over.file ?? fakeMp4(45);
     const url = await call(
@@ -536,7 +541,10 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
         height: 720,
         capturedAt: new Date(Date.now() - 60_000).toISOString(),
         recordedInApp: true,
-        integrityToken: (over.token ?? mockIntegrityToken)(hash),
+        integrityToken: (over.token ?? ((request: string) => mockIntegrityToken(request)))(
+          walkthroughRequestHash(storageKey, hash),
+          hash,
+        ),
         ...over.body,
       },
       android,
@@ -669,6 +677,12 @@ describe.skipIf(!url)('/v1/listings on Postgres', () => {
       [
         'basic integrity only',
         { token: (h) => mockIntegrityToken(h, 'meets_basic_integrity') },
+        'integrity.failed',
+      ],
+      [
+        // A token for the file alone (or for this file on another upload or listing) is refused.
+        'token not bound to this upload',
+        { token: (_request, file) => mockIntegrityToken(file) },
         'integrity.failed',
       ],
     ];
