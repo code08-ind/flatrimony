@@ -44,7 +44,11 @@ import {
   type ListingMissing,
 } from '@flatrimony/shared';
 import { ImageError, processPhoto, withImageSlot } from '../../lib/image.js';
-import { IntegrityUnavailable, type IntegrityVerifier } from '../../lib/integrity.js';
+import {
+  IntegrityUnavailable,
+  walkthroughRequestHash,
+  type IntegrityVerifier,
+} from '../../lib/integrity.js';
 import { UPLOAD_URL_TTL_SECONDS, type PhotoStorage } from '../../lib/photo-storage.js';
 import {
   mp4Header,
@@ -705,7 +709,11 @@ export const listingRoutes: FastifyPluginAsyncZod<ListingRoutesOptions> = async 
           });
           let verdict;
           try {
-            verdict = await opts.integrity.verify(body.integrityToken, body.sha256);
+            // Bound to this upload (its key names the listing), not only to the file.
+            verdict = await opts.integrity.verify(
+              body.integrityToken,
+              walkthroughRequestHash(body.storageKey, body.sha256),
+            );
           } catch (err) {
             if (err instanceof IntegrityUnavailable) {
               req.log.warn({ err: err.message }, 'integrity check unavailable');

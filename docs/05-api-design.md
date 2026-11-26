@@ -614,7 +614,7 @@ Server checks: object exists with matching size/hash; `durationS` 30–90; `reco
     2. the file is an MP4;
     3. its own duration is 30–90 s (whole seconds) and within 2 s of `durationS` (the file's length is stored);
     4. `capturedAt` is within 24 h, and so is the MP4's own creation time when the recorder wrote one (and it is within 10 minutes of `capturedAt`);
-    5. the Play Integrity token is for this file's hash and says `meets_device_integrity`.
+    5. the Play Integrity token says `meets_device_integrity` and was issued for this upload: its request hash is SHA-256 (hex) of `<storageKey>:<file SHA-256 hex>`. The key names the listing and the upload, so a token cannot be reused for the same file on another listing or upload.
 
     A refused upload is deleted. A passing one is moved to `<listing>/<uuid>.mp4`, replacing (and deleting) the previous video.
   - Both confirms answer `201` with the owner's view. Errors: `422 listing.video_invalid` (`hash_mismatch`, `not_mp4`, `duration`, `old`, `too_large`), `403 integrity.failed` (web clients, or a bad or weak token), `422` with `invalid_key` or `upload_missing`, `503` when storage or the integrity check is down.

@@ -7,6 +7,18 @@
  * T3.6). Until then `mock` decodes `mock.<base64url JSON>` tokens that tests and local runs make with
  * `mockIntegrityToken`; production refuses the mock (env.ts).
  */
+import { createHash } from 'node:crypto';
+
+/**
+ * The request hash a walkthrough's integrity token must be issued for: SHA-256 (lower-case hex) of
+ * `<storageKey>:<file SHA-256 hex>`. The storage key names the listing and this one upload, so a
+ * token cannot be replayed for the same file on another listing or another upload (the Android
+ * app computes the same value before asking Google for the token; T3.7).
+ */
+export function walkthroughRequestHash(storageKey: string, fileSha256Hex: string): string {
+  return createHash('sha256').update(`${storageKey}:${fileSha256Hex}`).digest('hex');
+}
+
 export type IntegrityVerdict =
   | 'meets_device_integrity'
   | 'meets_basic_integrity'
