@@ -269,7 +269,7 @@
       "verificationSub": "DigiLocker identity check",
       "verified": "Verified",
       "notVerified": "Not verified",
-      "verifySub": "Verify with DigiLocker to start chatting."
+      "verifySub": "Verify now with DigiLocker to start chatting."
     },
     "pause": {
       "title": "Pause my profile",
@@ -469,14 +469,13 @@
       "body": "Everyone you chat with on Flatrimony is verified with DigiLocker.",
       "minute": "Takes about a minute",
       "minuteSub": "A quick digital check with your official identity records.",
-      "privacy": "Only name, age and gender",
-      "privacySub": "We check your name, age and gender. Your documents are never stored.",
+      "privacy": "Only what verifies you",
+      "privacySub": "We keep your name, date of birth, gender and a coded DigiLocker reference (so one person has one account). Never your documents.",
       "badge": "Unlocks the Verified badge",
       "badgeSub": "Verified profiles earn trust before sharing a home.",
-      "consent": "By continuing, you agree that Flatrimony gets your name, date of birth and gender from DigiLocker to verify you.",
+      "consent": "By continuing, you agree that Flatrimony gets your name, date of birth, gender and DigiLocker reference from DigiLocker to verify you, and keeps them as described above.",
       "start": "Verify with DigiLocker",
-      "notNow": "Not now",
-      "poweredBy": "Through a licensed DigiLocker partner"
+      "notNow": "Not now"
     },
     "waiting": {
       "title": "Finish in DigiLocker",
@@ -494,9 +493,11 @@
     "failed": {
       "nameMismatch": {
         "title": "Your display name doesn’t match your ID",
-        "body": "Use your first name as it is on DigiLocker, so people know you’re real.",
+        "body": "Use your first name in English letters, as it is on DigiLocker, so people know you’re real.",
         "label": "Display name",
-        "retry": "Update and retry"
+        "retry": "Update and retry",
+        "latinOnly": "Type your name in English letters (A–Z), as on DigiLocker.",
+        "unchanged": "Change the name above to your first name as on DigiLocker."
       },
       "underage": {
         "title": "You need to be 18 or older",
@@ -524,9 +525,10 @@
       "body": "The DigiLocker link has expired. Please start again."
     },
     "timeout": {
-      "title": "Still checking",
-      "body": "DigiLocker is taking longer than usual. Check again in a moment.",
-      "check": "Check again"
+      "title": "Not finished yet",
+      "body": "If you finished in DigiLocker, check again. If you closed it, start again.",
+      "check": "Check again",
+      "restart": "Start again"
     },
     "tryAgain": "Try again",
     "done": "Done",
@@ -535,9 +537,10 @@
       "network": "Couldn’t start. Check your connection and try again.",
       "inProgress": "A verification is already starting. Try again in a moment.",
       "tooMany": "Too many attempts. Please try again later.",
-      "notOpen": "Verification isn’t open yet. Please try again later.",
+      "notOpen": "Verification isn’t available right now. Please try again later.",
       "generic": "Something went wrong. Please try again.",
       "status": "Couldn’t check the status. Check your connection."
-    }
+    },
+    "close": "Close"
   }
 }

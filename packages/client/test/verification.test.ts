@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Verification } from '@flatrimony/shared';
 import { messages } from '@flatrimony/i18n';
 import {
+  hasLatinLetter,
   outcomeCopy,
   outcomeOf,
   pollVerification,
@@ -102,8 +103,38 @@ describe('opening the verify screen again', () => {
     });
     expect(resumeFrom([failed], T0 + RESUME_WINDOW_MS + 1)).toBeNull();
     expect(resumeFrom([], T0)).toBeNull();
+    // Lazily expired (no completedAt): its expiry is when it ended.
+    const lapsed = attempt({ status: 'expired' });
+    expect(resumeFrom([lapsed], T0 + 11 * 60_000)).toEqual({
+      outcome: { kind: 'expired' },
+      id: lapsed.id,
+    });
+    expect(resumeFrom([lapsed], T0 + 10 * 60_000 + RESUME_WINDOW_MS + 1)).toBeNull();
+    // A recent success shows; outcomes a retry cannot change stay, however old.
+    const ok = attempt({ status: 'verified', completedAt: new Date(T0).toISOString() });
+    expect(resumeFrom([ok], T0 + 1_000)).toEqual({ outcome: { kind: 'verified' }, id: ok.id });
+    for (const code of ['underage', 'identity_in_use', 'banned'] as const) {
+      const final = attempt({
+        status: 'failed',
+        failureCode: code,
+        completedAt: new Date(T0).toISOString(),
+      });
+      expect(resumeFrom([final], T0 + 30 * 24 * 3600_000)).toEqual({
+        outcome: { kind: 'failed', code },
+        id: final.id,
+      });
+    }
     // Only DigiLocker attempts, newest first as the API lists them.
     expect(resumeFrom([attempt({ type: 'work_email' })], T0)).toBeNull();
+  });
+});
+
+describe('names DigiLocker can match', () => {
+  it('need at least one English letter', () => {
+    expect(hasLatinLetter('Meera')).toBe(true);
+    expect(hasLatinLetter('मीरा')).toBe(false);
+    expect(hasLatinLetter('मीरा Mi')).toBe(true);
+    expect(hasLatinLetter('A')).toBe(false); // an initial never matches
   });
 });
 

@@ -73,6 +73,15 @@ export async function pollVerification(
   }
 }
 
+/** Outcomes a new attempt cannot change: shown again whenever the verify screen opens. */
+const FINAL = new Set<VerificationFailureCode>(['underage', 'identity_in_use', 'banned']);
+
+/**
+ * DigiLocker gives names in English letters, so a display name without a word of at least two
+ * (typed in Devanagari, or a single initial) can never match it (docs/07 T3.1 founder decision 1).
+ */
+export const hasLatinLetter = (name: string) => /[A-Za-z]{2,}/.test(name);
+
 /** How long a finished attempt is still shown when the verify screen opens again. */
 export const RESUME_WINDOW_MS = 15 * 60_000;
 
@@ -88,10 +97,13 @@ export function resumeFrom(
   const latest = attempts.find((a) => a.type === 'digilocker');
   if (!latest) return null;
   if (latest.status === 'pending') return { wait: latest.id };
+  const outcome = outcomeOf(latest);
+  if (!outcome) return null;
+  // What a new attempt cannot change stays on screen (each start is a paid provider session).
+  if (outcome.kind === 'failed' && FINAL.has(outcome.code)) return { outcome, id: latest.id };
   const ended = Date.parse(latest.completedAt ?? latest.expiresAt ?? latest.startedAt);
   if (Number.isNaN(ended) || now - ended > RESUME_WINDOW_MS) return null;
-  const outcome = outcomeOf(latest);
-  return outcome ? { outcome, id: latest.id } : null;
+  return { outcome, id: latest.id };
 }
 
 /** What to say about an outcome, and what the user can do next. */

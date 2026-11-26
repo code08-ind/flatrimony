@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { useMe } from '../../../src/me';
 import { Avatar } from '../../../src/profile/Avatar';
 import { PauseRow } from '../../../src/profile/PauseRow';
@@ -24,7 +25,14 @@ const CATEGORY_LABEL = {
  */
 export default function ProfileTab() {
   const { t, locale } = useT();
-  const { me } = useMe();
+  const { me, refresh } = useMe();
+  // Back on the tab: the profile may have changed elsewhere (a verification that finished after
+  // the verify screen was left, say).
+  useFocusEffect(
+    useCallback(() => {
+      void refresh({ quiet: true });
+    }, [refresh]),
+  );
   if (!me) return null;
   const percent = me.biodataCompletion;
   const answered = me.scenarioAnswers?.length ?? 0;
