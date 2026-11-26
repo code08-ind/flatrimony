@@ -66,6 +66,7 @@ const b = upsert(apiEnv, {
 // service-role key (a well-known default of the Supabase CLI, local only) lets the API use Storage.
 let anonKey = '';
 let serviceRoleKey = '';
+let s3 = null;
 try {
   const status = execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
     cwd: root,
@@ -74,6 +75,15 @@ try {
   });
   anonKey = /^ANON_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
   serviceRoleKey = /^SERVICE_ROLE_KEY="?([^"\n]+)"?$/m.exec(status)?.[1] ?? '';
+  // Walkthrough videos (T3.6): the local stand-in for R2 is Storage's S3 endpoint.
+  const field = (name) => new RegExp(`^${name}="?([^"\\n]+)"?$`, 'm').exec(status)?.[1];
+  const [endpoint, keyId, secret, region] = [
+    'STORAGE_S3_URL',
+    'S3_PROTOCOL_ACCESS_KEY_ID',
+    'S3_PROTOCOL_ACCESS_KEY_SECRET',
+    'S3_PROTOCOL_REGION',
+  ].map(field);
+  if (endpoint && keyId && secret) s3 = { endpoint, keyId, secret, region: region ?? 'local' };
 } catch {
   // Supabase not running: the mobile file is written without the key; re-run after `supabase start`.
 }
@@ -82,6 +92,15 @@ if (serviceRoleKey)
     ...upsert(apiEnv, {
       SUPABASE_URL: 'http://127.0.0.1:54321',
       SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    }),
+  );
+if (s3)
+  b.push(
+    ...upsert(apiEnv, {
+      R2_ENDPOINT: s3.endpoint,
+      R2_REGION: s3.region,
+      R2_ACCESS_KEY_ID: s3.keyId,
+      R2_SECRET_ACCESS_KEY: s3.secret,
     }),
   );
 // The worker (apps/worker): direct database connection, and Storage for the upload sweep.

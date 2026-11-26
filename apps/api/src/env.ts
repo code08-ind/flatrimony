@@ -127,6 +127,20 @@ export const EnvSchema = z.object({
    */
   PLACES_PROVIDER: z.enum(['mock', 'google']).default('mock'),
   GOOGLE_PLACES_API_KEY: z.string().min(1).optional(),
+  /**
+   * Walkthrough video storage (T3.6): Cloudflare R2's S3 API, or locally Supabase Storage's S3
+   * endpoint (`supabase status`). Without it the video upload routes answer 503.
+   */
+  R2_ENDPOINT: z.url().optional(),
+  R2_REGION: z.string().min(1).default('auto'),
+  R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+  R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  R2_BUCKET: z.string().min(1).default('r2-walkthroughs'),
+  /**
+   * Play Integrity verification of walkthrough uploads (T3.6). Only `mock` exists until the Play
+   * Console project and its service account exist (docs/07 T3.6, Blocked); refused in production.
+   */
+  PLAY_INTEGRITY_PROVIDER: z.enum(['mock']).default('mock'),
   APP_VERSION: z.string().default('0.0.0'),
 });
 
@@ -153,6 +167,17 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   }
   if (env.APP_ENV === 'production' && env.DIGILOCKER_PROVIDER === 'mock') {
     throw new Error('DIGILOCKER_PROVIDER=mock is not allowed in production');
+  }
+  if (env.APP_ENV === 'production' && env.PLAY_INTEGRITY_PROVIDER === 'mock') {
+    throw new Error('PLAY_INTEGRITY_PROVIDER=mock is not allowed in production');
+  }
+  if (
+    env.APP_ENV === 'production' &&
+    !(env.R2_ENDPOINT && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY)
+  ) {
+    throw new Error(
+      'R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required in production',
+    );
   }
   if (env.APP_ENV === 'production' && env.SMS_PROVIDER === 'mock') {
     throw new Error('SMS_PROVIDER=mock is not allowed in production');

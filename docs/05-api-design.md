@@ -604,7 +604,23 @@ Server checks: object exists with matching size/hash; `durationS` 30–90; `reco
 - **Removed listings:** a listing a moderator removed is shown to its owner but cannot be edited; it can be deleted. A deleted listing is `404` everywhere.
 - **Brokerage:** a one-time cost naming a broker, agent, commission or dalal (look-alike spellings included) is `422 listing.brokerage_not_allowed`.
 - **Others' view:** a listing that is not the caller's is `404` until discovery brings the others' view (`ListingSummary`, women-only rule).
-- **Media:** the upload, confirm and delete endpoints come with T3.6. Delete must also remove the stored file.
+- **Media (T3.6):**
+  - `upload-url` gives `{ uploadUrl, storageKey, expiresAt }`:
+    - a photo (JPEG or WebP, ≤ 8 MB) is a Supabase signed upload to `<listing>/uploads/<uuid>` in `listing-photos`, valid 2 h;
+    - the video (`video/mp4`, ≤ 25 MB, Android only) is a 10-minute presigned R2 PUT to `uploads/<listing>/<uuid>.mp4`, with its size and type signed.
+  - **Confirming a photo** (`{ kind: "photo", storageKey, position }`): the photo is re-encoded as a WebP without metadata (as profile photos, §8.3) at `<listing>/<uuid>.webp`. A photo already at that position is replaced and its file deleted. The original is deleted.
+  - **Confirming the video:** the API reads the file (streamed, capped at 25 MB) and checks, in order:
+    1. the SHA-256 matches;
+    2. the file is an MP4;
+    3. its own duration is 30–90 s (whole seconds) and within 2 s of `durationS` (the file's length is stored);
+    4. `capturedAt` is within 24 h, and so is the MP4's own creation time when the recorder wrote one (and it is within 10 minutes of `capturedAt`);
+    5. the Play Integrity token is for this file's hash and says `meets_device_integrity`.
+
+    A refused upload is deleted. A passing one is moved to `<listing>/<uuid>.mp4`, replacing (and deleting) the previous video.
+  - Both confirms answer `201` with the owner's view. Errors: `422 listing.video_invalid` (`hash_mismatch`, `not_mp4`, `duration`, `old`, `too_large`), `403 integrity.failed` (web clients, or a bad or weak token), `422` with `invalid_key` or `upload_missing`, `503` when storage or the integrity check is down.
+  - `DELETE …/media/{id}` removes the file too; a live listing cannot drop below 3 photos or lose its video (`409 listing.incomplete`). Media writes take `If-Match`.
+  - The owner's view carries 1-hour signed `url`s.
+  - Deleting a listing deletes its files and any staged uploads.
 
 ### 8.7 Discovery
 

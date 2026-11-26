@@ -126,12 +126,20 @@ public = false
 file_size_limit = "8MiB"
 allowed_mime_types = ["image/jpeg", "image/webp"]
 
-# Listing photos: <listing_id>/<uuid>.webp, re-encoded by the API (docs/04 §8.4). Walkthrough
-# videos go to R2, not here.
+# Listing photos: originals are uploaded to <listing_id>/uploads/ (JPEG from the camera, or WebP),
+# then re-encoded by the API as <listing_id>/<uuid>.webp (docs/04 §8.4). Walkthrough videos go to
+# R2, not here.
 [storage.buckets.listing-photos]
 public = false
 file_size_limit = "8MiB"
-allowed_mime_types = ["image/webp"]
+allowed_mime_types = ["image/jpeg", "image/webp"]
+
+# Walkthrough videos: Cloudflare R2 outside local (docs/03 ADR-0010); locally the API reaches this
+# bucket through Supabase Storage's S3 endpoint, the same S3 calls it makes to R2 (T3.6).
+[storage.buckets.r2-walkthroughs]
+public = false
+file_size_limit = "25MiB"
+allowed_mime_types = ["video/mp4"]
 
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]

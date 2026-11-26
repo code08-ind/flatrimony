@@ -53,10 +53,13 @@ export interface ListingRepository {
   create(userId: string, input: CreateListingRequest): Promise<string>;
   /** Listings the user created in the last `windowMs`, deleted ones included. */
   createdSince(userId: string, windowMs: number): Promise<number>;
-  /** The caller's listing (not deleted), with its ETag version; null otherwise. */
-  get(userId: string, id: string): Promise<{ listing: OwnerListing; version: string } | null>;
+  /**
+   * The caller's listing (not deleted), with its ETag version and where its media files are (the
+   * routes sign view URLs; `url` is null here); null otherwise.
+   */
+  get(userId: string, id: string): Promise<Loaded | null>;
   /** The caller's listings, newest first (at most 50: an owner lists a room, rarely a few). */
-  listMine(userId: string): Promise<OwnerListing[]>;
+  listMine(userId: string): Promise<Loaded[]>;
   patch(userId: string, id: string, patch: ListingPatch, ifVersion?: string): Promise<WriteResult>;
   putRules(
     userId: string,
@@ -71,7 +74,75 @@ export interface ListingRepository {
     ifVersion?: string,
   ): Promise<WriteResult>;
   act(userId: string, id: string, action: ListingAction): Promise<WriteResult>;
+  /** Puts a processed photo at `position`, replacing (and returning) the one there. */
+  putPhoto(
+    userId: string,
+    id: string,
+    photo: PhotoWrite,
+    ifVersion?: string,
+  ): Promise<MediaWriteResult>;
+  /** Sets the walkthrough video, replacing (and returning) the previous one. */
+  putVideo(
+    userId: string,
+    id: string,
+    video: VideoWrite,
+    ifVersion?: string,
+  ): Promise<MediaWriteResult>;
+  /** Removes one photo or the video; returns its file. */
+  deleteMedia(
+    userId: string,
+    id: string,
+    mediaId: string,
+    ifVersion?: string,
+  ): Promise<MediaWriteResult>;
+  /** Every media file of the caller's listing (to delete them with the listing). */
+  mediaFiles(userId: string, id: string): Promise<MediaFile[]>;
 }
+
+/** Where a media file is stored. */
+export interface MediaFile {
+  id: string;
+  kind: 'photo' | 'walkthrough_video';
+  bucket: string;
+  key: string;
+}
+
+export interface Loaded {
+  listing: OwnerListing;
+  version: string;
+  files: MediaFile[];
+}
+
+export interface PhotoWrite {
+  key: string;
+  position: number;
+  sha256: Buffer;
+  /** 64 characters of 0/1. */
+  phash: string;
+  width: number;
+  height: number;
+}
+
+export interface VideoWrite {
+  key: string;
+  sha256: Buffer;
+  durationS: number;
+  width: number | null;
+  height: number | null;
+  capturedAt: string;
+  integrityVerdict: 'meets_device_integrity' | 'meets_basic_integrity' | 'failed' | 'unverified';
+}
+
+/** A media write: done (with the file it replaced or removed), or why not. */
+export type MediaWriteResult =
+  { result: 'ok'; replaced: MediaFile | null } | { result: Exclude<WriteResult, 'ok'> };
+
+const toFile = (r: {
+  id: string;
+  kind: 'photo' | 'walkthrough_video';
+  storage_bucket: string;
+  storage_key: string;
+}): MediaFile => ({ id: r.id, kind: r.kind, bucket: r.storage_bucket, key: r.storage_key });
 
 const VERSION_SQL = sql<string>`(extract(epoch from l.updated_at) * 1000000)::bigint::text`;
 const iso = (v: Date | string | null) => (v === null ? null : new Date(v).toISOString());
@@ -228,7 +299,16 @@ export function pgListingRepository(
         .execute(),
       db
         .selectFrom('listing_media')
-        .select(['id', 'listing_id', 'kind', 'position', 'duration_s', 'moderation_status'])
+        .select([
+          'id',
+          'listing_id',
+          'kind',
+          'position',
+          'duration_s',
+          'moderation_status',
+          'storage_bucket',
+          'storage_key',
+        ])
         .where('listing_id', 'in', found)
         .orderBy('kind')
         .orderBy('position')
@@ -297,6 +377,7 @@ export function pgListingRepository(
           position: m.position,
           durationS: m.duration_s,
           moderationStatus: m.moderation_status,
+          url: null,
         })),
         missing,
         lastConfirmedAt: iso(r.last_confirmed_at),
@@ -305,7 +386,13 @@ export function pgListingRepository(
         createdAt: iso(r.created_at)!,
         updatedAt: iso(r.updated_at)!,
       };
-      return { listing, version: r.version };
+      const files: MediaFile[] = md.map((m) => ({
+        id: m.id,
+        kind: m.kind,
+        bucket: m.storage_bucket,
+        key: m.storage_key,
+      }));
+      return { listing, version: r.version, files };
     });
   }
 
@@ -392,12 +479,10 @@ export function pgListingRepository(
         .orderBy('created_at', 'desc')
         .limit(50)
         .execute();
-      return (
-        await load(
-          userId,
-          ids.map((r) => r.id),
-        )
-      ).map((x) => x.listing);
+      return await load(
+        userId,
+        ids.map((r) => r.id),
+      );
     },
 
     async patch(userId, id, patch, ifVersion) {
@@ -527,6 +612,100 @@ export function pgListingRepository(
           return 'ok' as const;
         }),
       );
+    },
+    async putPhoto(userId, id, photo, ifVersion) {
+      return mapped(
+        db.transaction().execute(async (tx): Promise<MediaWriteResult> => {
+          const locked = await lock(tx, userId, id, ifVersion);
+          if (locked !== 'ok') return { result: locked };
+          const old = await tx
+            .deleteFrom('listing_media')
+            .where('listing_id', '=', id)
+            .where('kind', '=', 'photo')
+            .where('position', '=', photo.position)
+            .returning(['id', 'kind', 'storage_bucket', 'storage_key'])
+            .executeTakeFirst();
+          await tx
+            .insertInto('listing_media')
+            .values({
+              listing_id: id,
+              kind: 'photo',
+              storage_bucket: 'listing-photos',
+              storage_key: photo.key,
+              sha256: photo.sha256,
+              phash: photo.phash,
+              width: photo.width,
+              height: photo.height,
+              position: photo.position,
+            })
+            .execute();
+          await touch(tx, id);
+          return { result: 'ok', replaced: old ? toFile(old) : null };
+        }),
+      );
+    },
+
+    async putVideo(userId, id, video, ifVersion) {
+      return mapped(
+        db.transaction().execute(async (tx): Promise<MediaWriteResult> => {
+          const locked = await lock(tx, userId, id, ifVersion);
+          if (locked !== 'ok') return { result: locked };
+          const old = await tx
+            .deleteFrom('listing_media')
+            .where('listing_id', '=', id)
+            .where('kind', '=', 'walkthrough_video')
+            .returning(['id', 'kind', 'storage_bucket', 'storage_key'])
+            .executeTakeFirst();
+          await tx
+            .insertInto('listing_media')
+            .values({
+              listing_id: id,
+              kind: 'walkthrough_video',
+              storage_bucket: 'r2-walkthroughs',
+              storage_key: video.key,
+              sha256: video.sha256,
+              duration_s: video.durationS,
+              width: video.width,
+              height: video.height,
+              recorded_in_app: true,
+              captured_at: video.capturedAt,
+              integrity_verdict: video.integrityVerdict,
+              position: 0,
+            })
+            .execute();
+          await touch(tx, id);
+          return { result: 'ok', replaced: old ? toFile(old) : null };
+        }),
+      );
+    },
+
+    async deleteMedia(userId, id, mediaId, ifVersion) {
+      return mapped(
+        db.transaction().execute(async (tx): Promise<MediaWriteResult> => {
+          const locked = await lock(tx, userId, id, ifVersion);
+          if (locked !== 'ok') return { result: locked };
+          const gone = await tx
+            .deleteFrom('listing_media')
+            .where('id', '=', mediaId)
+            .where('listing_id', '=', id)
+            .returning(['id', 'kind', 'storage_bucket', 'storage_key'])
+            .executeTakeFirst();
+          if (!gone) return { result: 'not_found' };
+          await touch(tx, id);
+          return { result: 'ok', replaced: toFile(gone) };
+        }),
+      );
+    },
+
+    async mediaFiles(userId, id) {
+      const rows = await db
+        .selectFrom('listing_media as m')
+        .innerJoin('listings as l', 'l.id', 'm.listing_id')
+        .select(['m.id', 'm.kind', 'm.storage_bucket', 'm.storage_key'])
+        .where('l.id', '=', id)
+        .where('l.owner_id', '=', userId)
+        .execute();
+      return rows.map(toFile);
     },
   };
 }

@@ -8,7 +8,12 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from '../../src/db.js';
 import { createLogger } from '../../src/log.js';
-import { PHOTO_BUCKET, photoUploadSweep, staleUploads } from '../../src/tasks/photo-uploads.js';
+import {
+  LISTING_PHOTO_BUCKET,
+  PHOTO_BUCKET,
+  photoUploadSweep,
+  staleUploads,
+} from '../../src/tasks/photo-uploads.js';
 
 const URL = process.env.DATABASE_URL;
 
@@ -32,6 +37,9 @@ describe.skipIf(!URL)('photo upload sweep (Postgres)', () => {
     await sql`insert into storage.buckets (id, name) values (${other}, ${other}) on conflict do nothing`.execute(
       db,
     );
+    await sql`insert into storage.buckets (id, name) values (${LISTING_PHOTO_BUCKET}, ${LISTING_PHOTO_BUCKET}) on conflict do nothing`.execute(
+      db,
+    );
     const add = async (bucket: string, name: string, ageMinutes: number) => {
       names.push(name);
       await sql`insert into storage.objects (bucket_id, name, created_at)
@@ -44,6 +52,9 @@ describe.skipIf(!URL)('photo upload sweep (Postgres)', () => {
     await add(PHOTO_BUCKET, `${user}/uploads/fresh`, 30); // its upload URL is still valid
     await add(PHOTO_BUCKET, `${user}/old-final.webp`, 24 * 60); // a confirmed photo: never swept
     await add(other, `${user}/uploads/elsewhere`, 24 * 60); // another bucket
+    // A listing's abandoned original (T3.6), and one of its confirmed photos.
+    await add(LISTING_PHOTO_BUCKET, `${user}/uploads/listing-old`, 24 * 60);
+    await add(LISTING_PHOTO_BUCKET, `${user}/listing-final.webp`, 24 * 60);
   });
 
   afterAll(async () => {
@@ -78,6 +89,7 @@ describe.skipIf(!URL)('photo upload sweep (Postgres)', () => {
       keys.filter((k) => k.startsWith(user)).map((k) => `${bucket}:${k}`),
     );
     expect(ours.sort()).toEqual([
+      `${LISTING_PHOTO_BUCKET}:${user}/uploads/listing-old`,
       `${PHOTO_BUCKET}:${user}/uploads/old-1`,
       `${PHOTO_BUCKET}:${user}/uploads/old-2`,
     ]);

@@ -20,14 +20,14 @@ owner). Never make the bucket public.
 | File size limit | 8 MB |
 | Allowed MIME types | `image/jpeg`, `image/webp` |
 
-And for listing photos: `listing-photos`, not public, 8 MB, `image/webp` only (the API re-encodes).
+And for listing photos: `listing-photos`, not public, 8 MB, `image/jpeg` and `image/webp` (originals are uploaded under `<listing_id>/uploads/`; the API re-encodes them as WebP and deletes the original).
 
 ```sql
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('profile-photos', 'profile-photos', false, 8388608, array['image/jpeg', 'image/webp'])
 on conflict (id) do nothing;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('listing-photos', 'listing-photos', false, 8388608, array['image/webp'])
+values ('listing-photos', 'listing-photos', false, 8388608, array['image/jpeg', 'image/webp'])
 on conflict (id) do nothing;
 ```
 

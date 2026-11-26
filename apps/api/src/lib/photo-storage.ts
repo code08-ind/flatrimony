@@ -22,12 +22,17 @@ export interface PhotoStorage {
   list(prefix: string): Promise<{ key: string; createdAt: number }[]>;
 }
 
-export function supabasePhotoStorage(supabaseUrl: string, serviceRoleKey: string): PhotoStorage {
+export function supabasePhotoStorage(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  /** Profile photos by default; listing photos use 'listing-photos' (docs/04 §8.4). */
+  bucketName: string = PHOTO_BUCKET,
+): PhotoStorage {
   const client = new StorageClient(`${supabaseUrl.replace(/\/$/, '')}/storage/v1`, {
     apikey: serviceRoleKey,
     authorization: `Bearer ${serviceRoleKey}`,
   });
-  const bucket = () => client.from(PHOTO_BUCKET);
+  const bucket = () => client.from(bucketName);
   return {
     async createUploadUrl(key) {
       const { data, error } = await bucket().createSignedUploadUrl(key);

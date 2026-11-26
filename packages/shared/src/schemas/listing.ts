@@ -21,6 +21,7 @@ import {
   LatLng,
   Uuid,
 } from '../primitives.js';
+import { PHOTO_MAX_BYTES, PhotoUploadUrlResponse } from './me.js';
 
 /**
  * Words that put a broker on the platform (FR-LST-03; no landlords or brokers): a one-time cost may
@@ -241,6 +242,8 @@ export const ListingMediaItem = z.object({
   position: z.number().int(),
   durationS: z.number().int().nullable(),
   moderationStatus: ModerationStatus,
+  /** A 1-hour signed link; null when storage could not make one (reload later). */
+  url: z.string().nullable(),
 });
 export type ListingMediaItem = z.infer<typeof ListingMediaItem>;
 
@@ -282,3 +285,64 @@ export type OwnerListing = z.infer<typeof OwnerListing>;
 
 export const OwnerListingList = z.object({ listings: z.array(OwnerListing) });
 export type OwnerListingList = z.infer<typeof OwnerListingList>;
+
+/** A walkthrough video is at most 25 MB (docs/05 §8.6; 90 s of 720p from the in-app recorder). */
+export const VIDEO_MAX_BYTES = 25 * 1024 * 1024;
+
+/** `POST /v1/listings/:id/media/upload-url`: where to PUT one photo or the walkthrough video. */
+export const ListingMediaUploadUrlRequest = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('photo'),
+      contentType: z.enum(['image/jpeg', 'image/webp']),
+      sizeBytes: z.number().int().positive().max(PHOTO_MAX_BYTES),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('walkthrough_video'),
+      contentType: z.literal('video/mp4'),
+      sizeBytes: z.number().int().positive().max(VIDEO_MAX_BYTES),
+    })
+    .strict(),
+]);
+export type ListingMediaUploadUrlRequest = z.infer<typeof ListingMediaUploadUrlRequest>;
+
+/** The same shape as profile photos: PUT the file to `uploadUrl`, then confirm `storageKey`. */
+export const ListingMediaUploadUrlResponse = PhotoUploadUrlResponse;
+export type ListingMediaUploadUrlResponse = z.infer<typeof ListingMediaUploadUrlResponse>;
+
+/**
+ * `POST /v1/listings/:id/media`: confirm an upload. A photo takes a position (0-11; a photo already
+ * there is replaced). The video is recorded in the Android app, which sends its SHA-256, length,
+ * capture time and a Play Integrity token bound to that hash (FR-LST-05).
+ */
+export const ListingMediaConfirmRequest = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('photo'),
+      storageKey: z.string().min(1).max(200),
+      position: z
+        .number()
+        .int()
+        .min(0)
+        .max(LISTING_LIMITS.photosMax - 1),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('walkthrough_video'),
+      storageKey: z.string().min(1).max(200),
+      /** Lower-case hex SHA-256 of the file as uploaded. */
+      sha256: z.string().regex(/^[0-9a-f]{64}$/, 'Expected a lower-case hex SHA-256'),
+      durationS: z.number().int().min(30).max(90),
+      width: z.number().int().min(1).max(10000).optional(),
+      height: z.number().int().min(1).max(10000).optional(),
+      capturedAt: IsoDateTime,
+      /** Gallery videos are not accepted (FR-LST-05). */
+      recordedInApp: z.literal(true),
+      integrityToken: z.string().min(1).max(8000),
+    })
+    .strict(),
+]);
+export type ListingMediaConfirmRequest = z.infer<typeof ListingMediaConfirmRequest>;
