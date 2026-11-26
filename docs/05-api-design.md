@@ -590,6 +590,22 @@ Server checks: object exists with matching size/hash; `durationS` 30–90; `reco
 
 **Submit** `POST /listings/{id}/submit` checks: rules and costs present; 3–12 photos; 1 walkthrough video; owner verified (identity) — **listings require DigiLocker verification of the owner**; automatic checks pass. Returns `{ status: "active" | "pending_review", expiresAt }`.
 
+**As built (T3.5):**
+
+- Every owner route answers with the owner's view of the listing (`OwnerListing` in `@flatrimony/shared`, with an `ETag`), including `submit`, `confirm-available`, `pause` and `resume`. That view holds `status` and `expiresAt` among everything else, plus `missing` (what still blocks submitting: `rules`, `costs`, `photos`, `video`, `verification`) and `trueMonthlyPerPersonInr` (rent plus each person's share of the recurring costs).
+- `GET /me/listings` answers `{ listings: OwnerListing[] }`, newest first, at most 50, with no cursor (an owner lists a room, rarely a few).
+- `PATCH`, `PUT …/rules` and `PUT …/costs` take an optional `If-Match`: a stale one gives 412, and `*` or no header means the last write wins.
+- **Going live:**
+  - `submit` (from `draft`), `confirm-available` (from `active` or `expired`) and `resume` (from `paused` or `expired`) need a `have_room` owner (`403 listing.not_allowed_for_intent`), verified with DigiLocker (`403 verification.required`), and a complete listing (`409 listing.incomplete`, one error per missing part);
+  - other starting statuses give `409 conflict`;
+  - `submit` goes straight to `active` until the automatic checks exist (T3.8);
+  - going live sets `expiresAt` 7 days ahead.
+- **Suspended owners** can still read, pause and delete their listings.
+- **Removed listings:** a listing a moderator removed is shown to its owner but cannot be edited; it can be deleted. A deleted listing is `404` everywhere.
+- **Brokerage:** a one-time cost naming a broker, agent, commission or dalal (look-alike spellings included) is `422 listing.brokerage_not_allowed`.
+- **Others' view:** a listing that is not the caller's is `404` until discovery brings the others' view (`ListingSummary`, women-only rule).
+- **Media:** the upload, confirm and delete endpoints come with T3.6. Delete must also remove the stored file.
+
 ### 8.7 Discovery
 
 | Method | Path | Auth | Description | FR |

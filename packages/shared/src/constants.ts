@@ -91,6 +91,8 @@ export const RATE_LIMITS = {
   places: { limit: 60, windowMs: 60_000 },
   /** Starting DigiLocker verification (each start is a paid provider session). */
   verificationStart: { limit: 5, windowMs: 60 * 60_000 },
+  /** Creating listing drafts (an owner lists one room, rarely a few; T3.5). */
+  listingCreate: { limit: 10, windowMs: 24 * 60 * 60_000 },
 } as const;
 
 /** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */

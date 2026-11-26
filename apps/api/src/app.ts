@@ -55,6 +55,8 @@ import {
   type PlacesProvider,
 } from './modules/places/provider.js';
 import { placesRoutes } from './modules/places/routes.js';
+import type { ListingRepository } from './modules/listings/repository.js';
+import { listingRoutes } from './modules/listings/routes.js';
 
 export interface BuildOptions {
   env: Env;
@@ -82,6 +84,8 @@ export interface BuildOptions {
     hasher: IdentifierHasher;
     cipher: FieldCipher;
   }) => VerificationRepository;
+  /** Listings (Postgres in server.ts), built with the field cipher (addresses). Not served without it. */
+  listingRepo?: (deps: { cipher: FieldCipher }) => ListingRepository;
   /** DigiLocker provider (default: from DIGILOCKER_PROVIDER; tests inject their own). */
   digilocker?: DigiLockerProvider;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
@@ -142,6 +146,7 @@ export async function buildApp({
   otpStore,
   meRepo,
   verificationRepo,
+  listingRepo,
   digilocker,
   photoStorage,
   commutePreview,
@@ -301,6 +306,11 @@ export async function buildApp({
         key: dlKeys[0]!,
         ...(now ? { now } : {}),
       });
+  }
+
+  // Listings for their owners (T3.5). The address is encrypted with FIELD_ENCRYPTION_KEY.
+  if (listingRepo) {
+    await app.register(listingRoutes, { prefix: '/v1', repo: listingRepo({ cipher }) });
   }
 
   // Place search for the office/college picker (T2.8): the vendor key stays server-side.
