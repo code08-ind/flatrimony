@@ -269,7 +269,8 @@
       "verificationSub": "DigiLocker identity check",
       "verified": "Verified",
       "notVerified": "Not verified",
-      "verifySub": "Verify now with DigiLocker to start chatting."
+      "verifySub": "Verify now with DigiLocker to start chatting.",
+      "cantVerify": "Can’t be verified"
     },
     "pause": {
       "title": "Pause my profile",
@@ -488,7 +489,13 @@
     },
     "verified": {
       "title": "You’re verified",
-      "body": "Name, age and gender confirmed. Your Verified badge now shows on your Flat Biodata."
+      "body": "Name, age and gender confirmed. Your Verified badge now shows on your Flat Biodata.",
+      "tag": "Verified · Name, age and gender confirmed",
+      "age": "Age",
+      "ageValue": "{age} yrs",
+      "identity": "Name and gender",
+      "confirmed": "Confirmed with DigiLocker",
+      "startChatting": "Start chatting"
     },
     "failed": {
       "nameMismatch": {

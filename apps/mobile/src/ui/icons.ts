@@ -18,6 +18,7 @@ export { Check } from 'phosphor-react-native/src/icons/Check';
 export { CigaretteSlash } from 'phosphor-react-native/src/icons/CigaretteSlash';
 export { Clock } from 'phosphor-react-native/src/icons/Clock';
 export { Compass } from 'phosphor-react-native/src/icons/Compass';
+export { Fingerprint } from 'phosphor-react-native/src/icons/Fingerprint';
 export { ForkKnife } from 'phosphor-react-native/src/icons/ForkKnife';
 export { Globe } from 'phosphor-react-native/src/icons/Globe';
 export { GraduationCap } from 'phosphor-react-native/src/icons/GraduationCap';

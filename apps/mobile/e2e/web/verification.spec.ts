@@ -155,9 +155,13 @@ test('verify with DigiLocker: name mismatch → fix the name → verified', asyn
     ]);
     await consent(tab, 'MEERA SHARMA');
     await expect(page.getByRole('heading', { name: en.verification.verified.title })).toBeVisible();
-    // Age from the DigiLocker date of birth, never the name or the date itself.
-    // (the Profile tab underneath in the stack shows it too: the newest screen is last)
-    await expect(page.getByText(/^Meera, \d+$/).last()).toBeVisible();
+    // The confirmation card: age from the DigiLocker date of birth, never the name or the date.
+    const card = page.getByTestId('verify-confirmed');
+    await expect(card).toContainText(en.verification.verified.tag);
+    await expect(card).toContainText(/\d+ yrs/);
+    await expect(card).toContainText(en.verification.verified.confirmed);
+    await expect(card).not.toContainText('MEERA SHARMA');
+    await expect(page.getByTestId('verify-start-chatting')).toBeVisible();
   });
 
   await test.step('back on Profile the tile says Verified', async () => {

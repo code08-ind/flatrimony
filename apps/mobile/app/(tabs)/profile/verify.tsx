@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
+  Animated,
   AppState,
+  Easing,
   StyleSheet,
   Text,
   TextInput,
@@ -33,7 +35,14 @@ import { saveMe } from '../../../src/onboarding/save';
 import { textStyle, theme } from '../../../src/theme';
 import { useT } from '../../../src/useT';
 import { BackButton, PrimaryButton, SecondaryButton } from '../../../src/ui/buttons';
-import { Clock, LockSimple, SealCheck, ShieldCheck, WarningCircle } from '../../../src/ui/icons';
+import {
+  Clock,
+  Fingerprint,
+  LockSimple,
+  SealCheck,
+  ShieldCheck,
+  WarningCircle,
+} from '../../../src/ui/icons';
 import { Notice } from '../../../src/ui/Notice';
 import { Screen } from '../../../src/ui/Screen';
 
@@ -264,12 +273,21 @@ export default function VerifyScreen() {
             ) : null}
             {startsAgain ? consentLine : null}
             {copy.action === 'done' ? (
-              <PrimaryButton
-                testID="verify-done"
-                locale={locale}
-                label={t('verification.done')}
-                onPress={close}
-              />
+              <>
+                <PrimaryButton
+                  testID="verify-start-chatting"
+                  locale={locale}
+                  label={t('verification.verified.startChatting')}
+                  onPress={() => router.replace('/rishtas')}
+                />
+                <SecondaryButton
+                  testID="verify-done"
+                  locale={locale}
+                  label={t('verification.done')}
+                  trailingArrow={false}
+                  onPress={close}
+                />
+              </>
             ) : copy.action === 'edit_name' ? (
               <PrimaryButton
                 testID="verify-update-name"
@@ -333,12 +351,39 @@ export default function VerifyScreen() {
           <Text style={[textStyle('bodyLg', locale), styles.muted, styles.center]}>
             {t(copy.body)}
           </Text>
-          {verified && me?.age ? (
-            <Text style={[textStyle('label', locale), styles.muted]}>
-              {t('profile.nameAge', { name: me.displayName, age: me.age })}
-            </Text>
-          ) : null}
         </View>
+        {verified ? (
+          // Design M18's confirmation card, without the legal name or the gender value: the API
+          // never returns identity data, and the screen does not need it.
+          <View style={styles.card} testID="verify-confirmed">
+            <View style={styles.tag}>
+              <SealCheck size={16} color={theme.semantic.status.verified.fg} weight="fill" />
+              <Text
+                style={[textStyle('label', locale), { color: theme.semantic.status.verified.fg }]}
+              >
+                {t('verification.verified.tag')}
+              </Text>
+            </View>
+            {me?.age ? (
+              <View style={styles.fact}>
+                <Text style={[textStyle('body', locale), styles.muted]}>
+                  {t('verification.verified.age')}
+                </Text>
+                <Text style={[textStyle('label', locale), { color: theme.color.text.primary }]}>
+                  {t('verification.verified.ageValue', { age: me.age })}
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.fact}>
+              <Text style={[textStyle('body', locale), styles.muted]}>
+                {t('verification.verified.identity')}
+              </Text>
+              <Text style={[textStyle('label', locale), { color: theme.color.text.primary }]}>
+                {t('verification.verified.confirmed')}
+              </Text>
+            </View>
+          </View>
+        ) : null}
         {copy.action === 'edit_name' ? (
           <View style={styles.card}>
             <Text style={[textStyle('label', locale), { color: theme.color.text.primary }]}>
@@ -411,6 +456,7 @@ export default function VerifyScreen() {
           >
             {t('verification.checking.title')}
           </Text>
+          <CheckingBar key={phase.verificationId} running={phase.checking} />
           <Text style={[textStyle('bodyLg', locale), styles.muted, styles.center]}>
             {t('verification.waiting.body')}
           </Text>
@@ -450,7 +496,7 @@ export default function VerifyScreen() {
             testID="verify-start"
             locale={locale}
             label={t('verification.gate.start')}
-            icon={<ShieldCheck size={22} color={theme.semantic.action.primary.fg} weight="fill" />}
+            icon={<Fingerprint size={22} color={theme.semantic.action.primary.fg} weight="bold" />}
             busy={phase.step === 'starting'}
             onPress={() => void start()}
           />
@@ -494,7 +540,67 @@ export default function VerifyScreen() {
   );
 }
 
+/**
+ * Design M18's progress bar while DigiLocker answers. There is no real progress to report, so it
+ * eases towards 90 % over about half a minute and waits there; still with reduce motion.
+ */
+function CheckingBar({ running }: { running: boolean }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!running) return;
+    let anim: Animated.CompositeAnimation | null = null;
+    void AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (reduce) return progress.setValue(0.5);
+      anim = Animated.timing(progress, {
+        toValue: 0.9,
+        duration: 30_000,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      });
+      anim.start();
+    });
+    return () => anim?.stop();
+  }, [running, progress]);
+  return (
+    <View
+      style={styles.track}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
+      <Animated.View
+        style={[
+          styles.fill,
+          { width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) },
+        ]}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  track: {
+    alignSelf: 'stretch',
+    height: 6,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.color.brand.primarySubtle,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.color.brand.primary,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: theme.space['1'],
+    paddingHorizontal: theme.space['3'],
+    paddingVertical: theme.space['1'],
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.semantic.status.verified.bg,
+  },
+  fact: { flexDirection: 'row', justifyContent: 'space-between', gap: theme.space['3'] },
   titles: { gap: theme.space['2'] },
   overline: { color: theme.color.brand.primary, textTransform: 'uppercase' },
   muted: { color: theme.color.text.secondary },
