@@ -50,3 +50,6 @@ export { UserCircle } from 'phosphor-react-native/src/icons/UserCircle';
 export { UsersThree } from 'phosphor-react-native/src/icons/UsersThree';
 export { WarningCircle } from 'phosphor-react-native/src/icons/WarningCircle';
 export { X } from 'phosphor-react-native/src/icons/X';
+export { Stop } from 'phosphor-react-native/src/icons/Stop';
+export { VideoCamera } from 'phosphor-react-native/src/icons/VideoCamera';
+export { SpeakerSlash } from 'phosphor-react-native/src/icons/SpeakerSlash';

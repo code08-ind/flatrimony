@@ -289,6 +289,22 @@ export type OwnerListingList = z.infer<typeof OwnerListingList>;
 /** A walkthrough video is at most 25 MB (docs/05 §8.6; 90 s of 720p from the in-app recorder). */
 export const VIDEO_MAX_BYTES = 25 * 1024 * 1024;
 
+/** The in-app recorder (T3.7; FR-LST-05): 30–90 s of 720p H.264 without sound. */
+export const WALKTHROUGH = {
+  minSeconds: 30,
+  maxSeconds: 90,
+  /** 2 Mbit/s keeps 90 s of 720p under the 25 MB limit with room for the MP4 container. */
+  videoBitrate: 2_000_000,
+} as const;
+
+/**
+ * What a walkthrough's Play Integrity token is requested for: its SHA-256 (hex) is the token's
+ * request hash. The storage key names the listing and the one upload, so a token cannot be reused
+ * for the same file elsewhere (docs/05 §8.6). The app and the API both build it from this.
+ */
+export const walkthroughRequestHashInput = (storageKey: string, fileSha256Hex: string) =>
+  `${storageKey}:${fileSha256Hex}`;
+
 /** `POST /v1/listings/:id/media/upload-url`: where to PUT one photo or the walkthrough video. */
 export const ListingMediaUploadUrlRequest = z.discriminatedUnion('kind', [
   z

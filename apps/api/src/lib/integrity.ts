@@ -8,6 +8,7 @@
  * `mockIntegrityToken`; production refuses the mock (env.ts).
  */
 import { createHash } from 'node:crypto';
+import { walkthroughRequestHashInput } from '@flatrimony/shared';
 
 /**
  * The request hash a walkthrough's integrity token must be issued for: SHA-256 (lower-case hex) of
@@ -16,7 +17,9 @@ import { createHash } from 'node:crypto';
  * app computes the same value before asking Google for the token; T3.7).
  */
 export function walkthroughRequestHash(storageKey: string, fileSha256Hex: string): string {
-  return createHash('sha256').update(`${storageKey}:${fileSha256Hex}`).digest('hex');
+  return createHash('sha256')
+    .update(walkthroughRequestHashInput(storageKey, fileSha256Hex))
+    .digest('hex');
 }
 
 export type IntegrityVerdict =
