@@ -1,66 +1,277 @@
-/** Listing rules and true monthly cost (docs/05 §7, FR-LST-02..04). */
+/**
+ * Listings (docs/05 §7, §8.6; FR-LST-01..09): the owner's requests and views. Mirrors the checks
+ * of migration 0011 (docs/04 §15.6) so a bad value is a 422 with a field path, not a 500.
+ */
 import { z } from 'zod';
-import { FoodRule, GenderPreference, GuestsRule } from '../enums.js';
-import { Inr } from '../primitives.js';
+import {
+  Furnishing,
+  FoodRule,
+  GenderPreference,
+  GuestsRule,
+  ListingStatus,
+  MediaKind,
+  ModerationStatus,
+  RoomType,
+} from '../enums.js';
+import { humanText, IsoDate, IsoDateTime, isWellFormedText, LatLng, Uuid } from '../primitives.js';
 
-export const ListingRules = z.object({
-  bachelorsAllowed: z.boolean(),
-  foodRule: FoodRule,
-  guestsRule: GuestsRule,
-  petsAllowed: z.boolean(),
-  smokingAllowed: z.boolean(),
-  genderRule: GenderPreference,
-});
+/**
+ * Words that put a broker on the platform (FR-LST-03; no landlords or brokers): a one-time cost may
+ * not name them (the database's valid_one_time_costs has the plain list). Listing text is checked by
+ * the automatic listing checks instead (FR-LST-08), since "no brokerage" is an honest thing to write.
+ * Labels are folded first so look-alikes do not slip through: full-width letters (NFKC), Cyrillic
+ * and Greek look-alike letters, digits for letters, and spaces or symbols between letters.
+ */
+const BROKERAGE =
+  /broker|brokrage|dalal|dalaal|commis+ion|comis+ion|agent|agency|finder|ब्रोकर|दलाल|कमीशन|कमिशन/;
+const LOOKALIKES: Record<string, string> = {
+  а: 'a',
+  е: 'e',
+  о: 'o',
+  р: 'p',
+  с: 'c',
+  у: 'y',
+  х: 'x',
+  к: 'k',
+  м: 'm',
+  т: 't',
+  н: 'h',
+  в: 'b',
+  і: 'i',
+  ј: 'j',
+  ѕ: 's',
+  ԁ: 'd',
+  ɡ: 'g',
+  ο: 'o',
+  α: 'a',
+  ε: 'e',
+  ι: 'i',
+  κ: 'k',
+  ν: 'v',
+  ρ: 'p',
+  τ: 't',
+  χ: 'x',
+  '0': 'o',
+  '1': 'i',
+  '3': 'e',
+  '4': 'a',
+  '5': 's',
+  '7': 't',
+  '@': 'a',
+  $: 's',
+};
+const fold = (text: string) =>
+  [...text.normalize('NFKC').toLowerCase()]
+    .map((c) => LOOKALIKES[c] ?? c)
+    .join('')
+    // Keep letters and Devanagari marks; drop spaces, digits left over, dots, dashes, zero-widths.
+    .replace(/[^\p{L}\p{M}]/gu, '');
+export const mentionsBrokerage = (text: string) => BROKERAGE.test(fold(text));
+
+/** Delhi NCR with a margin (the database's listings_location_ncr_chk; docs/04 §15.6). */
+export const NCR_BOUNDS = { minLat: 27.8, maxLat: 29.2, minLng: 76.5, maxLng: 78.0 } as const;
+export const inNcr = ({ lat, lng }: LatLng) =>
+  lat >= NCR_BOUNDS.minLat &&
+  lat <= NCR_BOUNDS.maxLat &&
+  lng >= NCR_BOUNDS.minLng &&
+  lng <= NCR_BOUNDS.maxLng;
+
+const ListingLocation = LatLng.refine(inNcr, 'Pick a place in Delhi NCR');
+
+/** Free text people read, line breaks allowed (as the bio): 1..max characters. */
+function longText(max: number) {
+  return (
+    z
+      .string()
+      .trim()
+      .refine((s) => {
+        const n = [...s].length;
+        return n >= 1 && n <= max;
+      }, `Must be 1 to ${max} characters`)
+      .refine(
+        // eslint-disable-next-line no-control-regex -- matching control characters is the point
+        (s) => !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u202A-\u202E\u2066-\u2069]/u.test(s),
+        'Contains characters that cannot be shown',
+      )
+      .refine(isWellFormedText, 'Contains characters that cannot be shown')
+      // At least one character that shows (not only zero-width ones; QA T3.5).
+      .refine((s) => /[^\s\u200B-\u200F\u2060-\u2064\uFEFF\u00AD]/u.test(s), 'Write something')
+  );
+}
+
+export const LISTING_LIMITS = {
+  titleMinChars: 5,
+  titleMaxChars: 80,
+  descriptionMaxChars: 1000,
+  addressMaxChars: 300,
+  photosMin: 3,
+  photosMax: 12,
+  /** Days a confirmation keeps a listing live (FR-LST-07). */
+  confirmDays: 7,
+} as const;
+
+const ListingTitle = humanText(LISTING_LIMITS.titleMaxChars).refine(
+  (s) => [...s].length >= LISTING_LIMITS.titleMinChars,
+  `At least ${LISTING_LIMITS.titleMinChars} characters`,
+);
+
+const listingFields = {
+  title: ListingTitle,
+  description: longText(LISTING_LIMITS.descriptionMaxChars).nullable(),
+  areaId: z.number().int().positive().max(32767),
+  /** The exact pin: private (FR-LST-06); others see a point rounded to ~500 m. */
+  location: ListingLocation,
+  /** The full address: encrypted at rest, shown only to the owner (and a match after sharing). */
+  address: longText(LISTING_LIMITS.addressMaxChars).nullable(),
+  bhk: z.number().int().min(1).max(6),
+  roomType: RoomType,
+  furnishing: Furnishing,
+  availableFrom: IsoDate,
+  minLeaseMonths: z.number().int().min(1).max(36),
+  totalFlatmates: z.number().int().min(2).max(10),
+  currentFlatmates: z.number().int().min(1).max(9),
+  rentPerPersonInr: z.number().int().min(1000).max(200_000),
+  depositPerPersonInr: z.number().int().min(0).max(1_000_000),
+  offersVideoTour: z.boolean(),
+};
+
+const flatmatesFit = (l: { totalFlatmates?: number; currentFlatmates?: number }) =>
+  l.totalFlatmates === undefined ||
+  l.currentFlatmates === undefined ||
+  l.currentFlatmates < l.totalFlatmates;
+const flatmatesIssue = {
+  path: ['currentFlatmates'],
+  message: 'Fewer people live there now than the flat holds',
+};
+
+/** `POST /v1/listings`: a new draft (FR-LST-01, 02). */
+export const CreateListingRequest = z
+  .object({
+    ...listingFields,
+    description: listingFields.description.optional(),
+    address: listingFields.address.optional(),
+    minLeaseMonths: listingFields.minLeaseMonths.default(11),
+    offersVideoTour: listingFields.offersVideoTour.default(false),
+  })
+  .strict()
+  .refine(flatmatesFit, flatmatesIssue);
+export type CreateListingRequest = z.infer<typeof CreateListingRequest>;
+
+/** `PATCH /v1/listings/:id` (JSON Merge Patch: present fields change; `null` clears). */
+export const ListingPatch = z
+  .object(listingFields)
+  .partial()
+  .strict()
+  .refine((p) => Object.keys(p).length > 0, 'Nothing to change')
+  .refine(flatmatesFit, flatmatesIssue);
+export type ListingPatch = z.infer<typeof ListingPatch>;
+
+/** House rules (FR-LST-04): all required; they act as hard filters in discovery. */
+export const ListingRules = z
+  .object({
+    bachelorsAllowed: z.boolean(),
+    foodRule: FoodRule,
+    guestsRule: GuestsRule,
+    petsAllowed: z.boolean(),
+    smokingAllowed: z.boolean(),
+    genderRule: GenderPreference,
+  })
+  .strict();
 export type ListingRules = z.infer<typeof ListingRules>;
 
-const BROKERAGE = /brok(er|era)|dalal|दलाल/i;
+const MonthlyInr = z.number().int().min(0).max(100_000);
 
-export const OneTimeCost = z.object({
-  label: z.string().trim().min(1).max(60),
-  amountInr: Inr,
-});
+export const OneTimeCost = z
+  .object({
+    /** Never a broker's fee: the API answers `listing.brokerage_not_allowed` (mentionsBrokerage). */
+    label: humanText(40),
+    amountInr: z.number().int().min(0).max(1_000_000),
+  })
+  .strict();
+export type OneTimeCost = z.infer<typeof OneTimeCost>;
 
-/** Brokerage must be 0 (FR-LST-03): no landlords or brokers on the platform. */
+/**
+ * Each person's share of the monthly costs, plus one-time costs (FR-LST-03). There is no brokerage
+ * field: Flatrimony is broker-free, so it is not even accepted as input (docs/05 §8.6).
+ */
 export const ListingCosts = z
   .object({
-    maintenanceInr: Inr,
-    electricityEstimateInr: Inr,
-    wifiInr: Inr,
-    helpInr: Inr,
-    otherRecurringInr: Inr,
+    maintenanceInr: MonthlyInr,
+    electricityEstimateInr: MonthlyInr,
+    wifiInr: MonthlyInr,
+    helpInr: MonthlyInr,
+    otherRecurringInr: MonthlyInr,
     oneTimeCosts: z.array(OneTimeCost).max(10),
   })
-  .superRefine((costs, ctx) => {
-    costs.oneTimeCosts.forEach((c, i) => {
-      if (BROKERAGE.test(c.label) && c.amountInr !== 0) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['oneTimeCosts', i, 'amountInr'],
-          message: 'Brokerage is not allowed',
-          params: { errorCode: 'listing.brokerage_not_allowed' },
-        });
-      }
-    });
-  });
+  .strict();
 export type ListingCosts = z.infer<typeof ListingCosts>;
 
-/** Per-person monthly total shown on cards: rent + recurring costs (FR-LST-03). */
+/** What a person pays each month: rent plus their share of the recurring costs (FR-LST-03). */
 export function trueMonthlyPerPersonInr(
   rentPerPersonInr: number,
   costs: Pick<
     ListingCosts,
     'maintenanceInr' | 'electricityEstimateInr' | 'wifiInr' | 'helpInr' | 'otherRecurringInr'
   >,
-  sharingPeople: number,
 ): number {
-  if (!Number.isInteger(sharingPeople) || sharingPeople < 1) {
-    throw new RangeError('sharingPeople must be a positive integer');
-  }
-  const shared =
+  return (
+    rentPerPersonInr +
     costs.maintenanceInr +
     costs.electricityEstimateInr +
     costs.wifiInr +
     costs.helpInr +
-    costs.otherRecurringInr;
-  return rentPerPersonInr + Math.ceil(shared / sharingPeople);
+    costs.otherRecurringInr
+  );
 }
+
+/** What a listing still needs before it can be submitted (docs/04 §8.4). */
+export const ListingMissing = z.enum(['rules', 'costs', 'photos', 'video', 'verification']);
+export type ListingMissing = z.infer<typeof ListingMissing>;
+
+export const ListingMediaItem = z.object({
+  id: Uuid,
+  kind: MediaKind,
+  position: z.number().int(),
+  durationS: z.number().int().nullable(),
+  moderationStatus: ModerationStatus,
+});
+export type ListingMediaItem = z.infer<typeof ListingMediaItem>;
+
+/** A listing as its owner sees it: everything, including the exact pin and the address. */
+export const OwnerListing = z.object({
+  id: Uuid,
+  status: ListingStatus,
+  title: z.string(),
+  description: z.string().nullable(),
+  areaId: z.number().int(),
+  location: LatLng,
+  /** What others see: the pin rounded to ~500 m (FR-LST-06). */
+  approxLocation: LatLng,
+  address: z.string().nullable(),
+  bhk: z.number().int(),
+  roomType: RoomType,
+  furnishing: Furnishing,
+  availableFrom: IsoDate,
+  minLeaseMonths: z.number().int(),
+  totalFlatmates: z.number().int(),
+  currentFlatmates: z.number().int(),
+  rentPerPersonInr: z.number().int(),
+  depositPerPersonInr: z.number().int(),
+  offersVideoTour: z.boolean(),
+  rules: ListingRules.nullable(),
+  costs: ListingCosts.nullable(),
+  /** Rent plus recurring costs; null until the costs are filled in. */
+  trueMonthlyPerPersonInr: z.number().int().nullable(),
+  media: z.array(ListingMediaItem),
+  /** Empty when the listing can be submitted. */
+  missing: z.array(ListingMissing),
+  lastConfirmedAt: IsoDateTime.nullable(),
+  expiresAt: IsoDateTime.nullable(),
+  publishedAt: IsoDateTime.nullable(),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type OwnerListing = z.infer<typeof OwnerListing>;
+
+export const OwnerListingList = z.object({ listings: z.array(OwnerListing) });
+export type OwnerListingList = z.infer<typeof OwnerListingList>;

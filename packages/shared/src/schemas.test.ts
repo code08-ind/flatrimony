@@ -7,7 +7,10 @@ import {
   IndianPhone,
   LIMITS,
   Lifestyle,
+  CreateListingRequest,
   ListingCosts,
+  ListingPatch,
+  mentionsBrokerage,
   Me,
   OtpGuardRequest,
   Preferences,
@@ -268,28 +271,73 @@ describe('listings', () => {
     oneTimeCosts: [{ label: 'Setup', amountInr: 2000 }],
   };
 
-  it('allows zero brokerage only (FR-LST-03)', () => {
+  it('one-time costs never name a broker (FR-LST-03)', () => {
     expect(ListingCosts.safeParse(costs).success).toBe(true);
-    expect(
-      ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'Brokerage', amountInr: 0 }] })
-        .success,
-    ).toBe(true);
-    const bad = ListingCosts.safeParse({
-      ...costs,
-      oneTimeCosts: [{ label: 'Broker fee', amountInr: 5000 }],
-    });
-    expect(bad.success).toBe(false);
-    expect(bad.error?.issues[0]?.path).toEqual(['oneTimeCosts', 0, 'amountInr']);
-    expect(
-      ListingCosts.safeParse({ ...costs, oneTimeCosts: [{ label: 'दलाली', amountInr: 1 }] })
-        .success,
-    ).toBe(false);
+    // The API refuses these labels with listing.brokerage_not_allowed.
+    for (const label of ['Brokerage', 'Broker fee', 'दलाली', 'Agent fee', 'Commission'])
+      expect(mentionsBrokerage(label), label).toBe(true);
+    expect(mentionsBrokerage('Setup')).toBe(false);
+    // Look-alikes fold to the word (QA T3.5): digits, Cyrillic, full-width, spacing, Hindi, typos.
+    for (const label of [
+      'Br0kerage',
+      'Brоkerage',
+      'Ｂｒｏｋｅｒａｇｅ',
+      'B r o k e r a g e',
+      'Commision',
+      'Agency fee',
+      'ब्रोकरेज',
+      'कमीशन',
+    ])
+      expect(mentionsBrokerage(label), label).toBe(true);
+    for (const label of ['Setup', 'Society move-in fee', 'Cleaning', 'Gas connection'])
+      expect(mentionsBrokerage(label), label).toBe(false);
+    // Brokerage is not even an input field.
+    expect(ListingCosts.safeParse({ ...costs, brokerageInr: 0 }).success).toBe(false);
+    expect(ListingCosts.safeParse({ ...costs, wifiInr: 100_001 }).success).toBe(false);
   });
 
-  it('computes the all-in monthly cost per person', () => {
-    expect(trueMonthlyPerPersonInr(15000, costs, 3)).toBe(15000 + 2000);
-    expect(trueMonthlyPerPersonInr(15000, { ...costs, wifiInr: 901 }, 3)).toBe(17001);
-    expect(() => trueMonthlyPerPersonInr(15000, costs, 0)).toThrow(RangeError);
+  it("the costs are each person's share: true monthly = rent + their sum", () => {
+    expect(trueMonthlyPerPersonInr(15000, costs)).toBe(15000 + 6000);
+  });
+
+  const draft = {
+    title: 'Sunny room near Cyber Hub',
+    areaId: 3,
+    location: { lat: 28.4951, lng: 77.0889 },
+    bhk: 3,
+    roomType: 'private',
+    furnishing: 'semi_furnished',
+    availableFrom: '2026-12-01',
+    totalFlatmates: 3,
+    currentFlatmates: 2,
+    rentPerPersonInr: 18000,
+    depositPerPersonInr: 36000,
+  };
+
+  it('a new listing: defaults, NCR only, room left in the flat (FR-LST-02)', () => {
+    const ok = CreateListingRequest.parse(draft);
+    expect(ok.minLeaseMonths).toBe(11);
+    expect(ok.offersVideoTour).toBe(false);
+    expect(
+      CreateListingRequest.safeParse({ ...draft, location: { lat: 12.97, lng: 77.59 } }).success,
+    ).toBe(false); // Bengaluru
+    expect(CreateListingRequest.safeParse({ ...draft, currentFlatmates: 3 }).success).toBe(false);
+    expect(CreateListingRequest.safeParse({ ...draft, title: 'Room' }).success).toBe(false);
+    expect(CreateListingRequest.safeParse({ ...draft, ownerId: id }).success).toBe(false);
+    expect(
+      CreateListingRequest.safeParse({ ...draft, description: 'Line one\nline two' }).success,
+    ).toBe(true);
+    const zeroWidth = String.fromCodePoint(0x200b);
+    expect(CreateListingRequest.safeParse({ ...draft, description: zeroWidth }).success).toBe(
+      false,
+    );
+  });
+
+  it('a patch changes something, and keeps the flatmates consistent when it names both', () => {
+    expect(ListingPatch.safeParse({}).success).toBe(false);
+    expect(ListingPatch.safeParse({ description: null }).success).toBe(true);
+    expect(ListingPatch.safeParse({ totalFlatmates: 2, currentFlatmates: 2 }).success).toBe(false);
+    expect(ListingPatch.safeParse({ status: 'active' }).success).toBe(false);
   });
 });
 
