@@ -15,11 +15,10 @@ env:
   API_URL: http://localhost:8080
   NAME: Meera
 ---
-# The camera is granted up front (a dialog that appears late would block the record button).
+# launchApp grants the app's permissions (the camera included) by default, so no dialog appears
+# later to block the record button.
 - launchApp:
     clearState: true
-    permissions:
-      camera: allow
 - runScript: new-phone.js
 - runFlow:
     when:
