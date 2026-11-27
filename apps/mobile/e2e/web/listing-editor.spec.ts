@@ -147,6 +147,9 @@ test('list a room: six steps, saved as a draft, continued from My Flat', async (
   });
 
   await test.step('Money: the all-in total adds up as you type', async () => {
+    // A decimal part is dropped, never run into the digits (18000.5 is not ₹1,80,005).
+    await page.getByTestId('listing-rent').fill('18000.5');
+    await expect(page.getByTestId('listing-rent')).toHaveValue('18000');
     await page.getByTestId('listing-rent').fill('18000');
     await page.getByTestId('listing-deposit').fill('36000');
     await page.getByRole('textbox', { name: ed.money.maintenance }).fill('1500');
