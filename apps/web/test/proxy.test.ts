@@ -83,6 +83,7 @@ describe('what may pass the proxy at all', () => {
       ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f'],
       ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f', 'media', 'upload-url'],
       ['me', 'listings'],
+      ['verifications', 'email', 'confirm'],
     ])
       expect(precheck('GET', ok, headers({}))).toBeNull();
     for (const bad of [
@@ -90,6 +91,8 @@ describe('what may pass the proxy at all', () => {
       ['auth', 'otp-guard'],
       ['admin', 'reports'],
       ['dev', 'sms-outbox'],
+      ['dev', 'email-outbox', 'latest'],
+      ['webhooks', 'digilocker'],
       ['internal', 'jobs'],
       ['me', '..'],
       ['me', '.hidden'],

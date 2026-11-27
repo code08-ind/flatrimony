@@ -282,13 +282,19 @@ export interface PrivateBannedIdentities {
 }
 
 export interface PrivateEmailVerifications {
+  /**
+   * HMAC-SHA-256(HASH_PEPPER, "email:" || normalised address). Never the address itself.
+   */
+  address_hash: Buffer;
   consumed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
   email_domain: string;
   expires_at: Timestamp;
   id: Generated<string>;
   token_hash: Buffer;
   type: VerificationType;
   user_id: string;
+  verification_id: string;
 }
 
 export interface PrivateIdentityRecords {

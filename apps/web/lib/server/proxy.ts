@@ -17,7 +17,7 @@ import {
 /** The API's own body limit (Fastify default): anything larger is refused before it is read. */
 export const MAX_BODY_BYTES = 100 * 1024;
 
-/** Only what the web app uses (listings: the web listing editor, T3.9b); auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
+/** Only what the web app uses (listings: the web listing editor, T3.9b; verifications: the work/college email link page, T3.3); auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
 export const ALLOWED_ROOTS = new Set([
   'me',
   'config',
@@ -25,6 +25,7 @@ export const ALLOWED_ROOTS = new Set([
   'places',
   'commute',
   'listings',
+  'verifications',
 ]);
 
 const SEGMENT = /^[A-Za-z0-9_~-][A-Za-z0-9._~-]*$/;

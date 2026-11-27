@@ -1,12 +1,15 @@
 /**
  * Lookup hashes for identifiers we must match but never store raw (docs/04 §13):
- * HMAC-SHA-256(HASH_PEPPER, value). Used for phone numbers, device installation ids and
- * DigiLocker ids (bans, uniqueness). The pepper lives in Secret Manager, outside the database.
+ * HMAC-SHA-256(HASH_PEPPER, value). Used for phone numbers, device installation ids,
+ * DigiLocker ids and work/college email addresses (bans, uniqueness). The pepper lives in Secret Manager, outside the database.
  */
 import { createHmac, randomBytes } from 'node:crypto';
 import { normaliseIndianMobile } from './phone.js';
 
-export type IdentifierHasher = (kind: 'phone' | 'device' | 'digilocker', value: string) => Buffer;
+export type IdentifierHasher = (
+  kind: 'phone' | 'device' | 'digilocker' | 'email',
+  value: string,
+) => Buffer;
 
 export function createIdentifierHasher(pepper: string): IdentifierHasher {
   if (pepper.length < 32) throw new Error('HASH_PEPPER must be at least 32 characters');
@@ -22,6 +25,10 @@ export function createIdentifierHasher(pepper: string): IdentifierHasher {
       // One identity, one hash, however a provider formats the id (case, width, spaces): the
       // one-account rule and DigiLocker bans depend on it (T3.1 review).
       input = value.normalize('NFKC').trim().toLowerCase();
+    } else if (kind === 'email') {
+      // Callers pass the canonical address (normaliseEmail: lower case, no +tag); trimmed and
+      // lower-cased again so a slip cannot split one mailbox into two hashes.
+      input = value.trim().toLowerCase();
     }
     return createHmac('sha256', pepper).update(`${kind}:`).update(input).digest();
   };

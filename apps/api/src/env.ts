@@ -141,6 +141,21 @@ export const EnvSchema = z.object({
    * Console project and its service account exist (docs/07 T3.6, Blocked); refused in production.
    */
   PLAY_INTEGRITY_PROVIDER: z.enum(['mock']).default('mock'),
+  /**
+   * Transactional email for work/college email links (T3.3). Only `mock` exists until the founder
+   * picks a vendor and sets up the sending domain (docs/07 T3.3, Blocked); refused in production.
+   */
+  EMAIL_PROVIDER: z.enum(['mock']).default('mock'),
+  /**
+   * The web app's public origin: email links open its confirm page (`/{locale}/verify-email`).
+   * Required outside local; local default http://localhost:3000.
+   */
+  WEB_APP_URL: z
+    .string()
+    .optional()
+    .refine((v) => v === undefined || isBareOrigin(v), {
+      message: 'a bare origin such as https://flatrimony.in',
+    }),
   APP_VERSION: z.string().default('0.0.0'),
 });
 
@@ -179,6 +194,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       'R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required in production',
     );
   }
+  if (env.APP_ENV === 'production' && env.EMAIL_PROVIDER === 'mock') {
+    throw new Error('EMAIL_PROVIDER=mock is not allowed in production');
+  }
+  if (env.APP_ENV === 'production' && env.WEB_APP_URL?.startsWith('http:')) {
+    throw new Error('WEB_APP_URL must be https in production');
+  }
   if (env.APP_ENV === 'production' && env.SMS_PROVIDER === 'mock') {
     throw new Error('SMS_PROVIDER=mock is not allowed in production');
   }
@@ -197,6 +218,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       throw new Error('FIELD_ENCRYPTION_KEY is required outside local development');
     if (!env.PUBLIC_API_URL)
       throw new Error('PUBLIC_API_URL is required outside local development');
+    if (!env.WEB_APP_URL) throw new Error('WEB_APP_URL is required outside local development');
     if (!env.DIGILOCKER_WEBHOOK_SECRETS)
       throw new Error('DIGILOCKER_WEBHOOK_SECRETS is required outside local development');
     // Profile photos (T2.10): without Storage the photo routes answer 503 and nobody can finish

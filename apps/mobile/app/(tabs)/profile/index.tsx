@@ -9,7 +9,15 @@ import { Avatar } from '../../../src/profile/Avatar';
 import { PauseRow } from '../../../src/profile/PauseRow';
 import { textStyle, theme } from '../../../src/theme';
 import { useT } from '../../../src/useT';
-import { ArrowRight, ShieldCheck, Sparkle, UserCircle } from '../../../src/ui/icons';
+import {
+  ArrowRight,
+  CaretRight,
+  EnvelopeSimple,
+  SealCheck,
+  ShieldCheck,
+  Sparkle,
+  UserCircle,
+} from '../../../src/ui/icons';
 import { Logo } from '../../../src/ui/Logo';
 import { ProgressRing } from '../../../src/ui/ProgressRing';
 import { Screen } from '../../../src/ui/Screen';
@@ -175,8 +183,60 @@ export default function ProfileTab() {
         </Pressable>
       </View>
 
+      <EmailBadgeRow />
+
       <PauseRow />
     </Screen>
+  );
+}
+
+/**
+ * The optional work/college email badge (FR-VER-05, T3.3; design M34 "DigiLocker & work email"):
+ * the badges already earned, or "Add email".
+ */
+function EmailBadgeRow() {
+  const { t, locale } = useT();
+  const { me } = useMe();
+  if (!me) return null;
+  const earned = [
+    ...(me.badges.some((b) => b.type === 'work_verified')
+      ? [t('verification.email.verified.work')]
+      : []),
+    ...(me.badges.some((b) => b.type === 'student_verified')
+      ? [t('verification.email.verified.college')]
+      : []),
+  ];
+  const status = earned.length ? earned.join(' · ') : t('profile.tiles.emailSub');
+  return (
+    <Pressable
+      testID="email-badge-row"
+      accessibilityRole="button"
+      accessibilityLabel={`${t('profile.tiles.email')}. ${status}`}
+      onPress={() => router.push('/profile/verify-email')}
+      style={({ pressed }) => [styles.emailRow, pressed && styles.emailRowPressed]}
+    >
+      <View style={styles.emailIcon}>
+        {earned.length ? (
+          <SealCheck size={22} color={theme.semantic.status.verified.fg} weight="fill" />
+        ) : (
+          <EnvelopeSimple size={22} color={theme.color.brand.primary} />
+        )}
+      </View>
+      <View style={{ flex: 1, gap: theme.space['1'] }}>
+        <Text style={[textStyle('label', locale), { color: theme.color.text.primary }]}>
+          {t('profile.tiles.email')}
+        </Text>
+        <Text style={[textStyle('body', locale), { color: theme.color.text.secondary }]}>
+          {status}
+        </Text>
+      </View>
+      {earned.length < 2 ? (
+        <Text style={[textStyle('label', locale), { color: theme.color.brand.primary }]}>
+          {t('profile.tiles.emailAdd')}
+        </Text>
+      ) : null}
+      <CaretRight size={18} color={theme.color.text.secondary} />
+    </Pressable>
   );
 }
 
@@ -235,4 +295,23 @@ const styles = StyleSheet.create({
     ...theme.elevation['1'],
   },
   tilePrimary: { backgroundColor: theme.color.brand.primary },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space['3'],
+    minHeight: 72,
+    backgroundColor: theme.color.bg.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.layout.cardPadding,
+    ...theme.elevation['1'],
+  },
+  emailRowPressed: { backgroundColor: theme.color.brand.primarySubtle },
+  emailIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.color.brand.primarySubtle,
+  },
 });

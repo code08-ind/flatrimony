@@ -59,6 +59,12 @@ import type { ListingRepository } from './modules/listings/repository.js';
 import { mockIntegrityVerifier, type IntegrityVerifier } from './lib/integrity.js';
 import { s3VideoStorage, type VideoStorage } from './lib/video-storage.js';
 import { listingRoutes } from './modules/listings/routes.js';
+import { createEmailProvider, isMockEmailProvider, type EmailProvider } from './lib/email.js';
+import type { EmailVerificationRepository } from './modules/verification/email-repository.js';
+import {
+  devEmailOutboxRoutes,
+  emailVerificationRoutes,
+} from './modules/verification/email-routes.js';
 
 export interface BuildOptions {
   env: Env;
@@ -94,6 +100,10 @@ export interface BuildOptions {
   videoStorage?: VideoStorage;
   /** Play Integrity (default: from PLAY_INTEGRITY_PROVIDER). */
   integrity?: IntegrityVerifier;
+  /** Work/college email verification (Postgres in server.ts). Not served without it (or meRepo). */
+  emailVerificationRepo?: EmailVerificationRepository;
+  /** Email sender (default: from EMAIL_PROVIDER; tests inject their own). */
+  emailProvider?: EmailProvider;
   /** DigiLocker provider (default: from DIGILOCKER_PROVIDER; tests inject their own). */
   digilocker?: DigiLockerProvider;
   /** Profile photo storage (Supabase Storage in server.ts; tests inject a memory store). */
@@ -135,6 +145,7 @@ const REDACT = [
   'req.headers["x-flatrimony-proxy-secret"]',
   'body.phone',
   'body.otp',
+  'body.email',
   'body.token',
   'body.device.deviceId',
   'body.device.pushToken',
@@ -154,6 +165,8 @@ export async function buildApp({
   otpStore,
   meRepo,
   verificationRepo,
+  emailVerificationRepo,
+  emailProvider,
   listingRepo,
   listingPhotoStorage,
   videoStorage,
@@ -317,6 +330,22 @@ export async function buildApp({
         key: dlKeys[0]!,
         ...(now ? { now } : {}),
       });
+  }
+
+  // Work and college email verification (T3.3). Links open the web app's confirm page.
+  if (meRepo && emailVerificationRepo) {
+    const mailer = emailProvider ?? createEmailProvider(env.EMAIL_PROVIDER);
+    await app.register(emailVerificationRoutes, {
+      prefix: '/v1',
+      repo: emailVerificationRepo,
+      me: meRepo,
+      email: mailer,
+      hasher,
+      webAppUrl: env.WEB_APP_URL ?? 'http://localhost:3000',
+      ...(now ? { now } : {}),
+    });
+    if (env.APP_ENV === 'local' && env.NODE_ENV !== 'production' && isMockEmailProvider(mailer))
+      await app.register(devEmailOutboxRoutes, { provider: mailer });
   }
 
   // Listings for their owners (T3.5). The address is encrypted with FIELD_ENCRYPTION_KEY.

@@ -270,7 +270,10 @@
       "verified": "Verified",
       "notVerified": "Not verified",
       "verifySub": "Verify now with DigiLocker to start chatting.",
-      "cantVerify": "Can’t be verified"
+      "cantVerify": "Can’t be verified",
+      "email": "Work or college email",
+      "emailSub": "Optional badge",
+      "emailAdd": "Add email"
     },
     "pause": {
       "title": "Pause my profile",
@@ -461,6 +464,23 @@
         "community-standards": "Community Standards",
         "tenancy-guidelines": "Tenancy Guidelines"
       }
+    },
+    "verifyEmail": {
+      "title": "Confirm your email",
+      "checking": "Confirming your email…",
+      "verifiedTitle": "Email confirmed",
+      "verifiedWork": "Your profile now shows “Verified company”. You can close this page.",
+      "verifiedCollege": "Your profile now shows “Verified student”. You can close this page.",
+      "expiredTitle": "This link has expired",
+      "expiredBody": "Links work for 24 hours. Ask for a new one in the Flatrimony app.",
+      "invalidTitle": "This link can’t be used",
+      "invalidBody": "It was already used or replaced by a newer link. Ask for a new one in the app if you need it.",
+      "noTokenTitle": "Open the link from your email",
+      "noTokenBody": "This page needs the whole link from the email. Copy it again if your mail app cut it short.",
+      "errorTitle": "Something went wrong",
+      "errorBody": "Check your connection and try again. The link still works.",
+      "retry": "Try again",
+      "home": "Go to Flatrimony"
     }
   },
   "verification": {
@@ -548,7 +568,54 @@
       "generic": "Something went wrong. Please try again.",
       "status": "Couldn’t check the status. Check your connection."
     },
-    "close": "Close"
+    "close": "Close",
+    "email": {
+      "overline": "Optional badge",
+      "title": "Add a work or college email",
+      "body": "Earn a “Verified company” or “Verified student” badge. Flatmates see the badge, never your employer, college or email.",
+      "kindLabel": "Which email?",
+      "work": "Work email",
+      "workSub": "“Verified company” badge",
+      "college": "College email",
+      "collegeSub": "“Verified student” badge",
+      "labelWork": "Work email address",
+      "labelCollege": "College email address",
+      "placeholderWork": "you@company.com",
+      "placeholderCollege": "you@college.ac.in",
+      "privacy": "We keep only the part after @ (like company.com), never your address. One email can verify one account.",
+      "send": "Send link",
+      "sent": {
+        "title": "Check your inbox",
+        "body": "We sent a link to {email}. Open it on any device within 24 hours.",
+        "bodyNoEmail": "We sent you a link. Open it on any device within 24 hours.",
+        "spam": "Can’t find it? Check spam or promotions.",
+        "resend": "Send again",
+        "resendIn": "Send again in {seconds} s",
+        "change": "Use another email",
+        "check": "I opened the link"
+      },
+      "notYet": "Not confirmed yet. Open the link in the email, then check again.",
+      "verified": {
+        "work": "Verified company",
+        "college": "Verified student",
+        "title": "Badge added",
+        "body": "Your profile now shows this badge."
+      },
+      "inUse": {
+        "title": "This email is already used",
+        "body": "It is confirmed on a Flatrimony account. Use another work or college email."
+      },
+      "errors": {
+        "invalid": "Enter a valid email address.",
+        "personal": "Use your work email, not a personal one like Gmail or Outlook.",
+        "disposable": "Use a work or college email you can keep.",
+        "notCollege": "Use your college email: it ends in .ac.in, .edu.in or .edu.",
+        "already": "This badge is already on your profile.",
+        "addressLimit": "This address got enough links for today. Try again tomorrow.",
+        "tooMany": "Too many links asked for. Try again in an hour.",
+        "sendFailed": "We couldn’t send the email. Try again in a moment."
+      }
+    }
   },
   "listing": {
     "video": {
