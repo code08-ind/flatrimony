@@ -1131,7 +1131,9 @@ function ReviewStep({ listing }: { listing: OwnerListing }) {
         {!verified ? (
           <SecondaryButton
             label={t('listing.editor.review.verifyAction')}
-            onPress={() => router.push('/profile/verify')}
+            onPress={() =>
+              router.push({ pathname: '/profile/verify', params: { listing: listing.id } })
+            }
             locale={locale}
           />
         ) : null}

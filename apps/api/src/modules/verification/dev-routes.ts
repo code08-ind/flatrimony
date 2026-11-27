@@ -17,8 +17,12 @@ export interface DevDigiLockerOptions {
   mock: MockDigiLocker;
   /** The first DIGILOCKER_WEBHOOK_SECRETS key: the mock signs its webhooks like a provider. */
   key: Buffer;
+  /** Local development: also serve /dev/digilocker-latest (loopback only). */
+  local?: boolean;
   now?: () => number;
 }
+
+const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -67,6 +71,17 @@ export const devDigiLockerRoutes: FastifyPluginAsync<DevDigiLockerOptions> = asy
     { parseAs: 'string', bodyLimit: 4 * 1024 },
     (_req, body, done) => done(null, Object.fromEntries(new URLSearchParams(body as string))),
   );
+
+  // Local end-to-end flows (Maestro on an emulator, whose browser cannot reach this machine's
+  // localhost): the newest waiting session's consent page path, for loopback callers only and only
+  // in local development (never on a test environment that serves the consent page).
+  if (opts.local)
+    app.post('/dev/digilocker-latest', { config: { rateLimit: false } }, async (req, reply) => {
+      if (!LOOPBACK.has(req.socket.remoteAddress ?? '')) return reply.code(404).send({});
+      const ref = opts.mock.latestPending();
+      if (!ref) return reply.code(404).send({});
+      return { consentPath: `/dev/digilocker/${ref}` };
+    });
 
   app.get<{ Params: { ref: string } }>('/dev/digilocker/:ref', async (req, reply) => {
     const session = opts.mock.session(req.params.ref);

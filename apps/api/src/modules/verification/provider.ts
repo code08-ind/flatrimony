@@ -62,6 +62,8 @@ export const mockRef = () =>
 export interface MockDigiLocker extends DigiLockerProvider {
   /** The pending session for a reference (for the consent page), or null. */
   session(providerRef: string): { verificationId: string; expiresAt: Date; done: boolean } | null;
+  /** The newest session still waiting for the tester (local end-to-end flows), or null. */
+  latestPending(): string | null;
   /** What the tester chose on the consent page. */
   complete(
     providerRef: string,
@@ -107,6 +109,13 @@ export function mockDigiLockerProvider({
             done: s.result.state !== 'pending',
           }
         : null;
+    },
+    latestPending() {
+      // A Map keeps insertion order: the last waiting one is the newest start.
+      let newest: string | null = null;
+      for (const [ref, s] of sessions)
+        if (s.result.state === 'pending' && s.expiresAt.getTime() > now()) newest = ref;
+      return newest;
     },
     complete(providerRef, outcome) {
       const s = REF.test(providerRef) ? sessions.get(providerRef) : undefined;

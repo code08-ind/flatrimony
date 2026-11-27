@@ -556,6 +556,19 @@ describe('the mock consent page (local and test environments only)', () => {
     );
     await app.close();
   });
+
+  it('locally, the newest waiting consent page for end-to-end flows', async () => {
+    const { app, start } = await setup();
+    const latest = () => app.inject({ method: 'POST', url: '/dev/digilocker-latest' });
+    expect((await latest()).statusCode).toBe(404);
+    const first = (await start()).json();
+    const second = (await start()).json();
+    const res = await latest();
+    expect(res.statusCode).toBe(200);
+    expect(new URL(second.redirectUrl).pathname).toBe(res.json().consentPath);
+    expect(new URL(first.redirectUrl).pathname).not.toBe(res.json().consentPath);
+    await app.close();
+  });
 });
 
 describe('the consent page outside local development', () => {
@@ -593,6 +606,8 @@ describe('the consent page outside local development', () => {
     await off.close();
     const on = await build(stagingEnv({ DIGILOCKER_MOCK_CONSENT_PAGE: 'true' }));
     expect(on.printRoutes()).toContain('digilocker/');
+    // The end-to-end helper stays local only.
+    expect(on.printRoutes()).not.toContain('digilocker-latest');
     await on.close();
   });
 });
