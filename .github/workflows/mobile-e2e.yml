@@ -16,6 +16,10 @@ on:
       - apps/mobile/app/**
       - apps/mobile/src/**
       - apps/mobile/app.config.ts
+      # What journey 2 goes through on the API side (the walkthrough upload, the mock DigiLocker).
+      - apps/api/src/modules/verification/**
+      - apps/api/src/modules/listings/**
+      - packages/client/**
       - packages/i18n/src/messages/en.json
       - .github/workflows/mobile-e2e.yml
 
@@ -142,6 +146,7 @@ jobs:
             maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report-1.xml" --debug-output "$RUNNER_TEMP/maestro/debug-1"
             for f in "$RUNNER_TEMP"/photos/*.png; do adb push "$f" /sdcard/Pictures/; adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$(basename "$f")" > /dev/null; sleep 1; done
             adb shell content call --uri content://media --method scan_volume --arg external_primary > /dev/null || true
+            echo "Gallery photos indexed: $(adb shell content query --uri content://media/external/images/media --projection _display_name | grep -c room-)"
             maestro test e2e/maestro/journey-2.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report-2.xml" --debug-output "$RUNNER_TEMP/maestro/debug-2"
 
       - name: API log

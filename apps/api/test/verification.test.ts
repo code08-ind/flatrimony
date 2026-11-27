@@ -567,6 +567,13 @@ describe('the mock consent page (local and test environments only)', () => {
     expect(res.statusCode).toBe(200);
     expect(new URL(second.redirectUrl).pathname).toBe(res.json().consentPath);
     expect(new URL(first.redirectUrl).pathname).not.toBe(res.json().consentPath);
+    // Only for callers on this machine.
+    const remote = await app.inject({
+      method: 'POST',
+      url: '/dev/digilocker-latest',
+      remoteAddress: '192.0.2.1',
+    });
+    expect(remote.statusCode).toBe(404);
     await app.close();
   });
 });

@@ -2,10 +2,15 @@
 // browser cannot reach the API on the host (localhost there is the emulator), so the host does what
 // a tester would: find the newest waiting consent page (a local-only, loopback-only dev route) and
 // post "Allow" with an identity whose first name matches the profile (FR-VER-03).
-const latest = http.post(API_URL + '/dev/digilocker-latest', {
-  headers: { 'Content-Type': 'application/json' },
-  body: '{}',
-});
+// The app may still be starting the session: ask again for up to about 15 s.
+let latest = null;
+const until = Date.now() + 15000;
+do {
+  latest = http.post(API_URL + '/dev/digilocker-latest', {
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+} while (latest.status === 404 && Date.now() < until);
 if (latest.status !== 200)
   throw new Error('No DigiLocker session is waiting (status ' + latest.status + ')');
 const consentPath = json(latest.body).consentPath;

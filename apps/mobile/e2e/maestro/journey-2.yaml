@@ -15,8 +15,11 @@ env:
   API_URL: http://localhost:8080
   NAME: Meera
 ---
+# The camera is granted up front (a dialog that appears late would block the record button).
 - launchApp:
     clearState: true
+    permissions:
+      camera: allow
 - runScript: new-phone.js
 - runFlow:
     when:
@@ -200,7 +203,7 @@ env:
     timeout: 60000
 - tapOn: { id: listing-next }
 
-# Video: record a walkthrough in the app (camera permission, 33 s, stop, use it, upload)
+# Video: record a walkthrough in the app (at least 31 s: Stop turns on then), use it, upload
 - extendedWaitUntil:
     visible: { id: listing-record-video }
     timeout: 15000
@@ -214,12 +217,14 @@ env:
       visible: While using the app
     commands:
       - tapOn: While using the app
+# Record turns on when the camera is ready (slow on an emulator without a GPU).
 - extendedWaitUntil:
-    visible: { id: walkthrough-record }
-    timeout: 30000
+    visible: { id: walkthrough-record, enabled: true }
+    timeout: 60000
 - tapOn: { id: walkthrough-record }
+# Stop turns on at 31 s.
 - extendedWaitUntil:
-    visible: Stop
+    visible: { id: walkthrough-stop, enabled: true }
     timeout: 60000
 - tapOn: { id: walkthrough-stop }
 - extendedWaitUntil:
@@ -247,13 +252,21 @@ env:
     visible: { id: verify-start }
     timeout: 15000
 - tapOn: { id: verify-start }
+- extendedWaitUntil:
+    notVisible: { id: verify-start }
+    timeout: 15000
+# Waits (retrying) for the session the app just started, then approves it.
 - runScript:
     file: digilocker-approve.js
     env:
       API_URL: ${API_URL}
       NAME: MEERA SHARMA
-# The browser tab could not load the consent page (it is on the host): close it.
-- back
+# The browser tab cannot load the consent page (it is on the host): close it, if it is in front.
+- runFlow:
+    when:
+      notVisible: { id: verify-done }
+    commands:
+      - back
 - extendedWaitUntil:
     visible: { id: verify-done }
     timeout: 60000
