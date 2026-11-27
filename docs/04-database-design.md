@@ -1462,6 +1462,16 @@ Trigger `listings_fresh_week`: a listing entering `active` (submit, resume, conf
 
 The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds owners during the last 24 hours of a live listing's 7 days (`listing.expiring`), then expires live listings past `expires_at` (`listing.expired`), each with a notification row. Both run in batches of 500 with `FOR UPDATE SKIP LOCKED`, so overlapping runs never act on a listing twice and a listing an owner is confirming is skipped, not waited for. After a worker outage of over a day, a listing can get its reminder and its expiry in the same tick. Push delivery (later) must respect quiet hours (FR-NOTIF-03) when it sends, whatever the row's `created_at`.
 
+### 15.10 Work and college email verification (T3.3, migration file 0015)
+
+0015 completes `private.email_verifications` (§6.3) for FR-VER-05. Additions:
+
+- `verification_id` (unique, cascade) ties each link to its attempt in `public.verifications` (type `work_email` / `college_email`, provider `internal_email`); a trigger refuses a link whose attempt belongs to another member or type. A newer request expires the older pending attempt (the one-pending-per-type index), so its link stops working.
+- `address_hash` = HMAC-SHA-256(`HASH_PEPPER`, `email:` + the canonical address: lower case, without a `+tag`). The address itself is never stored; `email_domain` is kept for the employer opt-in (later). `created_at` with an index on (`address_hash`, `created_at`) lets the API cap links to one address at 3 a day per member and 10 a day in all (under an advisory lock per address).
+- One mailbox, one account: a partial unique index on `address_hash` where `consumed_at` is set. A second member confirming the same address fails `email_in_use` (new failure code), also when two confirm at once.
+- Deferred constraint triggers (checked at commit, like the identity record in §15.1): `profiles.has_work_badge` / `has_college_badge` need a confirmed link of that type for the member, so no code path can hand out a badge without one, and a confirmed link backing a badge cannot be deleted.
+- The worker's daily task `verifications.purge-email-links` deletes unconfirmed links 7 days after they expired (§12); attempts stay (status only), and confirmed links stay because they back the badge and the one-mailbox rule.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:

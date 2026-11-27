@@ -39,6 +39,7 @@ async function setup(
           FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
           DIGILOCKER_WEBHOOK_SECRETS: `v1,whsec_${randomBytes(32).toString('base64')}`,
           PUBLIC_API_URL: 'https://api.staging.test',
+          WEB_APP_URL: 'https://app.staging.test',
         }
       : {}),
   });

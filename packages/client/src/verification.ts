@@ -172,6 +172,13 @@ export function outcomeCopy(outcome: Exclude<VerifyOutcome, { kind: 'error' }>):
             body: 'verification.failed.providerError.body',
             action: 'retry',
           };
+        // Work/college email only (T3.3); never a DigiLocker outcome.
+        case 'email_in_use':
+          return {
+            title: 'verification.email.inUse.title',
+            body: 'verification.email.inUse.body',
+            action: 'none',
+          };
       }
   }
 }

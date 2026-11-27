@@ -3,7 +3,7 @@
  * Cloud Scheduler (infra/terraform/envs/staging). Job kinds and tasks are added by the tasks that
  * need them: `commute.compute` (T2.9) is here; `media.process` (photo processing off the request
  * path), reminders and purges (M5/M6) come with theirs. Listing expiry and its reminder (T3.10) run
- * on every tick.
+ * on every tick; spent work/college email links (T3.3) are purged daily.
  */
 import { cachedIdToken } from '@flatrimony/routing';
 import type { WorkerEnv } from './env.js';
@@ -12,6 +12,7 @@ import type { AnyJobDefinition, Task } from './runner.js';
 import { supabaseStorage } from './storage.js';
 import { photoUploadSweep } from './tasks/photo-uploads.js';
 import { listingExpiry, listingExpiryReminders } from './tasks/listing-expiry.js';
+import { emailLinkPurge } from './tasks/email-links.js';
 
 /** How the worker reaches the routing service: a Google ID token on Cloud Run, none locally. */
 export function routingFor(env: WorkerEnv): RoutingConfig {
@@ -31,7 +32,7 @@ export function tasksFor(env: WorkerEnv): {
   skipped: string[];
 } {
   const skipped: string[] = [];
-  const daily: Task[] = [commuteRefresh()];
+  const daily: Task[] = [commuteRefresh(), emailLinkPurge()];
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)
     daily.push(photoUploadSweep(supabaseStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)));
   else skipped.push('photos.sweep-uploads');

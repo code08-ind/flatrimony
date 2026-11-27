@@ -6,6 +6,7 @@ import { pgBansRepository } from './modules/auth/bans.js';
 import { cachedSessionLookup, pgSessionLookup } from './modules/auth/sessions.js';
 import { pgMeRepository } from './modules/me/repository.js';
 import { pgVerificationRepository } from './modules/verification/repository.js';
+import { pgEmailVerificationRepository } from './modules/verification/email-repository.js';
 import { pgListingRepository } from './modules/listings/repository.js';
 import { supabasePhotoStorage } from './lib/photo-storage.js';
 import { restrictImageDecoders } from './lib/image.js';
@@ -26,6 +27,7 @@ const app = await buildApp({
         sessionLookup: cachedSessionLookup(pgSessionLookup(db)),
         meRepo: pgMeRepository(db),
         verificationRepo: (deps) => pgVerificationRepository(db, deps),
+        emailVerificationRepo: pgEmailVerificationRepository(db),
         listingRepo: (deps) => pgListingRepository(db, deps),
       }
     : {}),

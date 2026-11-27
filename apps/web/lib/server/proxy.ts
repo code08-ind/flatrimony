@@ -17,7 +17,7 @@ import {
 /** The API's own body limit (Fastify default): anything larger is refused before it is read. */
 export const MAX_BODY_BYTES = 100 * 1024;
 
-/** Only what the web app uses (listings: the web listing editor, T3.9b); auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
+/** Only what the web app uses (listings: the web listing editor, T3.9b; verifications: the work/college email link page, T3.3); auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
 export const ALLOWED_ROOTS = new Set([
   'me',
   'config',
@@ -25,7 +25,11 @@ export const ALLOWED_ROOTS = new Set([
   'places',
   'commute',
   'listings',
+  'verifications',
 ]);
+
+/** The one verifications call the web app makes: the page an email link opens (T3.3). */
+const EMAIL_CONFIRM = 'verifications/email/confirm';
 
 const SEGMENT = /^[A-Za-z0-9_~-][A-Za-z0-9._~-]*$/;
 const PASS_REQUEST = [
@@ -96,6 +100,9 @@ export const problem = (status: number, code: string, title: string): ProxyResul
 export function precheck(method: string, path: string[], headers: Headers): ProxyResult | null {
   // Plain path segments under an allowed root: no "..", no encoded slashes, nothing else.
   if (!path.length || !ALLOWED_ROOTS.has(path[0]!) || !path.every((s) => SEGMENT.test(s)))
+    return problem(404, 'not_found', 'Not found');
+  // Of verifications, the web app only confirms email links (T3.3); DigiLocker stays app-only.
+  if (path[0] === 'verifications' && !(method === 'POST' && path.join('/') === EMAIL_CONFIRM))
     return problem(404, 'not_found', 'Not found');
   if (method !== 'GET' && !sameOrigin(headers.get('origin'), headers.get('host')))
     return problem(403, 'forbidden', 'Forbidden');

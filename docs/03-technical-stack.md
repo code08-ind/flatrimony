@@ -314,7 +314,9 @@ Until decided, staging uses the default `run.app` URLs.
 | `RAZORPAY_KEY_ID` | No | Public key id |
 | `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Yes | Payments |
 | `EXPO_ACCESS_TOKEN` | Yes | Push notifications (enhanced security) |
-| `EMAIL_API_KEY` | Yes | Transactional email |
+| `EMAIL_API_KEY` | Yes | Transactional email (work/college email links, T3.3) |
+| `EMAIL_PROVIDER` | No | `mock` (default; keeps messages in memory, `POST /dev/email-outbox/latest` locally); production refuses `mock` until a vendor is chosen |
+| `WEB_APP_URL` | No | The web app's origin; work/college email links open its `/{locale}/verify-email` page. Required outside local (https in production), default `http://localhost:3000` locally |
 | `PLAY_INTEGRITY_*` | Yes | Verify Play Integrity tokens |
 | `ROUTING_URL` | No | URL of the routing service (API and worker); without it commute zones are the radius approximation |
 | `PLACES_PROVIDER` | No | `mock` (default: searches the seeded NCR areas; local and CI) or `google`; production refuses `mock` |

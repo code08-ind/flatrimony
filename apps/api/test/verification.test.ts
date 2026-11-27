@@ -573,6 +573,7 @@ describe('the consent page outside local development', () => {
       FIELD_ENCRYPTION_KEY: `v1:${randomBytes(32).toString('base64')}`,
       DIGILOCKER_WEBHOOK_SECRETS: SECRET,
       PUBLIC_API_URL: 'https://api.staging.test',
+      WEB_APP_URL: 'https://app.staging.test',
       ...extra,
     });
   const build = async (env: ReturnType<typeof loadEnv>) =>
@@ -608,6 +609,7 @@ describe('configuration', () => {
       SUPABASE_URL: 'https://x.supabase.co',
       SUPABASE_SERVICE_ROLE_KEY: randomBytes(24).toString('hex'),
       PUBLIC_API_URL: 'https://api.staging.test',
+      WEB_APP_URL: 'https://app.staging.test',
     };
     const key = `v1:${randomBytes(32).toString('base64')}`;
     const noUrl = Object.fromEntries(
@@ -636,6 +638,7 @@ describe('configuration', () => {
         FIELD_ENCRYPTION_KEY: key,
         DIGILOCKER_WEBHOOK_SECRETS: SECRET,
         PUBLIC_API_URL: 'https://api.staging.test',
+        WEB_APP_URL: 'https://app.staging.test',
       }),
     ).toThrow(/DIGILOCKER_PROVIDER=mock/);
   });

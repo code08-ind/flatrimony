@@ -71,6 +71,14 @@ const request = (over: Partial<ProxyRequest> = {}): ProxyRequest => ({
 
 describe('what may pass the proxy at all', () => {
   const headers = (h: Record<string, string>) => new Headers({ host: 'flatrimony.in', ...h });
+  it('of verifications, only the email link confirm (POST, same origin)', () => {
+    const post = (path: string[]) =>
+      precheck('POST', path, headers({ origin: 'https://flatrimony.in' }));
+    expect(post(['verifications', 'email', 'confirm'])).toBeNull();
+    expect(post(['verifications', 'email'])?.status).toBe(404);
+    expect(post(['verifications', 'digilocker'])?.status).toBe(404);
+  });
+
   it('only the API roots the web app uses, as plain segments', () => {
     for (const ok of [
       ['me'],
@@ -90,6 +98,11 @@ describe('what may pass the proxy at all', () => {
       ['auth', 'otp-guard'],
       ['admin', 'reports'],
       ['dev', 'sms-outbox'],
+      ['dev', 'email-outbox', 'latest'],
+      ['verifications'],
+      ['verifications', 'digilocker'],
+      ['verifications', 'email', 'confirm'], // GET: only the POST passes
+      ['webhooks', 'digilocker'],
       ['internal', 'jobs'],
       ['me', '..'],
       ['me', '.hidden'],

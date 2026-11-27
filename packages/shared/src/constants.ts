@@ -91,9 +91,22 @@ export const RATE_LIMITS = {
   places: { limit: 60, windowMs: 60_000 },
   /** Starting DigiLocker verification (each start is a paid provider session). */
   verificationStart: { limit: 5, windowMs: 60 * 60_000 },
+  /** Work/college email links a member may ask for (each sends an email; T3.3). */
+  emailVerificationStart: { limit: 5, windowMs: 60 * 60_000 },
+  /** Opening email links, per IP (each token is 32 random bytes: this only bounds the work). */
+  emailVerificationConfirm: { limit: 30, windowMs: 60 * 60_000 },
   /** Creating listing drafts (an owner lists one room, rarely a few; T3.5). */
   listingCreate: { limit: 10, windowMs: 24 * 60 * 60_000 },
 } as const;
+
+/**
+ * Links to one email address per day (T3.3): at most 3 from any one member, 10 from all members
+ * together, so nobody's inbox gets flooded and one member cannot use up the owner's links.
+ */
+export const EMAIL_LINKS_PER_MEMBER_ADDRESS_PER_DAY = 3;
+export const EMAIL_LINKS_PER_ADDRESS_PER_DAY = 10;
+/** How long an email verification link works. */
+export const EMAIL_LINK_TTL_MS = 24 * 60 * 60_000;
 
 /** Stored idempotent responses expire after 24 hours (docs/05 §6.1). */
 export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60_000;

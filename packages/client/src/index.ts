@@ -10,5 +10,6 @@ export * from './onboarding/errors.js';
 export * from './onboarding/logic.js';
 export * from './rich-text.js';
 export * from './verification.js';
+export * from './email-verification.js';
 export * from './walkthrough.js';
 export * from './listing-editor.js';
