@@ -214,7 +214,10 @@ test('list a room on the web: every step, the QR for the phone, continued from M
   });
 
   await test.step('Rules: pets allowed, veg kitchen', async () => {
-    await page.getByRole('checkbox', { name: new RegExp(`^${ed.rules.pets}`) }).check();
+    await page
+      .locator('label.card-option', { hasText: ed.rules.pets })
+      .getByRole('checkbox')
+      .check();
     await page
       .getByRole('group', { name: ed.rules.food })
       .getByRole('radio', { name: ed.rules.foodVeg })
@@ -325,6 +328,6 @@ test('list a room on the web: every step, the QR for the phone, continued from M
     await accessible(page);
     await page.getByTestId('listing-continue').click();
     await heading(page, ed.video.heading);
-    await expect(page).toHaveURL(new RegExp(`id=${listingId}&step=video$`));
+    await expect(page).toHaveURL((url) => url.search === `?id=${listingId}&step=video`);
   });
 });
