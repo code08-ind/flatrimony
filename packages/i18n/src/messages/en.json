@@ -831,5 +831,11 @@
       "noPhoto": "No photo yet",
       "deleted": "Listing deleted."
     }
+  },
+  "notifications": {
+    "listing": {
+      "expiring": "Is your room still available?",
+      "expired": "Your listing has expired. Tap “Still available” in My Flat to bring it back."
+    }
   }
 }

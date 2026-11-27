@@ -2,7 +2,8 @@
  * What each run does (docs/04 §11). `tick` (every 5 minutes) and `daily` (02:30 IST) are started by
  * Cloud Scheduler (infra/terraform/envs/staging). Job kinds and tasks are added by the tasks that
  * need them: `commute.compute` (T2.9) is here; `media.process` (photo processing off the request
- * path), listing expiry (T3.10), reminders and purges (M5/M6) come with theirs.
+ * path), reminders and purges (M5/M6) come with theirs. Listing expiry and its reminder (T3.10) run
+ * on every tick.
  */
 import { cachedIdToken } from '@flatrimony/routing';
 import type { WorkerEnv } from './env.js';
@@ -10,6 +11,7 @@ import { COMMUTE_KIND, commuteJob, commuteRefresh, type RoutingConfig } from './
 import type { AnyJobDefinition, Task } from './runner.js';
 import { supabaseStorage } from './storage.js';
 import { photoUploadSweep } from './tasks/photo-uploads.js';
+import { listingExpiry, listingExpiryReminders } from './tasks/listing-expiry.js';
 
 /** How the worker reaches the routing service: a Google ID token on Cloud Run, none locally. */
 export function routingFor(env: WorkerEnv): RoutingConfig {
@@ -33,5 +35,7 @@ export function tasksFor(env: WorkerEnv): {
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)
     daily.push(photoUploadSweep(supabaseStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)));
   else skipped.push('photos.sweep-uploads');
-  return { tasks: { tick: [], daily }, skipped };
+  // Remind first, then expire: a listing never expires without its reminder having had a chance.
+  const tick: Task[] = [listingExpiryReminders(), listingExpiry()];
+  return { tasks: { tick, daily }, skipped };
 }
