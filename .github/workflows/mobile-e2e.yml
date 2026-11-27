@@ -169,6 +169,9 @@ jobs:
                 if (t) console.log(t); (n.children || []).forEach(walk); };
               walk(require(process.argv[1]));" "$f" | head -80
           done
+          echo '--- Crash (first lines of the exception)'
+          grep -E -A12 'FATAL EXCEPTION|JavascriptException|Unhandled JS Exception' "$dir/logs/device-logcat.txt" | head -n 40 || true
+          grep -E 'ReactNativeJS.*(Error|Exception|Invariant)' "$dir/logs/device-logcat.txt" | head -n 20 || true
           echo '--- App log (React Native, crashes)'
           grep -E 'ReactNativeJS|AndroidRuntime|FATAL|ReactNative|Hermes' "$dir/logs/device-logcat.txt" | tail -n 80 || true
           done
