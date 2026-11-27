@@ -10,3 +10,4 @@
 - T3.7 walkthrough recorder: all `listing.video.*` Hindi strings are agent drafts.
 - T3.9 listing editor and My Flat: all `listing.editor.*` and `listing.myFlat.*` Hindi strings are agent drafts.
 - T3.10 listing expiry: `notifications.listing.*` Hindi strings are agent drafts (`expiring` follows docs/05 §10, "Is your room still available?").
+- T3.9b web listing editor: `listing.editor.video.handover.badge|title|body|note` Hindi come from the Hindi web export (`docs/designs/web/hi/listing_stepper_video_handover`); the other new `listing.editor.*` Hindi strings are agent drafts.

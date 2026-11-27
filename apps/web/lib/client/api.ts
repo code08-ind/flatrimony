@@ -26,11 +26,14 @@ export async function api<T = unknown>(
     body,
     locale,
     ifMatch,
+    timeoutMs = 30_000,
   }: {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     locale?: 'en' | 'hi';
     ifMatch?: string;
+    /** Only for calls the server gives a longer budget (lib/server/proxy.ts). */
+    timeoutMs?: number;
   } = {},
 ): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {};
@@ -50,7 +53,7 @@ export async function api<T = unknown>(
       },
       // Longer than the web server's own budget (two token refreshes and two API calls,
       // lib/server/proxy.ts), so a rotated session cookie is never dropped by a page that gave up.
-      30_000,
+      timeoutMs,
     );
   } catch {
     throw new NetworkError();

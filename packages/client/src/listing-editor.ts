@@ -306,3 +306,18 @@ export function listingErrorKey(status: number | 'network', body?: unknown): Mes
   if (status === 503) return 'listing.editor.errors.unavailable';
   return 'listing.editor.errors.generic';
 }
+
+// ------------------------------------------------------------------ web → Android (FR-LST-05)
+
+const LISTING_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The link that opens a draft at the Video step in the Android app (`flatrimony://listings/{id}/
+ * video`; docs/05 §8.6, FR-LST-05): what the web's "Continue on your phone" QR code holds. Only a
+ * listing id goes in it (no personal data); null for anything that is not one.
+ */
+export function walkthroughAppLink(listingId: string): string | null {
+  return LISTING_ID.test(listingId)
+    ? `flatrimony://listings/${listingId.toLowerCase()}/video`
+    : null;
+}

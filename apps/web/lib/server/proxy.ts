@@ -17,8 +17,15 @@ import {
 /** The API's own body limit (Fastify default): anything larger is refused before it is read. */
 export const MAX_BODY_BYTES = 100 * 1024;
 
-/** Only what the web app uses; auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
-export const ALLOWED_ROOTS = new Set(['me', 'config', 'reference', 'places', 'commute']);
+/** Only what the web app uses (listings: the web listing editor, T3.9b); auth hooks, otp-guard (the browser calls it itself), dev routes and admin stay out of reach. */
+export const ALLOWED_ROOTS = new Set([
+  'me',
+  'config',
+  'reference',
+  'places',
+  'commute',
+  'listings',
+]);
 
 const SEGMENT = /^[A-Za-z0-9_~-][A-Za-z0-9._~-]*$/;
 const PASS_REQUEST = [
@@ -48,6 +55,17 @@ const NO_BODY = new Set([204, 205, 304]);
 export const REFRESH_TIMEOUT_MS = 4_000;
 export const FORWARD_TIMEOUT_MS = 10_000;
 export const API_TIMEOUT_MS = 30_000;
+/**
+ * Confirming a listing photo (POST /listings/{id}/media) re-encodes it on the API, which takes
+ * longer than an ordinary call on a busy server: its own budget, and the browser waits
+ * MEDIA_API_TIMEOUT_MS (two refreshes and two forwards still fit).
+ */
+export const MEDIA_FORWARD_TIMEOUT_MS = 40_000;
+export const MEDIA_API_TIMEOUT_MS = 90_000;
+
+/** POST /listings/{id}/media: the one call that gets the longer budget. */
+export const isMediaConfirm = (method: string, path: string[]) =>
+  method === 'POST' && path.length === 3 && path[0] === 'listings' && path[2] === 'media';
 
 export interface ProxyRequest {
   method: string;
@@ -174,7 +192,9 @@ export async function proxy(
       ...(req.body !== undefined ? { body: req.body } : {}),
       cache: 'no-store',
       redirect: 'manual',
-      signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS),
+      signal: AbortSignal.timeout(
+        isMediaConfirm(req.method, req.path) ? MEDIA_FORWARD_TIMEOUT_MS : FORWARD_TIMEOUT_MS,
+      ),
     });
   };
 
