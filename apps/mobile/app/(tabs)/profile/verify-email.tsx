@@ -60,6 +60,13 @@ export default function VerifyEmailScreen() {
   const [notice, setNotice] = useState<MessageKey | null>(null);
   const [clock, setClock] = useState(Date.now());
   const sending = useRef(false);
+  // A cold open may come before the profile: students start on College once it arrives.
+  const kindSet = useRef(!!params.type || !!me);
+  useEffect(() => {
+    if (kindSet.current || !me) return;
+    kindSet.current = true;
+    if (me.category === 'student') setType('college_email');
+  }, [me]);
 
   /** The member's attempts and badges as the API has them now. */
   const load = useCallback(async () => {
@@ -88,15 +95,19 @@ export default function VerifyEmailScreen() {
     });
     return () => sub.remove();
   }, [load]);
-  // The "Send again in N s" countdown.
-  useEffect(() => {
-    const timer = setInterval(() => setClock(Date.now()), 1_000);
-    return () => clearInterval(timer);
-  }, []);
-
   const view: EmailBadgeView | null =
     me && attempts ? emailBadgeView(type, me.badges, attempts, clock) : null;
   const mine = sent[type];
+  // The "Send again in N s" countdown: ticks only while it runs.
+  const resendAt = mine ? mine.at + RESEND_AFTER_MS : 0;
+  useEffect(() => {
+    if (resendAt <= Date.now()) return;
+    const timer = setInterval(() => {
+      setClock(Date.now());
+      if (Date.now() >= resendAt) clearInterval(timer);
+    }, 1_000);
+    return () => clearInterval(timer);
+  }, [resendAt]);
   const showSent = !editing && view?.kind === 'sent';
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
@@ -109,11 +120,13 @@ export default function VerifyEmailScreen() {
     setNotice(null);
     setTouched(false);
     setEditing(false);
+    setEmail(''); // an address typed for one kind is never sent as the other
   };
 
-  const send = async () => {
+  /** Sends a link to `address` (the field, or the address of the last link for "Send again"). */
+  const send = async (address: string = email) => {
     setTouched(true);
-    const problem = emailFieldError(type, email);
+    const problem = emailFieldError(type, address);
     if (problem) return setError(problem);
     if (sending.current) return;
     sending.current = true;
@@ -123,7 +136,7 @@ export default function VerifyEmailScreen() {
     try {
       const res = await api('/verifications/email', {
         method: 'POST',
-        body: { email: email.trim(), type },
+        body: { email: address.trim(), type },
         locale,
       });
       const parsed = StartEmailVerificationResponse.safeParse(res.body);
@@ -134,7 +147,7 @@ export default function VerifyEmailScreen() {
       }
       setSent((s) => ({
         ...s,
-        [type]: { verificationId: parsed.data.verificationId, to: email.trim(), at: Date.now() },
+        [type]: { verificationId: parsed.data.verificationId, to: address.trim(), at: Date.now() },
       }));
       setEditing(false);
       await load();
@@ -153,9 +166,10 @@ export default function VerifyEmailScreen() {
     const ok = await load();
     setChecking(false);
     if (!ok) setError('verification.errors.status');
+    return ok;
   };
 
-  // The badge arrived while this screen was open: say so once.
+  // The badge arrived while this screen was open: drop "not confirmed yet".
   const verified = view?.kind === 'verified';
   useEffect(() => {
     if (verified) setNotice(null);
@@ -267,7 +281,9 @@ export default function VerifyEmailScreen() {
               busy={checking}
               trailingArrow={false}
               onPress={() =>
-                void check().then(() => setNotice((n) => n ?? 'verification.email.notYet'))
+                void check().then((ok) => {
+                  if (ok) setNotice((n) => n ?? 'verification.email.notYet');
+                })
               }
             />
             {mine?.to ? (
@@ -281,10 +297,7 @@ export default function VerifyEmailScreen() {
                 }
                 disabled={wait > 0 || busy}
                 trailingArrow={false}
-                onPress={() => {
-                  setEmail(mine.to!);
-                  void send();
-                }}
+                onPress={() => void send(mine.to!)}
               />
             ) : null}
             <SecondaryButton

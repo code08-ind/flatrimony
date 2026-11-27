@@ -36,7 +36,13 @@ describe.skipIf(!url)('pgEmailVerificationRepository', () => {
 
   async function link(
     userId: string,
-    over: { type?: EmailVerificationType; address?: Buffer; ttlMs?: number; max?: number } = {},
+    over: {
+      type?: EmailVerificationType;
+      address?: Buffer;
+      ttlMs?: number;
+      max?: number;
+      maxMine?: number;
+    } = {},
   ) {
     const id = randomUUID();
     const token = randomBytes(32).toString('base64url');
@@ -48,6 +54,7 @@ describe.skipIf(!url)('pgEmailVerificationRepository', () => {
       tokenHash: sha(token),
       expiresAt: new Date(Date.now() + (over.ttlMs ?? 24 * 60 * 60_000)),
       maxPerAddressPerDay: over.max ?? 3,
+      maxPerMemberAddressPerDay: over.maxMine ?? 3,
     });
     return { id, token, outcome };
   }
@@ -146,7 +153,17 @@ describe.skipIf(!url)('pgEmailVerificationRepository', () => {
       .execute();
     expect(await repo.confirm(sha(token))).toEqual({ status: 'expired' });
     expect((await status(id)).status).toBe('expired');
+    // Opened again: still "expired", not "used or replaced".
+    expect(await repo.confirm(sha(token))).toEqual({ status: 'expired' });
     expect((await repo.badges(u))!.hasWorkBadge).toBe(false);
+  });
+
+  it('no new link once the badge is there (a link opened meanwhile)', async () => {
+    const u = await user();
+    const first = await link(u);
+    expect((await repo.confirm(sha(first.token))).status).toBe('verified');
+    expect((await link(u)).outcome).toEqual({ status: 'already_verified' });
+    expect((await link(u, { type: 'college_email' })).outcome).toEqual({ status: 'started' });
   });
 
   it('unknown tokens and deleted accounts are invalid', async () => {
@@ -197,6 +214,19 @@ describe.skipIf(!url)('pgEmailVerificationRepository', () => {
       'started',
       'address_limited',
     ]);
+  });
+
+  it('one member uses only their own share of an address', async () => {
+    const address = randomBytes(32);
+    const asker = await user();
+    const outcomes = [];
+    for (let i = 0; i < 3; i += 1)
+      outcomes.push((await link(asker, { address, max: 10, maxMine: 2 })).outcome.status);
+    expect(outcomes).toEqual(['started', 'started', 'address_limited']);
+    // The mailbox's owner still gets a link.
+    expect((await link(await user(), { address, max: 10, maxMine: 2 })).outcome.status).toBe(
+      'started',
+    );
   });
 
   it('concurrent requests for one address never pass the cap', async () => {

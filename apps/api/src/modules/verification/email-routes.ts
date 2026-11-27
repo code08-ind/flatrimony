@@ -15,6 +15,7 @@ import {
   ConfirmEmailVerificationResponse,
   EMAIL_LINK_TTL_MS,
   EMAIL_LINKS_PER_ADDRESS_PER_DAY,
+  EMAIL_LINKS_PER_MEMBER_ADDRESS_PER_DAY,
   RATE_LIMITS,
   StartEmailVerificationRequest,
   StartEmailVerificationResponse,
@@ -52,6 +53,12 @@ const linkProblem = (code: 'link_invalid' | 'link_expired' | 'email_in_use', mes
   new ApiError('verification.failed', {
     title: 'This link cannot be used',
     errors: [{ path: 'body.token', code, message }],
+  });
+
+const alreadyVerified = () =>
+  new ApiError('conflict', {
+    title: 'This badge is already on your profile',
+    errors: [{ path: 'body.type', code: 'already_verified', message: 'Already verified' }],
   });
 
 export const tokenHash = (token: string) => createHash('sha256').update(token).digest();
@@ -104,7 +111,7 @@ export const emailVerificationRoutes: FastifyPluginAsyncZod<
       const badges = await repo.badges(userId);
       if (!badges) throw new ApiError('profile.incomplete', { title: 'Create your profile first' });
       if (type === 'work_email' ? badges.hasWorkBadge : badges.hasCollegeBadge)
-        throw new ApiError('conflict', { title: 'This badge is already on your profile' });
+        throw alreadyVerified();
 
       const id = randomUUID();
       const token = randomBytes(32).toString('base64url');
@@ -117,9 +124,14 @@ export const emailVerificationRoutes: FastifyPluginAsyncZod<
         tokenHash: tokenHash(token),
         expiresAt,
         maxPerAddressPerDay: EMAIL_LINKS_PER_ADDRESS_PER_DAY,
+        maxPerMemberAddressPerDay: EMAIL_LINKS_PER_MEMBER_ADDRESS_PER_DAY,
       });
+      if (started.status === 'already_verified') throw alreadyVerified();
       if (started.status === 'in_progress')
-        throw new ApiError('conflict', { title: 'A link is already on its way' });
+        throw new ApiError('conflict', {
+          title: 'A link is already on its way',
+          errors: [{ path: 'body', code: 'in_progress', message: 'Try again in a moment' }],
+        });
       if (started.status === 'address_limited')
         throw new ApiError('rate_limited', {
           title: 'Too many links to this address today',
@@ -181,7 +193,10 @@ export const emailVerificationRoutes: FastifyPluginAsyncZod<
         case 'expired':
           throw linkProblem('link_expired', 'This link has expired. Ask for a new one in the app.');
         case 'email_in_use':
-          req.log.info({ type: outcome.type, status: 'failed' }, 'email verification confirmed');
+          req.log.info(
+            { type: outcome.type, status: 'failed', failureCode: 'email_in_use' },
+            'email verification refused',
+          );
           throw linkProblem(
             'email_in_use',
             'This email is already confirmed on a Flatrimony account.',

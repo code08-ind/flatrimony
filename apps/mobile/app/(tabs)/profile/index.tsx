@@ -212,7 +212,20 @@ function EmailBadgeRow() {
       testID="email-badge-row"
       accessibilityRole="button"
       accessibilityLabel={`${t('profile.tiles.email')}. ${status}`}
-      onPress={() => router.push('/profile/verify-email')}
+      onPress={() =>
+        router.push({
+          pathname: '/profile/verify-email',
+          // With one badge earned, "Add email" opens the other kind.
+          params:
+            earned.length === 1
+              ? {
+                  type: me.badges.some((b) => b.type === 'work_verified')
+                    ? 'college_email'
+                    : 'work_email',
+                }
+              : {},
+        })
+      }
       style={({ pressed }) => [styles.emailRow, pressed && styles.emailRowPressed]}
     >
       <View style={styles.emailIcon}>

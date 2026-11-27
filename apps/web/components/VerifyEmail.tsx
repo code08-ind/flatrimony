@@ -20,6 +20,11 @@ export function VerifyEmail() {
   const [state, setState] = useState<State>({ kind: 'checking' });
   const token = useRef<string | null | undefined>(undefined);
   const inFlight = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Each new outcome moves focus to its heading (screen readers hear it), once.
+  useEffect(() => {
+    if (state.kind !== 'checking') heading.current?.focus();
+  }, [state.kind]);
 
   const confirm = useCallback(async () => {
     const value = token.current;
@@ -42,13 +47,23 @@ export function VerifyEmail() {
   }, [locale]);
 
   useEffect(() => {
-    if (token.current === undefined) {
+    /** Takes the token out of the address bar and the history (not something to share). */
+    const take = () => {
       token.current = tokenFromHash(window.location.hash);
-      // Out of the address bar and the history: the link is not something to share or bookmark.
       if (window.location.hash)
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
+    };
+    if (token.current === undefined) take();
     void confirm();
+    // A whole link pasted into this tab after a cut-short one changes only the fragment: no
+    // reload, so read it here.
+    const onHash = () => {
+      if (!window.location.hash) return;
+      take();
+      void confirm();
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, [confirm]);
 
   const home = (
@@ -78,6 +93,8 @@ export function VerifyEmail() {
         return [t('verification.email.inUse.title'), t('verification.email.inUse.body')];
       case 'no_token':
         return [t('web.verifyEmail.noTokenTitle'), t('web.verifyEmail.noTokenBody')];
+      case 'rate_limited':
+        return [t('web.verifyEmail.tooManyTitle'), t('web.verifyEmail.tooManyBody')];
       case 'error':
         return [t('web.verifyEmail.errorTitle'), t('web.verifyEmail.errorBody')];
     }
@@ -88,7 +105,7 @@ export function VerifyEmail() {
       actions={
         state.kind === 'checking' ? null : (
           <>
-            {state.kind === 'error' ? (
+            {state.kind === 'error' || state.kind === 'rate_limited' ? (
               <Button testId="verify-email-retry" onClick={() => void confirm()}>
                 {t('web.verifyEmail.retry')}
               </Button>
@@ -105,7 +122,7 @@ export function VerifyEmail() {
             {title}
           </h1>
         ) : (
-          <h1 tabIndex={-1} ref={(el) => el?.focus()}>
+          <h1 tabIndex={-1} ref={heading}>
             {title}
           </h1>
         )}

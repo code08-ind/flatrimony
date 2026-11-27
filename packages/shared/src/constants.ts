@@ -99,8 +99,12 @@ export const RATE_LIMITS = {
   listingCreate: { limit: 10, windowMs: 24 * 60 * 60_000 },
 } as const;
 
-/** Links sent to one email address per day, whoever asks (nobody's inbox gets flooded; T3.3). */
-export const EMAIL_LINKS_PER_ADDRESS_PER_DAY = 3;
+/**
+ * Links to one email address per day (T3.3): at most 3 from any one member, 10 from all members
+ * together, so nobody's inbox gets flooded and one member cannot use up the owner's links.
+ */
+export const EMAIL_LINKS_PER_MEMBER_ADDRESS_PER_DAY = 3;
+export const EMAIL_LINKS_PER_ADDRESS_PER_DAY = 10;
 /** How long an email verification link works. */
 export const EMAIL_LINK_TTL_MS = 24 * 60 * 60_000;
 

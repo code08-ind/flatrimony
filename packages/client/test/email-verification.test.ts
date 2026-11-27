@@ -64,6 +64,11 @@ describe('emailStartErrorKey', () => {
     [422, { errors: [{ code: 'personal_domain' }] }, 'verification.email.errors.personal'],
     [409, { code: 'conflict' }, 'verification.email.errors.already'],
     [
+      409,
+      { code: 'conflict', errors: [{ code: 'in_progress' }] },
+      'verification.errors.inProgress',
+    ],
+    [
       429,
       { code: 'rate_limited', errors: [{ code: 'address_limited' }] },
       'verification.email.errors.addressLimit',
@@ -88,7 +93,8 @@ describe('emailConfirmResult', () => {
     [422, { errors: [{ code: 'email_in_use' }] }, { kind: 'in_use' }],
     [422, { errors: [{ code: 'link_invalid' }] }, { kind: 'invalid' }],
     [422, { errors: [{ path: 'body.token', code: 'invalid_string' }] }, { kind: 'invalid' }],
-    [429, {}, { kind: 'error' }],
+    [429, {}, { kind: 'rate_limited' }],
+    [503, {}, { kind: 'error' }],
     ['network', undefined, { kind: 'error' }],
   ] as const)('%s %j', (status, body, result) => {
     expect(emailConfirmResult(status, body)).toEqual(result);

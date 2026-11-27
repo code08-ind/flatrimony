@@ -100,7 +100,8 @@ describe('POST /v1/verifications/email', () => {
     const w = mem.starts[0]!;
     expect(w).toMatchObject({ id: body.verificationId, type: 'work_email', domain: 'infosys.com' });
     expect(w.addressHash).toHaveLength(32);
-    expect(w.maxPerAddressPerDay).toBe(3);
+    expect(w.maxPerAddressPerDay).toBe(10);
+    expect(w.maxPerMemberAddressPerDay).toBe(3);
 
     // The link goes to the address as typed (local part kept), to the web confirm page.
     const message = mail.latest('asha.rao+flat@infosys.com')!;
@@ -170,10 +171,16 @@ describe('POST /v1/verifications/email', () => {
     await app.close();
   });
 
-  it('a concurrent request is a conflict', async () => {
+  it('a concurrent request and a badge that arrived meanwhile are told apart', async () => {
     const { app, mem, start } = await setup();
     mem.setStart({ status: 'in_progress' });
-    expect((await start({ email: 'a@infosys.com', type: 'work_email' })).statusCode).toBe(409);
+    const busy = await start({ email: 'a@infosys.com', type: 'work_email' });
+    expect(busy.statusCode).toBe(409);
+    expect(busy.json().errors[0]).toMatchObject({ code: 'in_progress' });
+    mem.setStart({ status: 'already_verified' });
+    const done = await start({ email: 'a@infosys.com', type: 'work_email' });
+    expect(done.statusCode).toBe(409);
+    expect(done.json().errors[0]).toMatchObject({ code: 'already_verified' });
     await app.close();
   });
 

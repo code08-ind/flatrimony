@@ -218,9 +218,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       throw new Error('FIELD_ENCRYPTION_KEY is required outside local development');
     if (!env.PUBLIC_API_URL)
       throw new Error('PUBLIC_API_URL is required outside local development');
-    if (!env.WEB_APP_URL) throw new Error('WEB_APP_URL is required outside local development');
     if (!env.DIGILOCKER_WEBHOOK_SECRETS)
       throw new Error('DIGILOCKER_WEBHOOK_SECRETS is required outside local development');
+    // Work/college email links open the web app (T3.3).
+    if (!env.WEB_APP_URL) throw new Error('WEB_APP_URL is required outside local development');
     // Profile photos (T2.10): without Storage the photo routes answer 503 and nobody can finish
     // their profile, so a deploy without it is a misconfiguration.
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)

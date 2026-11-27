@@ -480,7 +480,9 @@
       "errorTitle": "Something went wrong",
       "errorBody": "Check your connection and try again. The link still works.",
       "retry": "Try again",
-      "home": "Go to Flatrimony"
+      "home": "Go to Flatrimony",
+      "tooManyTitle": "Too many tries",
+      "tooManyBody": "Too many links were opened from this network. Wait an hour, then open the link again: it still works."
     }
   },
   "verification": {
@@ -582,7 +584,7 @@
       "labelCollege": "College email address",
       "placeholderWork": "you@company.com",
       "placeholderCollege": "you@college.ac.in",
-      "privacy": "We keep only the part after @ (like company.com), never your address. One email can verify one account.",
+      "privacy": "We keep only the part after @ (like company.com) and a coded copy of the address, so one email cannot verify two accounts. Never the address itself.",
       "send": "Send link",
       "sent": {
         "title": "Check your inbox",

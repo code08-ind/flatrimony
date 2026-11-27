@@ -71,6 +71,14 @@ const request = (over: Partial<ProxyRequest> = {}): ProxyRequest => ({
 
 describe('what may pass the proxy at all', () => {
   const headers = (h: Record<string, string>) => new Headers({ host: 'flatrimony.in', ...h });
+  it('of verifications, only the email link confirm (POST, same origin)', () => {
+    const post = (path: string[]) =>
+      precheck('POST', path, headers({ origin: 'https://flatrimony.in' }));
+    expect(post(['verifications', 'email', 'confirm'])).toBeNull();
+    expect(post(['verifications', 'email'])?.status).toBe(404);
+    expect(post(['verifications', 'digilocker'])?.status).toBe(404);
+  });
+
   it('only the API roots the web app uses, as plain segments', () => {
     for (const ok of [
       ['me'],
@@ -83,7 +91,6 @@ describe('what may pass the proxy at all', () => {
       ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f'],
       ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f', 'media', 'upload-url'],
       ['me', 'listings'],
-      ['verifications', 'email', 'confirm'],
     ])
       expect(precheck('GET', ok, headers({}))).toBeNull();
     for (const bad of [
@@ -92,6 +99,9 @@ describe('what may pass the proxy at all', () => {
       ['admin', 'reports'],
       ['dev', 'sms-outbox'],
       ['dev', 'email-outbox', 'latest'],
+      ['verifications'],
+      ['verifications', 'digilocker'],
+      ['verifications', 'email', 'confirm'], // GET: only the POST passes
       ['webhooks', 'digilocker'],
       ['internal', 'jobs'],
       ['me', '..'],

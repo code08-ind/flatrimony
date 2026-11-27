@@ -66,7 +66,10 @@ export function emailStartErrorKey(status: number | 'network', body?: unknown): 
   const b = body as ProblemBody;
   const reason = b?.errors?.[0]?.code;
   if (status === 422 && reason && reason in PROBLEM_KEY) return PROBLEM_KEY[reason as EmailProblem];
-  if (status === 409 && b?.code === 'conflict') return 'verification.email.errors.already';
+  if (status === 409 && b?.code === 'conflict')
+    return reason === 'in_progress'
+      ? 'verification.errors.inProgress'
+      : 'verification.email.errors.already';
   if (status === 429)
     return reason === 'address_limited'
       ? 'verification.email.errors.addressLimit'
@@ -80,7 +83,9 @@ export type EmailConfirmResult =
   | { kind: 'expired' }
   | { kind: 'invalid' }
   | { kind: 'in_use' }
-  /** Network, rate limit or server trouble: the same link may work on a retry. */
+  /** Too many tries from this network: wait, then the same link still works. */
+  | { kind: 'rate_limited' }
+  /** Network or server trouble: the same link may work on a retry. */
   | { kind: 'error' };
 
 /** The answer of `POST /verifications/email/confirm`. */
@@ -97,6 +102,7 @@ export function emailConfirmResult(status: number | 'network', body?: unknown): 
     // A malformed token (a link cut short by the mail app) is as good as an unknown one.
     return { kind: 'invalid' };
   }
+  if (status === 429) return { kind: 'rate_limited' };
   return { kind: 'error' };
 }
 

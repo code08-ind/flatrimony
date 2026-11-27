@@ -19,8 +19,10 @@ export interface EmailStartWrite {
   addressHash: Buffer;
   tokenHash: Buffer;
   expiresAt: Date;
-  /** Links to one address per day, whoever asks. */
+  /** Links to one address per day, all members together. */
   maxPerAddressPerDay: number;
+  /** Links one member may send to one address per day. */
+  maxPerMemberAddressPerDay: number;
 }
 
 export type EmailStartOutcome =
@@ -28,7 +30,9 @@ export type EmailStartOutcome =
   /** This address had its links for today. */
   | { status: 'address_limited' }
   /** Another request of this member for this type won the race. */
-  | { status: 'in_progress' };
+  | { status: 'in_progress' }
+  /** The badge arrived meanwhile (a link opened while this request ran). */
+  | { status: 'already_verified' };
 
 export type EmailConfirmOutcome =
   | { status: 'verified'; type: EmailVerificationType; userId: string }
@@ -97,14 +101,32 @@ export function pgEmailVerificationRepository(db: Database): EmailVerificationRe
           await sql`select pg_advisory_xact_lock(hashtextextended(${write.addressHash.toString('hex')}, 0))`.execute(
             tx,
           );
+          // Two caps: one member cannot flood an inbox, and several members together cannot
+          // either; a member who asks for someone else's address only uses up their own share.
           const recent = await tx
             .selectFrom('private.email_verifications')
-            .select((eb) => eb.fn.countAll<string>().as('n'))
+            .select((eb) => [
+              eb.fn.countAll<string>().as('all'),
+              sql<string>`count(*) filter (where user_id = ${userId})`.as('mine'),
+            ])
             .where('address_hash', '=', write.addressHash)
             .where('created_at', '>', sql<Date>`now() - interval '1 day'`)
             .executeTakeFirstOrThrow();
-          if (Number(recent.n) >= write.maxPerAddressPerDay)
+          if (
+            Number(recent.mine) >= write.maxPerMemberAddressPerDay ||
+            Number(recent.all) >= write.maxPerAddressPerDay
+          )
             return { status: 'address_limited' } as const;
+
+          // The badge may have arrived since the route looked (a link opened meanwhile); the
+          // profile row lock orders this against confirm, which locks it too.
+          const profile = await tx
+            .selectFrom('profiles')
+            .select(['has_work_badge', 'has_college_badge'])
+            .where('id', '=', userId)
+            .forUpdate()
+            .executeTakeFirst();
+          if (profile?.[BADGE_COLUMN[write.type]]) return { status: 'already_verified' } as const;
 
           // One pending attempt per member and type: a new request replaces the older link.
           await tx
@@ -177,15 +199,17 @@ export function pgEmailVerificationRepository(db: Database): EmailVerificationRe
             return link.status === 'verified'
               ? { status: 'verified', type, userId: link.user_id }
               : { status: 'invalid' };
-          if (link.status !== 'pending') return { status: 'invalid' };
-          if (link.expired) {
-            await tx
-              .updateTable('verifications')
-              .set({ status: 'expired', completed_at: sql`now()` })
-              .where('id', '=', link.verification_id)
-              .execute();
+          // Past its time: expired, however often it is opened (a replaced link is invalid).
+          if (link.expired && (link.status === 'pending' || link.status === 'expired')) {
+            if (link.status === 'pending')
+              await tx
+                .updateTable('verifications')
+                .set({ status: 'expired', completed_at: sql`now()` })
+                .where('id', '=', link.verification_id)
+                .execute();
             return { status: 'expired' };
           }
+          if (link.status !== 'pending') return { status: 'invalid' };
           const taken = await tx
             .selectFrom('private.email_verifications')
             .select('id')

@@ -108,18 +108,6 @@ async function onboardedUser(page: Page): Promise<unknown> {
   return session;
 }
 
-/** Completes the mock DigiLocker consent page that the app opened in a new tab. */
-async function consent(tab: Page, name: string) {
-  await tab.waitForLoadState();
-  await expect(tab.getByRole('heading', { name: 'DigiLocker (test)' })).toBeVisible();
-  await tab.getByLabel('Name on the documents').fill(name);
-  await tab.getByLabel('Date of birth').fill('1998-08-15');
-  await tab.getByLabel('Gender').selectOption('female');
-  await tab.getByRole('button', { name: 'Allow' }).click();
-  await expect(tab.getByRole('heading', { name: 'Done' })).toBeVisible();
-  await tab.close();
-}
-
 test('work email: refused personal address, link sent, opened, badge shown', async ({ page }) => {
   const session = await onboardedUser(page);
   await page.addInitScript((value) => {
