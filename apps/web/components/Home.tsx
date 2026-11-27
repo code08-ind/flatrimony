@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { isComplete } from '@flatrimony/client';
@@ -9,7 +10,10 @@ import { useMe } from '../lib/client/me';
 import { SessionEnded } from './SessionEnded';
 import { Button, Frame, Notice } from './ui';
 
-/** After onboarding, until web Discover (W02) exists: the profile is saved; sign out. */
+/**
+ * After onboarding, until web Discover (W02) exists: the profile is saved; My Flat for members with
+ * a room (T3.9b); sign out.
+ */
 export function Home() {
   const { status, me, refresh } = useMe();
   const router = useRouter();
@@ -68,6 +72,11 @@ export function Home() {
         <h1>{t('web.savedTitle')}</h1>
         <p className="subtitle">{t('web.savedBody')}</p>
       </header>
+      {me.intent === 'have_room' ? (
+        <Link className="btn btn-primary" href={`/${locale}/my-flat`} data-testid="home-my-flat">
+          {t('listing.myFlat.overline')}
+        </Link>
+      ) : null}
     </Frame>
   );
 }

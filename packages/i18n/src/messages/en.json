@@ -666,7 +666,8 @@
           "availableFrom": "Pick the date the room is free from.",
           "flatmates": "Fewer people must live there now than the flat holds.",
           "description": "The description can be up to 1,000 characters.",
-          "address": "The address can be up to 300 characters."
+          "address": "The address can be up to 300 characters.",
+          "availableFromPast": "Pick today or a later date."
         },
         "pinSaved": "Pin saved",
         "decreaseField": "Fewer: {field}",
@@ -698,7 +699,7 @@
           "rent": "Enter a rent between ₹1,000 and ₹2,00,000.",
           "deposit": "Enter the deposit (0 if there is none).",
           "recurring": "Monthly costs are up to ₹1,00,000 each.",
-          "oneTime": "Give each one-time cost a label of up to 40 characters and an amount."
+          "oneTime": "Give each one-time cost a label of up to 40 characters and an amount up to ₹10,00,000."
         }
       },
       "rules": {
@@ -742,7 +743,8 @@
           "failed": "The photo could not be added. Try again.",
           "tooLarge": "Use a photo up to 8 MB.",
           "unsupported": "Use a JPEG or WebP photo.",
-          "liveMinimum": "A live listing keeps at least 3 photos. Add another first, or pause the listing."
+          "liveMinimum": "A live listing keeps at least 3 photos. Add another first, or pause the listing.",
+          "unreadable": "This file could not be opened as a photo. Use a JPEG, PNG or WebP photo."
         },
         "removeNumbered": "Remove photo {number}"
       },
@@ -754,7 +756,19 @@
         "recorded": "Walkthrough added ({seconds} s)",
         "rerecord": "Record again",
         "webTitle": "Continue on your Android phone",
-        "webBody": "The walkthrough is recorded in the Flatrimony Android app. Your draft is saved: open My Flat on your phone to continue."
+        "webBody": "The walkthrough is recorded in the Flatrimony Android app. Your draft is saved: open My Flat on your phone to continue.",
+        "handover": {
+          "badge": "In-app recording",
+          "title": "Record your walkthrough on your Android phone",
+          "body": "Videos must be recorded live in the Flatrimony Android app. Pre-recorded clips aren't accepted, so flatmates see the real room.",
+          "scan": "Scan with your Android phone to open this draft in the app",
+          "qrLabel": "QR code that opens this draft at the Video step in the Flatrimony Android app",
+          "noScanner": "No scanner? Open the Flatrimony app on your Android phone, go to My Flat and tap Continue.",
+          "note": "Video is recorded in the Flatrimony Android app. Your draft stays saved here.",
+          "doneTitle": "Already done",
+          "check": "I recorded it, check again",
+          "notYet": "No walkthrough yet. Record it on your phone, then check again."
+        }
       },
       "review": {
         "overline": "Review & publish",
@@ -775,7 +789,8 @@
         "liveBody": "It shows in Discover for 7 days. Tap “Still available” each week to keep it there.",
         "reviewTitle": "Your listing is being checked",
         "reviewBody": "Our team will look at it soon. You will see it go live in My Flat.",
-        "toMyFlat": "Go to My Flat"
+        "toMyFlat": "Go to My Flat",
+        "verifyInApp": "Verify with DigiLocker in the Flatrimony app, then submit from here or from the app."
       },
       "errors": {
         "network": "No connection. Check your internet and try again.",
@@ -794,7 +809,8 @@
       },
       "liveEditNote": "This listing is live. Changes are checked again before they show in Discover.",
       "heldForReview": "Your changes are being checked by our team, so the listing is out of Discover for now. You will see it go live again in My Flat.",
-      "save": "Save"
+      "save": "Save",
+      "stepsLabel": "Listing steps"
     },
     "myFlat": {
       "overline": "My Flat",

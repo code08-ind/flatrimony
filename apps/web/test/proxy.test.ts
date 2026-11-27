@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { webConfig } from '../lib/server/config';
 import {
+  API_TIMEOUT_MS,
+  FORWARD_TIMEOUT_MS,
+  isMediaConfirm,
   MAX_BODY_BYTES,
+  MEDIA_API_TIMEOUT_MS,
+  MEDIA_FORWARD_TIMEOUT_MS,
   precheck,
+  REFRESH_TIMEOUT_MS,
   proxy,
   readCapped,
   type ProxyRequest,
@@ -73,6 +79,10 @@ describe('what may pass the proxy at all', () => {
       ['reference'],
       ['config'],
       ['commute', 'preview'],
+      ['listings'],
+      ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f'],
+      ['listings', '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f', 'media', 'upload-url'],
+      ['me', 'listings'],
     ])
       expect(precheck('GET', ok, headers({}))).toBeNull();
     for (const bad of [
@@ -85,6 +95,9 @@ describe('what may pass the proxy at all', () => {
       ['me', '.hidden'],
       ['me', 'a%2Fb'],
       ['me', 'a b'],
+      ['listings', '..', 'me'],
+      ['listings', 'x%2F..%2Fadmin'],
+      ['listing'],
     ])
       expect(precheck('GET', bad, headers({}))?.status).toBe(404);
   });
@@ -172,6 +185,50 @@ describe('forwarding', () => {
     const empty = network({ api: () => new Response(null, { status: 204 }) });
     const result = await proxy(request({ method: 'DELETE' }), config, empty.fetchImpl, () => NOW);
     expect(result).toMatchObject({ status: 204, body: null });
+  });
+});
+
+describe('the listing editor (T3.9b)', () => {
+  it("owner writes pass with this site's Origin; If-Match goes along", async () => {
+    const id = '7d4f3a2e-5b6c-4d7e-8f90-1a2b3c4d5e6f';
+    const h = new Headers({ host: 'flatrimony.in', origin: 'https://flatrimony.in' });
+    for (const [method, path] of [
+      ['POST', ['listings']],
+      ['PATCH', ['listings', id]],
+      ['PUT', ['listings', id, 'costs']],
+      ['POST', ['listings', id, 'submit']],
+      ['DELETE', ['listings', id, 'media', id]],
+    ] as const)
+      expect(precheck(method, [...path], h)).toBeNull();
+    expect(
+      precheck('PATCH', ['listings', id], new Headers({ host: 'flatrimony.in' }))?.status,
+    ).toBe(403);
+    const net = network({ api: () => json(200, { id }, { etag: 'W/"4"' }) });
+    const result = await proxy(
+      request({
+        method: 'PATCH',
+        path: ['listings', id],
+        body: new TextEncoder().encode('{"title":"x"}').buffer,
+        headers: new Headers({ host: 'flatrimony.in', 'if-match': 'W/"3"' }),
+      }),
+      config,
+      net.fetchImpl,
+      () => NOW,
+    );
+    expect(result.headers.etag).toBe('W/"4"');
+    const [call] = net.apiCalls();
+    expect(call!.url).toBe(`https://api.test/v1/listings/${id}`);
+    expect((call!.init.headers as Record<string, string>)['if-match']).toBe('W/"3"');
+  });
+  it("only the photo confirm gets the longer budget, and it still fits the browser's", () => {
+    expect(isMediaConfirm('POST', ['listings', 'x', 'media'])).toBe(true);
+    expect(isMediaConfirm('POST', ['listings', 'x', 'media', 'upload-url'])).toBe(false);
+    expect(isMediaConfirm('DELETE', ['listings', 'x', 'media'])).toBe(false);
+    expect(isMediaConfirm('POST', ['me', 'x', 'media'])).toBe(false);
+    expect(2 * REFRESH_TIMEOUT_MS + 2 * FORWARD_TIMEOUT_MS).toBeLessThan(API_TIMEOUT_MS);
+    expect(2 * REFRESH_TIMEOUT_MS + 2 * MEDIA_FORWARD_TIMEOUT_MS).toBeLessThan(
+      MEDIA_API_TIMEOUT_MS,
+    );
   });
 });
 

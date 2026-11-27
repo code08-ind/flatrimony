@@ -229,10 +229,18 @@ export function Stepper({
   );
 }
 
-/** Page frame for sign-in and onboarding: one column, the actions at the end. */
-export function Frame({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+/** Page frame for sign-in and onboarding: one column, the actions at the end (`wide`: listings). */
+export function Frame({
+  children,
+  actions,
+  wide = false,
+}: {
+  children: ReactNode;
+  actions?: ReactNode;
+  wide?: boolean;
+}) {
   return (
-    <main className="frame">
+    <main className={wide ? 'frame frame-wide' : 'frame'}>
       <div className="frame-body">{children}</div>
       {actions ? <div className="frame-actions">{actions}</div> : null}
     </main>

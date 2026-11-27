@@ -18,6 +18,7 @@ import {
   listingResumeStep,
   statusChip,
   stepsDone,
+  walkthroughAppLink,
   type BasicsDraft,
   type MoneyDraft,
 } from '../src/index.js';
@@ -250,5 +251,15 @@ describe('errors', () => {
           .reduce<unknown>((n, k) => (n as Record<string, unknown>)?.[k], messages[locale]);
         expect(typeof text, `${locale}:${key}`).toBe('string');
       }
+  });
+});
+
+describe('the web → Android link (FR-LST-05)', () => {
+  it('opens the draft at the Video step; nothing but a listing id goes in it', () => {
+    const id = listing().id;
+    expect(walkthroughAppLink(id)).toBe(`flatrimony://listings/${id}/video`);
+    expect(walkthroughAppLink(id.toUpperCase())).toBe(`flatrimony://listings/${id}/video`);
+    for (const bad of ['', 'abc', `${id}/../me`, `${id}?x=1`, 'javascript:alert(1)'])
+      expect(walkthroughAppLink(bad)).toBeNull();
   });
 });
