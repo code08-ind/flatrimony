@@ -215,6 +215,10 @@ export interface Listings {
   deposit_per_person_inr: number;
   description: string | null;
   expires_at: Timestamp | null;
+  /**
+   * The expires_at the last "still available?" reminder was for (FR-LST-07); one reminder per week.
+   */
+  expiry_reminded_for: Timestamp | null;
   furnishing: FurnishingLevel;
   id: Generated<string>;
   last_confirmed_at: Timestamp | null;
@@ -238,6 +242,17 @@ export interface Listings {
   title: string;
   total_flatmates: number;
   updated_at: Generated<Timestamp>;
+}
+
+export interface Notifications {
+  created_at: Generated<Timestamp>;
+  deep_link: string | null;
+  id: Generated<string>;
+  params: Generated<Json>;
+  read_at: Timestamp | null;
+  title_key: string;
+  type: string;
+  user_id: string;
 }
 
 export interface PreferenceAreas {
@@ -447,6 +462,7 @@ export interface DB {
   listing_media: ListingMedia;
   listing_rules: ListingRules;
   listings: Listings;
+  notifications: Notifications;
   preference_areas: PreferenceAreas;
   preferences: Preferences;
   'private.banned_identities': PrivateBannedIdentities;

@@ -1449,6 +1449,19 @@ Migration 0008 pulls `public.consents` and `public.devices` (§6.10) forward fro
 - **Access:** RLS is on, nothing is granted to clients, and findings are deleted with their listing.
 - **Duplicate photos:** two photos are the same picture when their 64-bit perceptual hashes differ in at most 6 bits (`bit_count(a.phash # b.phash)`). Photos of other owners' listings are compared, deleted listings included.
 
+### 15.9 Listing expiry and notifications (T3.10, migration file 0014)
+
+0014 pulls `public.notifications` (§6.10) forward for the listing expiry reminder. Additions to the DDL above:
+
+- `type` is a dotted lower-case name; `title_key` is an i18n key; `params` is a JSON object of at most 2 KB holding ids and counts only, never personal data (a name in a title, such as "New message from {firstName}", is looked up when the notification is shown or sent, not stored); `deep_link` is a `flatrimony://` or `https://` link of up to 300 characters.
+- RLS is on and nothing is granted to clients: the API (and the worker) read and write it. Rows go with the account.
+
+`listings.expiry_reminded_for` records which `expires_at` the last "still available?" reminder was for. A reminder is due when it differs from the current `expires_at`, so every new week (a confirmation, going live again) gets one reminder and no two transactions' clocks are compared.
+
+Trigger `listings_fresh_week`: a listing entering `active` (submit, resume, confirm, a moderator's approval) whose `expires_at` is unset or past gets `now() + 7 days`, a new `last_confirmed_at` and a `published_at` if it had none. A listing held for review keeps its old `expires_at` while it waits and so never expires the moment it is approved.
+
+The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds owners during the last 24 hours of a live listing's 7 days (`listing.expiring`), then expires live listings past `expires_at` (`listing.expired`), each with a notification row. Both run in batches of 500 with `FOR UPDATE SKIP LOCKED`, so overlapping runs never act on a listing twice and a listing an owner is confirming is skipped, not waited for. After a worker outage of over a day, a listing can get its reminder and its expiry in the same tick. Push delivery (later) must respect quiet hours (FR-NOTIF-03) when it sends, whatever the row's `created_at`.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:
