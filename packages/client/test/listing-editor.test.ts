@@ -20,6 +20,7 @@ import {
   stepsDone,
   walkthroughAppLink,
   type BasicsDraft,
+  wholeRupeesTyped,
   type MoneyDraft,
 } from '../src/index.js';
 
@@ -120,6 +121,13 @@ describe('Basics (M28)', () => {
 });
 
 describe('Money (M29)', () => {
+  it('an amount field keeps whole rupees: a decimal part is dropped, not run together', () => {
+    expect(wholeRupeesTyped('18000.5')).toBe('18000');
+    expect(wholeRupeesTyped('18,000')).toBe('18000');
+    expect(wholeRupeesTyped('₹ 1,20,000.75')).toBe('120000');
+    expect(wholeRupeesTyped('.5')).toBe('');
+  });
+
   it('reads rupees as typed (commas, ₹), refuses anything else', () => {
     expect(inr('18,000')).toBe(18000);
     expect(inr('₹ 1,20,000')).toBe(120000);

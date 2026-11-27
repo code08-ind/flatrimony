@@ -22,6 +22,7 @@ import {
   liveTrueMonthly,
   moneyFrom,
   moneyProblem,
+  wholeRupeesTyped,
   nextPhotoPosition,
   stepIndex,
   stepsDone,
@@ -113,11 +114,17 @@ export default function ListingEditor() {
   // the checklist, the ETag and what is missing are current. Typed drafts are kept.
   const idRef = useRef<string | null>(params.id ?? null);
   idRef.current = listing?.id ?? params.id ?? null;
+  // Every write and every reload takes a new stamp. A reload adopts its answer only if nothing
+  // newer happened while it was on its way, so a slow reload never undoes a photo just added (or
+  // brings back an old ETag that turns the next save into a 412).
+  const stamp = useRef(0);
   const reload = useCallback(
     async (drafts: boolean) => {
       const id = idRef.current;
       if (!id) return;
+      const mine = ++stamp.current;
       const r = await getListing(id);
+      if (mine !== stamp.current) return;
       if (r.ok) {
         adopt(r, drafts);
         setLoadFailed(null);
@@ -195,6 +202,7 @@ export default function ListingEditor() {
           );
           if (!p.ok) r = p;
           else {
+            stamp.current++;
             adopt(p);
             r = await putCosts(listing.id, costsFrom(money), p.etag);
           }
@@ -208,7 +216,10 @@ export default function ListingEditor() {
         setError(r.error);
         return false;
       }
-      if (r) adopt(r);
+      if (r) {
+        stamp.current++;
+        adopt(r);
+      }
       return true;
     } finally {
       saving.current = false;
@@ -240,6 +251,7 @@ export default function ListingEditor() {
     saving.current = false;
     setBusy(false);
     if (!r.ok) return setError(r.error);
+    stamp.current++;
     adopt(r);
     setOutcome(r.listing.status === 'active' ? 'live' : 'review');
   };
@@ -405,6 +417,7 @@ export default function ListingEditor() {
           onAdded={(updated) => {
             // The confirm answers with the listing: adopt it at once (the next free position),
             // then reload for its ETag.
+            stamp.current++;
             setListing(updated);
             if (statusRef.current === 'active' && updated.status === 'pending_review')
               setHeld(true);
@@ -678,7 +691,9 @@ function MoneyStep({ draft, onChange }: { draft: MoneyDraft; onChange: (d: Money
               onChangeText={(v) =>
                 onChange({
                   ...draft,
-                  oneTime: draft.oneTime.map((x, j) => (j === i ? { ...x, amount: v } : x)),
+                  oneTime: draft.oneTime.map((x, j) =>
+                    j === i ? { ...x, amount: wholeRupeesTyped(v) } : x,
+                  ),
                 })
               }
               placeholder="₹"
@@ -756,7 +771,7 @@ function Amount({
         <TextInput
           testID={testID}
           value={value}
-          onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ''))}
+          onChangeText={(v) => onChange(wholeRupeesTyped(v))}
           accessibilityLabel={label}
           keyboardType="number-pad"
           maxLength={7}

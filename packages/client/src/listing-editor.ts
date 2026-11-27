@@ -135,6 +135,12 @@ export interface MoneyDraft {
   oneTime: { label: string; amount: string }[];
 }
 
+/**
+ * What an amount field keeps as the owner types: the whole rupees only. A decimal part is dropped,
+ * never run into the digits ("18000.5" is 18000, not 180005); commas and spaces go.
+ */
+export const wholeRupeesTyped = (text: string) => text.split('.')[0]!.replace(/[^0-9]/g, '');
+
 /** A whole number of rupees from typed text (digits and Indian grouping commas), or null. */
 export function inr(text: string): number | null {
   const digits = text.replace(/[,\s₹]/g, '');
