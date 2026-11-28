@@ -1482,6 +1482,16 @@ The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds o
 - `deck_cache`: `items` is a JSON array; `params_hash` 1–128 characters.
 - Access as §7: RLS on all six tables; members read their matches, only their own "still interested?" answers and their matches' contact shares; swipes, blocks and the deck cache are API-only; all writes go through the API. `public.is_match_member(matches)` is the helper of §7 (used by the matches policy). Only `matches` joins the `supabase_realtime` publication: unlike §7's plan, `match_decisions` stays out, because Realtime does not apply RLS to DELETE events, which carry the old key (match, member) and would tell every subscriber who was in which match; "both answered" reaches the app through the match's status and notifications.
 
+### 15.12 Discovery candidates (T4.3, migration file 0017)
+
+§10's query as two functions the API calls (`private.discovery_rooms(viewer, max_rows)` returns `listing_id, target_id, is_locked`; `private.discovery_people(viewer, max_rows)` returns `target_id`), at most 300 rows, most recently active first; scoring, deal-breakers and ranking follow in `packages/matching`, and the API runs the women-only filter again. Clients cannot call them. Differences from the sketch:
+
+- Genders count only when DigiLocker verified them (`profiles_verified_gender_chk` already forbids a gender without verification). The women-only rule is the same in both modes and is never relaxed for unverified viewers; FR-DISC-12's locked cards apply only to rooms' `female_only` / `male_only` rules.
+- Rooms also check the viewer's flatmate preference against the owner's verified gender, and a "no guests" room against viewers who have guests sometimes or often. People mode checks both members' preferences, overlapping budgets (`int4range`), move-in windows within 30 days (`daterange`), meeting commute zones (or, without both zones, a shared preferred area), and offers only `need_room` and `pair_up` members.
+- Swipes: a room swipe hides that room only; a person swipe hides that person card only; a pass returns after 30 days (FR-DISC-09).
+- Deal-breakers are left to `packages/matching` (self-ratings, one rule everywhere). The "bachelors allowed: no" room rule is not applied (founder decision, docs/07 T4.3).
+- §9's supporting indexes on `preferences` and `profiles` are created here.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:
