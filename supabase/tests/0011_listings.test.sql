@@ -44,7 +44,7 @@ select throws_ok(pg_temp.listing('00000000-0000-4000-8000-00000000d002', '000000
 select lives_ok(pg_temp.listing('00000000-0000-4000-8000-00000000d001', '00000000-0000-4000-8000-0000000000c1'),
   'a have_room member can start a draft, verified or not');
 select throws_ok($$update public.listings set owner_id = '00000000-0000-4000-8000-0000000000c2' where id = '00000000-0000-4000-8000-00000000d001'$$,
-  '23514', 'listing_owner_not_have_room', 'nor can a listing be handed to one');
+  '23514', 'listing_owner_immutable', 'nor can a listing be handed to one (listings keep their owner, 0016)');
 
 -- ================================================================== listing fields
 select throws_ok(pg_temp.listing(gen_random_uuid(), '00000000-0000-4000-8000-0000000000c1', 'Room'),

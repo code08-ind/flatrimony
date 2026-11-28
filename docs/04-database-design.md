@@ -1472,6 +1472,16 @@ The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds o
 - Deferred constraint triggers (checked at commit, like the identity record in §15.1): `profiles.has_work_badge` / `has_college_badge` need a confirmed link of that type for the member, so no code path can hand out a badge without one, and a confirmed link backing a badge cannot be deleted.
 - The worker's daily task `verifications.purge-email-links` deletes unconfirmed links 7 days after they expired (§12); attempts stay (status only), and confirmed links stay because they back the badge and the one-mailbox rule.
 
+### 15.11 Discovery, swipes and matches (T4.2, migration file 0016)
+
+0016 creates the §6.5 tables (the plan's "0007") with these additions:
+
+- `swipes`: notes are visible text (`is_display_text`) of 1 to 140 characters, super likes only; a room swipe (`listing_id` set) must target that listing's owner (trigger); extra indexes for a member's swipes by time (the daily like limit, FR-DISC-08: a re-swipe upsert must also set `created_at = now()`), by listing, by target (account purges) and for the 90-day pass purge. Whether the listing is live is the API's check (T4.5), not the database's.
+- `matches`: a `kind` column (`person` or `room`) replaces the §6.5 key `unique nulls not distinct (user_a, user_b, listing_id)`, which would turn a room match into a person match (and collide with the pair's real one) when its listing is deleted. Now: one person match per pair and one room match per pair and room (two partial unique indexes); a person match has no listing; a room match is made for a listing of one of its members (trigger) and keeps `kind = 'room'` with `listing_id` null if that listing is deleted later. A match never changes its members, kind or room (trigger), and a listing never changes its owner (trigger on `listings`), so swipes and matches stay with the right people. A closed match has `closed_at` and `closed_reason` (an open one neither) and `closed_by` is one of the two, only when closed; `closed_at` is not before `created_at`; `breakdown` is a JSON object.
+- `match_decisions` and `contact_shares`: only the match's two members can add rows (trigger); indexed by member for account purges.
+- `deck_cache`: `items` is a JSON array; `params_hash` 1–128 characters.
+- Access as §7: RLS on all six tables; members read their matches, only their own "still interested?" answers and their matches' contact shares; swipes, blocks and the deck cache are API-only; all writes go through the API. `public.is_match_member(matches)` is the helper of §7 (used by the matches policy). Only `matches` joins the `supabase_realtime` publication: unlike §7's plan, `match_decisions` stays out, because Realtime does not apply RLS to DELETE events, which carry the old key (match, member) and would tell every subscriber who was in which match; "both answered" reaches the app through the match's status and notifications.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:
