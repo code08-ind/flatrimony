@@ -509,6 +509,8 @@ Reviewers check, in this order:
 
 ### 8.2 Critical user journeys (must have E2E coverage)
 
+The web journeys run on every pull request. The Android (Maestro) journeys run nightly, by hand at checkpoints (after every two or three major sub-phases and before a milestone is marked done) and on pull requests that change the flows; they no longer run on every app change while the app is being built (founder decision 2026-11-28; `.github/workflows/mobile-e2e.yml`).
+
 1. Sign up with OTP → onboarding → Discover.
 2. Create a listing with photos and an in-app video → listing active.
 3. Swipe right on both sides → match → DigiLocker (mocked in staging) → first message.

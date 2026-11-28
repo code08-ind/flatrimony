@@ -1,9 +1,16 @@
 # Mobile E2E (docs/03 §8.1: Maestro flows on an Android emulator, nightly and before release).
 # Builds a release APK of the app for the local stack (APP_ENV=local, debug-signed, no EAS account
 # needed), starts Supabase and the API on the runner, and runs the Maestro flows in
-# apps/mobile/e2e/maestro on an emulator. Also runs on pull requests that change the flows, this
-# workflow, or what the flows select by (screens, test IDs, English copy), so a broken flow is caught
-# before it reaches the nightly run.
+# apps/mobile/e2e/maestro on an emulator.
+#
+# When it runs (founder decision 2026-11-28: the emulator run takes about 30 minutes, so it no
+# longer runs on every app change while the app is being built):
+#   - nightly, on main;
+#   - by hand at checkpoints (Actions → mobile-e2e → Run workflow, or
+#     `gh workflow run mobile-e2e --ref <branch>`): after every two or three major sub-phases and
+#     before a milestone is marked done in docs/07;
+#   - on pull requests that change the flows themselves or this workflow.
+# The web journeys (apps/mobile/e2e/web) still run on every pull request (ci.yml, web-e2e-smoke).
 name: mobile-e2e
 
 on:
@@ -13,14 +20,6 @@ on:
   pull_request:
     paths:
       - apps/mobile/e2e/maestro/**
-      - apps/mobile/app/**
-      - apps/mobile/src/**
-      - apps/mobile/app.config.ts
-      # What journey 2 goes through on the API side (the walkthrough upload, the mock DigiLocker).
-      - apps/api/src/modules/verification/**
-      - apps/api/src/modules/listings/**
-      - packages/client/**
-      - packages/i18n/src/messages/en.json
       - .github/workflows/mobile-e2e.yml
 
 concurrency:
