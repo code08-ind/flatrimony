@@ -158,7 +158,10 @@ env:
     element: Following month
     direction: DOWN
 - tapOn: Following month
-- tapOn: '15 .*'
+- scrollUntilVisible:
+    element: '15 [A-Z][a-z]+ \d{4}'
+    direction: DOWN
+- tapOn: '15 [A-Z][a-z]+ \d{4}'
 - tapOn: { id: listing-next }
 
 # Money
