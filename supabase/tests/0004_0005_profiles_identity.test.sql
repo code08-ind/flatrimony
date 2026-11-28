@@ -59,9 +59,10 @@ select is(
    from information_schema.role_table_grants
    where grantee in ('anon', 'authenticated') and table_schema in ('public', 'private')),
   array['authenticated:public.anchors:SELECT', 'authenticated:public.consents:SELECT',
-        'authenticated:public.lifestyle:SELECT', 'authenticated:public.preferences:SELECT',
-        'authenticated:public.profiles:SELECT'],
-  'clients hold exactly these grants in public/private: SELECT on their own-row tables (consents from 0008)');
+        'authenticated:public.contact_shares:SELECT', 'authenticated:public.lifestyle:SELECT',
+        'authenticated:public.match_decisions:SELECT', 'authenticated:public.matches:SELECT',
+        'authenticated:public.preferences:SELECT', 'authenticated:public.profiles:SELECT'],
+  'clients hold exactly these grants in public/private: SELECT on their own-row tables (consents from 0008; matches, own decisions and contact shares from 0016)');
 
 select schema_privs_are('private', 'anon', '{}', 'anon has no privileges on schema private');
 select schema_privs_are('private', 'authenticated', '{}', 'authenticated has no privileges on schema private');

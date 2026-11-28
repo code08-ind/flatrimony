@@ -1472,6 +1472,16 @@ The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds o
 - Deferred constraint triggers (checked at commit, like the identity record in §15.1): `profiles.has_work_badge` / `has_college_badge` need a confirmed link of that type for the member, so no code path can hand out a badge without one, and a confirmed link backing a badge cannot be deleted.
 - The worker's daily task `verifications.purge-email-links` deletes unconfirmed links 7 days after they expired (§12); attempts stay (status only), and confirmed links stay because they back the badge and the one-mailbox rule.
 
+### 15.11 Discovery, swipes and matches (T4.2, migration file 0016)
+
+0016 creates the §6.5 tables (the plan's "0007") with these additions:
+
+- `swipes`: notes are visible text (`is_display_text`) of 1 to 140 characters, super likes only; a room swipe (`listing_id` set) must target that listing's owner (trigger); extra indexes for a member's swipes by time (the daily like limit, FR-DISC-08) and by listing.
+- `matches`: a closed match has both `closed_at` and `closed_reason` (and an open one neither), `closed_at` is not before `created_at`, `breakdown` is a JSON object; a room match must include the listing's owner (trigger, when the match is made; deleting the listing later leaves `listing_id` null).
+- `match_decisions` and `contact_shares`: only the match's two members can add rows (trigger).
+- `deck_cache`: `items` is a JSON array; `params_hash` 1–128 characters.
+- Access as §7: RLS on all six tables; members read their matches, only their own "still interested?" answers and their matches' contact shares; swipes, blocks and the deck cache are API-only; all writes go through the API. `public.is_match_member(matches)` is the helper of §7. `matches` and `match_decisions` join the `supabase_realtime` publication where it exists.
+
 ## 16. Testing the database
 
 - **pgTAP** tests in `supabase/tests/`:

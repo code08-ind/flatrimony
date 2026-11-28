@@ -63,6 +63,11 @@ export type LifestyleAttribute =
 export type ListingStatus =
   'active' | 'draft' | 'expired' | 'paused' | 'pending_review' | 'removed';
 
+export type MatchCloseReason =
+  'account_deleted' | 'blocked' | 'expired' | 'not_interested' | 'reported' | 'unmatched';
+
+export type MatchStatus = 'chatting' | 'closed' | 'matched' | 'met' | 'moving_in';
+
 export type MediaKind = 'photo' | 'walkthrough_video';
 
 export type ModerationStatus = 'approved' | 'pending' | 'rejected';
@@ -76,6 +81,8 @@ export type ProductCode = 'listing_boost_7d' | 'move_pass_30d';
 export type RoomType = 'private' | 'shared';
 
 export type SmokingHabit = 'no' | 'outside_only' | 'yes';
+
+export type SwipeAction = 'like' | 'pass' | 'super_like';
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
@@ -104,6 +111,12 @@ export interface Anchors {
   user_id: string;
 }
 
+export interface Blocks {
+  blocked_id: string;
+  blocker_id: string;
+  created_at: Generated<Timestamp>;
+}
+
 export interface CommuteZones {
   computed_at: Generated<Timestamp>;
   max_minutes: number;
@@ -120,6 +133,20 @@ export interface Consents {
   user_id: string;
   version: string;
   withdrawn_at: Timestamp | null;
+}
+
+export interface ContactShares {
+  match_id: string;
+  shared_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface DeckCache {
+  computed_at: Generated<Timestamp>;
+  items: Json;
+  mode: string;
+  params_hash: string;
+  user_id: string;
 }
 
 export interface Devices {
@@ -242,6 +269,28 @@ export interface Listings {
   title: string;
   total_flatmates: number;
   updated_at: Generated<Timestamp>;
+}
+
+export interface MatchDecisions {
+  decided_at: Generated<Timestamp>;
+  match_id: string;
+  still_interested: boolean;
+  user_id: string;
+}
+
+export interface Matches {
+  breakdown: Json;
+  closed_at: Timestamp | null;
+  closed_by: string | null;
+  closed_reason: MatchCloseReason | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  last_message_at: Timestamp | null;
+  listing_id: string | null;
+  score: number;
+  status: Generated<MatchStatus>;
+  user_a: string;
+  user_b: string;
 }
 
 export interface Notifications {
@@ -441,6 +490,16 @@ export interface SupabaseMigrationsSeedFiles {
   path: string;
 }
 
+export interface Swipes {
+  action: SwipeAction;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  listing_id: string | null;
+  note: string | null;
+  swiper_id: string;
+  target_id: string;
+}
+
 export interface Verifications {
   completed_at: Timestamp | null;
   expires_at: Timestamp | null;
@@ -459,8 +518,11 @@ export interface Verifications {
 
 export interface DB {
   anchors: Anchors;
+  blocks: Blocks;
   commute_zones: CommuteZones;
   consents: Consents;
+  contact_shares: ContactShares;
+  deck_cache: DeckCache;
   devices: Devices;
   lifestyle: Lifestyle;
   lifestyle_importance: LifestyleImportance;
@@ -468,6 +530,8 @@ export interface DB {
   listing_media: ListingMedia;
   listing_rules: ListingRules;
   listings: Listings;
+  match_decisions: MatchDecisions;
+  matches: Matches;
   notifications: Notifications;
   preference_areas: PreferenceAreas;
   preferences: Preferences;
@@ -487,5 +551,6 @@ export interface DB {
   scenario_answers: ScenarioAnswers;
   'supabase_migrations.schema_migrations': SupabaseMigrationsSchemaMigrations;
   'supabase_migrations.seed_files': SupabaseMigrationsSeedFiles;
+  swipes: Swipes;
   verifications: Verifications;
 }
