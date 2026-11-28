@@ -34,7 +34,7 @@
     "@types/react-dom": "^19.3.0",
     "jsqr": "1.4.0",
     "pg": "^8.23.1",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "vitest": "^5.1.0"
   }
 }
