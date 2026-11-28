@@ -147,9 +147,12 @@ env:
     direction: DOWN
 - tapOn: { id: listing-location-search }
 - inputText: Cyber
-- extendedWaitUntil:
-    visible: 'Cyber City, .*'
-    timeout: 15000
+# The suggestions open under the keyboard: close it, then scroll to them.
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Cyber City, .*'
+    direction: DOWN
+    timeout: 20000
 - tapOn: 'Cyber City, .*'
 - scrollUntilVisible:
     element: Following month
