@@ -170,6 +170,10 @@ env:
     timeout: 15000
 - tapOn: { id: listing-rent }
 - inputText: '18000'
+- hideKeyboard
+- scrollUntilVisible:
+    element: { id: listing-deposit }
+    direction: DOWN
 - tapOn: { id: listing-deposit }
 - inputText: '36000'
 - hideKeyboard
