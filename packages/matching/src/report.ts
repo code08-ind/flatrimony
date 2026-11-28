@@ -44,7 +44,11 @@ export interface RishtaFacts {
   score: number;
   /** Strongest first: weight × similarity, then the Flat Biodata order. */
   agreements: { attribute: LifestyleAttribute; similarity: number }[];
-  /** The weakest attribute below the agreement line (the heavier one on a tie), if any. */
+  /**
+   * The largest difference that matters: the self-rated attribute with the highest weight × (1 −
+   * similarity) below the agreement line (the Flat Biodata order on a tie), if any. Self-ratings
+   * only, so "you" and "them" always differ.
+   */
   biggestGap?: { attribute: LifestyleAttribute; similarity: number; you: string; them: string };
   perAttribute: Partial<Record<LifestyleAttribute, number>>;
 }
@@ -63,9 +67,10 @@ export function rishtaFacts(viewer: MatchProfile, other: MatchProfile): RishtaFa
     .slice(0, MAX_AGREEMENTS)
     .map(({ attribute, similarity }) => ({ attribute, similarity }));
 
+  const gapSize = (m: AttributeMatch) => m.weight * (1 - m.selfSimilarity);
   const gap = attributes
-    .filter((m) => m.similarity < AGREEMENT_MIN_SIMILARITY)
-    .sort((x, y) => x.similarity - y.similarity || y.weight - x.weight)[0];
+    .filter((m) => m.selfSimilarity < AGREEMENT_MIN_SIMILARITY)
+    .sort((x, y) => gapSize(y) - gapSize(x))[0];
 
   return {
     score,
@@ -74,7 +79,7 @@ export function rishtaFacts(viewer: MatchProfile, other: MatchProfile): RishtaFa
       ? {
           biggestGap: {
             attribute: gap.attribute,
-            similarity: gap.similarity,
+            similarity: gap.selfSimilarity,
             // Compared attributes have values on both sides.
             you: lifestyleValue(viewer.lifestyle, gap.attribute)!,
             them: lifestyleValue(other.lifestyle, gap.attribute)!,

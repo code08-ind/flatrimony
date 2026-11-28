@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Lifestyle, LifestyleAttribute } from '@flatrimony/shared';
+import { ENUMS, type Lifestyle, type LifestyleAttribute } from '@flatrimony/shared';
 import {
   ATTRIBUTES,
   CLEANING_SCALE,
@@ -89,12 +89,24 @@ describe('unordered tables', () => {
           expect(f(a, b)).toBeGreaterThanOrEqual(0);
           expect(f(a, b)).toBeLessThanOrEqual(1);
           if (a === b) expect(f(a, b)).toBe(1);
-          else expect(f(a, b)).toBeLessThanOrEqual(1);
         }
     };
-    check(['have', 'love', 'ok', 'no'] as const, PETS);
-    check(['veg', 'eggetarian', 'non_veg', 'vegan'] as const, FOOD);
-    check(['office', 'hybrid', 'wfh', 'night_shift', 'student'] as const, WORK_MODE);
+    // Every value the database allows: a new enum value without a score fails here.
+    check(ENUMS.pet_attitude, PETS);
+    check(ENUMS.food_habit, FOOD);
+    check(ENUMS.work_mode, WORK_MODE);
+  });
+
+  it('the ordered scales are exactly the database values', () => {
+    expect([...CLEANING_SCALE].sort()).toEqual([...ENUMS.cleaning_level].sort());
+    expect([...SMOKING_SCALE].sort()).toEqual([...ENUMS.smoking_habit].sort());
+    expect([...FREQUENCY_SCALE].sort()).toEqual([...ENUMS.frequency_level].sort());
+  });
+
+  it('an unknown value fails loudly instead of scoring NaN', () => {
+    expect(() => PETS('have', 'cat' as never)).toThrow(/No similarity/);
+    expect(() => scaleSimilarity(CLEANING_SCALE, 'daily', 'hourly' as never)).toThrow(/Unknown/);
+    expect(() => scaleSimilarity(CLEANING_SCALE, 'hourly' as never, 'daily')).toThrow(/hourly/);
   });
 
   it('puts the clashes at the bottom', () => {
@@ -186,6 +198,22 @@ describe('scenario answers (FR-DISC-03)', () => {
     expect(scenarioValue(person(), 'cleaning')).toBeNull();
   });
 
+  it('ignores values outside 0..1 or not numbers', () => {
+    const p = person(
+      {},
+      {
+        scenarios: [
+          { attribute: 'cleaning', value: 2 },
+          { attribute: 'cleaning', value: -1 },
+          { attribute: 'cleaning', value: Number.NaN },
+          { attribute: 'guests', value: 0.4 },
+        ],
+      },
+    );
+    expect(scenarioValue(p, 'cleaning')).toBeNull();
+    expect(scenarioValue(p, 'guests')).toBe(0.4);
+  });
+
   it('blends 50/50 with the self-ratings only when both answered', () => {
     const a = person({ cleaning: 'daily' }, { scenarios: [{ attribute: 'cleaning', value: 1 }] });
     const b = person({ cleaning: 'daily' }, { scenarios: [{ attribute: 'cleaning', value: 0 }] });
@@ -239,7 +267,7 @@ describe('compatibility (spec §5.1 step 4)', () => {
     expect(compatibility(a, c).score).toBe(Math.round((100 * 10) / 10.5));
   });
 
-  it('opposite habits on everything score 0', () => {
+  it('opposite habits on everything score 0; partly opposite ones score above 0', () => {
     const a = person();
     const b = person({
       bedtime: '05:00',
@@ -272,6 +300,25 @@ describe('deal-breakers (FR-DISC-02)', () => {
     expect(dealbreakerConflicts(person(), smoker)).toEqual([]);
   });
 
+  it('scenario answers neither rescue nor break a deal-breaker (self-ratings decide)', () => {
+    const agree = [{ attribute: 'food' as const, value: 1 }];
+    const vegan = person(
+      { food: 'vegan' },
+      { importance: { food: 'dealbreaker' }, scenarios: agree },
+    );
+    const nonVeg = person({ food: 'non_veg' }, { scenarios: agree });
+    expect(dealbreakerConflicts(vegan, nonVeg)).toEqual(['food']);
+    const tidy = person(
+      { cleaning: 'daily' },
+      { importance: { cleaning: 'dealbreaker' }, scenarios: [{ attribute: 'cleaning', value: 1 }] },
+    );
+    const alsoTidy = person(
+      { cleaning: 'daily' },
+      { scenarios: [{ attribute: 'cleaning', value: 0 }] },
+    );
+    expect(dealbreakerConflicts(tidy, alsoTidy)).toEqual([]);
+  });
+
   it('an attribute that cannot be compared never conflicts', () => {
     const strict = person({}, { importance: { drinking: 'dealbreaker' } });
     expect(dealbreakerConflicts(strict, person({ drinking: undefined }))).toEqual([]);
@@ -290,15 +337,15 @@ describe('Rishta report facts (FR-DISC-05)', () => {
     expect(facts.perAttribute.bedtime).toBe(0);
   });
 
-  it('the biggest gap is the weakest attribute, the heavier one on a tie, with both values', () => {
+  it('the biggest gap is the largest weight × difference, with both values', () => {
     const a = person({}, { importance: { smoking: 'dont_care' } });
     const b = person({ smoking: 'yes', pets: 'no' }, { importance: { smoking: 'dont_care' } });
-    // smoking 0 (weight 0.5) vs pets 0.33 (weight 2): the weakest wins.
+    // smoking: 0.5 × 1 = 0.5 (both don't care); pets: 2 × 0.67 = 1.33: what matters comes first.
     expect(rishtaFacts(a, b).biggestGap).toEqual({
-      attribute: 'smoking',
-      similarity: 0,
-      you: 'no',
-      them: 'yes',
+      attribute: 'pets',
+      similarity: 0.33,
+      you: 'love',
+      them: 'no',
     });
     // Equal similarity: the heavier attribute.
     const c = person(
@@ -306,6 +353,14 @@ describe('Rishta report facts (FR-DISC-05)', () => {
       { importance: { smoking: 'dont_care' } },
     );
     expect(rishtaFacts(a, c).biggestGap?.attribute).toBe('cleaning');
+  });
+
+  it('scenario answers alone never make a gap (both self-rated the same)', () => {
+    const a = person({}, { scenarios: [{ attribute: 'cleaning', value: 1 }] });
+    const b = person({}, { scenarios: [{ attribute: 'cleaning', value: 0 }] });
+    const facts = rishtaFacts(a, b);
+    expect(facts.perAttribute.cleaning).toBe(0.5); // the score still sees the difference
+    expect(facts.biggestGap).toBeUndefined();
   });
 
   it('no gap when everything agrees; the viewer is "you"', () => {
@@ -376,13 +431,20 @@ describe('ranking (FR-DISC-07)', () => {
     expect(rankScore(card({ isBoosted: true }), now)).toBe(80 + RANK_BOOST.boosted);
   });
 
-  it('never lets the boosts beat a much better match', () => {
-    const all =
-      RANK_BOOST.verified +
-      RANK_BOOST.recentlyActive +
-      RANK_BOOST.underExposed +
-      RANK_BOOST.boosted;
-    expect(all).toBeLessThan(15);
+  it('never lets every boost beat a match 15 points better', () => {
+    const better = { ...card({ score: 90 }), id: 'better' };
+    const boosted = {
+      ...card({
+        score: 75,
+        isVerified: true,
+        lastActiveAt: daysAgo(1),
+        createdAt: daysAgo(1),
+        impressions: 0,
+        isBoosted: true,
+      }),
+      id: 'boosted',
+    };
+    expect(rankCandidates([boosted, better], now).map((x) => x.id)).toEqual(['better', 'boosted']);
   });
 
   it('orders by rank, keeping the incoming order on ties', () => {

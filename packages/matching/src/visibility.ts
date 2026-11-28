@@ -27,7 +27,10 @@ export const isVerifiedWoman = (p: {
   verifiedGender: VerifiedGender | null;
 }) => p.isIdentityVerified && p.verifiedGender === 'female';
 
-/** Whether `viewer` may see `subject`'s profile or listings. */
+/**
+ * Whether `viewer` may see another member's (`subject`'s) profile or listings. Not for a member's
+ * own data (Me, My Flat): an unverified women-only member always sees their own.
+ */
 export function canSee(viewer: Viewer, subject: Subject): boolean {
   return subject.category !== 'women_only' || isVerifiedWoman(viewer);
 }

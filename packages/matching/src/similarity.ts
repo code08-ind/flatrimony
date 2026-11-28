@@ -32,8 +32,11 @@ export function timeSimilarity(a: string, b: string): number {
 
 /** Distance on an ordered scale: the same step is 1, the far ends are 0. */
 export function scaleSimilarity<T extends string>(scale: readonly T[], a: T, b: T): number {
-  const steps = scale.length - 1;
-  return 1 - Math.abs(scale.indexOf(a) - scale.indexOf(b)) / steps;
+  const ia = scale.indexOf(a);
+  const ib = scale.indexOf(b);
+  // A value the scale does not know (a new enum value) must fail loudly, not score wrongly.
+  if (ia < 0 || ib < 0) throw new Error(`Unknown value on the scale: ${ia < 0 ? a : b}`);
+  return 1 - Math.abs(ia - ib) / (scale.length - 1);
 }
 
 /**
@@ -48,7 +51,13 @@ export function pairTable<T extends string>(
     scores.set(`${x}|${y}`, score);
     scores.set(`${y}|${x}`, score);
   }
-  return (a, b) => (a === b ? 1 : scores.get(`${a}|${b}`)!);
+  return (a, b) => {
+    if (a === b) return 1;
+    const score = scores.get(`${a}|${b}`);
+    // A value the table does not know (a new enum value) must fail loudly, not score NaN.
+    if (score === undefined) throw new Error(`No similarity for ${a} and ${b}`);
+    return score;
+  };
 }
 
 export const CLEANING_SCALE = ['daily', 'few_times_week', 'weekly', 'rarely'] as const;
@@ -81,7 +90,10 @@ export const FOOD = pairTable<Lifestyle['food']>([
   ['vegan', 'non_veg', 0],
 ]);
 
-/** Work patterns: a night shift clashes with everyone's quiet hours; office and WFH differ by day. */
+/**
+ * Work patterns: a night shift clashes with every other pattern's quiet hours; office and WFH differ
+ * by day.
+ */
 export const WORK_MODE = pairTable<NonNullable<Lifestyle['workMode']>>([
   ['office', 'hybrid', 0.75],
   ['office', 'wfh', 0.5],

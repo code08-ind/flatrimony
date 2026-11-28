@@ -57,8 +57,13 @@ export interface MatchProfile {
 
 export interface AttributeMatch {
   attribute: LifestyleAttribute;
-  /** 0..1 */
+  /** 0..1, self-ratings blended with scenario answers: what the score uses. */
   similarity: number;
+  /**
+   * 0..1, the self-ratings alone: what deal-breakers and the report's gap use, so both rest on
+   * values the members can see and the candidate SQL can check (T4.3).
+   */
+  selfSimilarity: number;
   weight: number;
 }
 
@@ -80,14 +85,25 @@ export function weightFor(a: MatchProfile, b: MatchProfile, attribute: Lifestyle
   );
 }
 
-/** A member's scenario value for an attribute (the mean when several questions speak to it). */
+/**
+ * A member's scenario value for an attribute (the mean when several questions speak to it). Values
+ * come from `ref.scenario_questions` options (0..1); anything else is ignored.
+ */
 export function scenarioValue(p: MatchProfile, attribute: LifestyleAttribute): number | null {
-  const values = (p.scenarios ?? []).filter((s) => s.attribute === attribute).map((s) => s.value);
+  const values = (p.scenarios ?? [])
+    .filter(
+      (s) => s.attribute === attribute && Number.isFinite(s.value) && s.value >= 0 && s.value <= 1,
+    )
+    .map((s) => s.value);
   if (values.length === 0) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-/** The blended similarity of one attribute, or null when it cannot be compared. */
+/**
+ * The blended similarity of one attribute, or null when it cannot be compared. An attribute counts
+ * only when both members self-rated it: scenario answers refine a self-rating, they never stand in
+ * for one.
+ */
 export function blendedSimilarity(
   a: MatchProfile,
   b: MatchProfile,
@@ -106,9 +122,14 @@ export function blendedSimilarity(
 export function compatibility(a: MatchProfile, b: MatchProfile): Compatibility {
   const attributes: AttributeMatch[] = [];
   for (const attribute of ATTRIBUTES) {
-    const similarity = blendedSimilarity(a, b, attribute);
-    if (similarity === null) continue;
-    attributes.push({ attribute, similarity, weight: weightFor(a, b, attribute) });
+    const selfSimilarity = attributeSimilarity(attribute, a.lifestyle, b.lifestyle);
+    if (selfSimilarity === null) continue;
+    attributes.push({
+      attribute,
+      similarity: blendedSimilarity(a, b, attribute)!,
+      selfSimilarity,
+      weight: weightFor(a, b, attribute),
+    });
   }
   const total = attributes.reduce((sum, m) => sum + m.weight, 0);
   const weighted = attributes.reduce((sum, m) => sum + m.weight * m.similarity, 0);
@@ -117,7 +138,8 @@ export function compatibility(a: MatchProfile, b: MatchProfile): Compatibility {
 
 /**
  * The attributes on which a deal-breaker of either member is not met (FR-DISC-02). Any entry removes
- * the pair before scoring.
+ * the pair before scoring. Judged on the self-ratings alone: a scenario answer neither rescues nor
+ * breaks a pair, and the candidate SQL (T4.3) can apply the same rule.
  */
 export function dealbreakerConflicts(a: MatchProfile, b: MatchProfile): LifestyleAttribute[] {
   return ATTRIBUTES.filter((attribute) => {
@@ -126,7 +148,7 @@ export function dealbreakerConflicts(a: MatchProfile, b: MatchProfile): Lifestyl
       importanceOf(b, attribute) !== 'dealbreaker'
     )
       return false;
-    const similarity = blendedSimilarity(a, b, attribute);
+    const similarity = attributeSimilarity(attribute, a.lifestyle, b.lifestyle);
     return similarity !== null && similarity < DEALBREAKER_MIN_SIMILARITY;
   });
 }
