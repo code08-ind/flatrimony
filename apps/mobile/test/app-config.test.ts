@@ -25,3 +25,24 @@ describe('app.config: plain HTTP only for local builds (T2.12)', () => {
     },
   );
 });
+
+describe('app.config: Android permissions', () => {
+  const pluginOptions = (config: ExpoConfig, name: string) => {
+    const entry = config.plugins?.find((p) => (Array.isArray(p) ? p[0] : p) === name);
+    return (Array.isArray(entry) ? entry[1] : {}) as Record<string, unknown>;
+  };
+
+  it('nothing blocks the camera the walkthrough recorder needs (T3.11)', async () => {
+    const config = await configFor('production');
+    // expo-image-picker's `cameraPermission: false` removes CAMERA from the merged manifest.
+    expect(pluginOptions(config, 'expo-image-picker').cameraPermission).not.toBe(false);
+    expect(pluginOptions(config, 'expo-camera').cameraPermission).toEqual(expect.any(String));
+    expect(config.android?.blockedPermissions ?? []).not.toContain('android.permission.CAMERA');
+  });
+
+  it('no microphone anywhere (walkthroughs are silent)', async () => {
+    const config = await configFor('production');
+    expect(pluginOptions(config, 'expo-image-picker').microphonePermission).toBe(false);
+    expect(pluginOptions(config, 'expo-camera').microphonePermission).toBe(false);
+  });
+});
