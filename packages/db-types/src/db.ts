@@ -285,6 +285,7 @@ export interface Matches {
   closed_reason: MatchCloseReason | null;
   created_at: Generated<Timestamp>;
   id: Generated<string>;
+  kind: string;
   last_message_at: Timestamp | null;
   listing_id: string | null;
   score: number;
