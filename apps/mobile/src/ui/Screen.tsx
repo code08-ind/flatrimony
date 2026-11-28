@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 
@@ -10,13 +10,20 @@ interface ScreenProps {
    * moves when a message appears above it, and stays reachable on short screens.
    */
   footer?: ReactNode;
+  /** When it changes (a stepper's step), the content scrolls back to the top. */
+  scrollKey?: string;
 }
 
 /** Light screen shell: matcha-milk background, 20 px side padding, safe areas (docs/06 §3.3). */
-export function Screen({ children, footer }: ScreenProps) {
+export function Screen({ children, footer, scrollKey }: ScreenProps) {
+  const scroll = useRef<ScrollViewInstance>(null);
+  useEffect(() => {
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  }, [scrollKey]);
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView
+        ref={scroll}
         style={styles.scroll}
         contentContainerStyle={[styles.content, footer ? styles.contentWithFooter : null]}
         keyboardShouldPersistTaps="handled"

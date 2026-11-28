@@ -391,7 +391,7 @@ export default function ListingEditor() {
   );
 
   return (
-    <Screen footer={footer}>
+    <Screen footer={footer} scrollKey={step}>
       <StepHeader
         step={n}
         total={LISTING_STEPS.length}
