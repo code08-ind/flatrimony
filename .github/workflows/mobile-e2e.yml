@@ -110,6 +110,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # Journey 2 uploads photos and the walkthrough to the signed Storage URLs the API hands out,
+      # which name the runner's 127.0.0.1:54321: `adb reverse` (in the emulator script) makes that
+      # address reach the runner from inside the emulator.
       # Journey 2 picks three photos from the gallery: fresh random-block PNGs each run, so the
       # duplicate-photo check (T3.8) has nothing to match.
       - name: Gallery photos for journey 2
@@ -147,6 +150,7 @@ jobs:
             for f in "$RUNNER_TEMP"/photos/*.png; do adb push "$f" /sdcard/Pictures/; adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$(basename "$f")" > /dev/null; sleep 1; done
             adb shell content call --uri content://media --method scan_volume --arg external_primary > /dev/null || true
             echo "Gallery photos indexed: $(adb shell content query --uri content://media/external/images/media --projection _display_name | grep -c room-)"
+            adb reverse tcp:54321 tcp:54321
             maestro test e2e/maestro/journey-2.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report-2.xml" --debug-output "$RUNNER_TEMP/maestro/debug-2"
 
       - name: API log
