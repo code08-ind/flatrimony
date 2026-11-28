@@ -248,6 +248,7 @@ Linked FR-ID and acceptance criteria · UI states defined · API contract define
 | 15 Nov 2026 | Design tokens built with an in-repo tested generator instead of Style Dictionary (founder to confirm) | ADR-0013 |
 | 15 Nov 2026 | Supply-chain policy: dependencies must be ≥ 7 days old (pnpm `minimumReleaseAge`, Dependabot cooldown); trust downgrades blocked; GitHub Actions pinned by SHA | ADR-0001, Tech §14 |
 | 15 Nov 2026 | One React version (19.3.0, as shipped by Expo SDK 58) across web, admin and mobile via pnpm overrides | — |
+| 28 Nov 2026 | Android E2E (Maestro, about 30 min) runs nightly, by hand at checkpoints (every two or three major sub-phases, and before a milestone is marked done) and when the flows change, not on every app pull request; web journeys stay on every PR. Android-only bugs are caught at the next nightly run or checkpoint (founder) | docs/03 §8.2 |
 
 ## 7. Weekly status report template
 
