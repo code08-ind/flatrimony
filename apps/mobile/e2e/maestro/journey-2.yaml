@@ -165,9 +165,13 @@ env:
 - tapOn: { id: listing-next }
 
 # Money
+# The step opens where Basics was scrolled to: back up to the rent.
 - extendedWaitUntil:
-    visible: { id: listing-rent }
+    visible: Monthly costs per person
     timeout: 15000
+- scrollUntilVisible:
+    element: { id: listing-rent }
+    direction: UP
 - tapOn: { id: listing-rent }
 - inputText: '18000'
 - hideKeyboard
