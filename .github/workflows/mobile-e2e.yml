@@ -16,6 +16,10 @@ on:
       - apps/mobile/app/**
       - apps/mobile/src/**
       - apps/mobile/app.config.ts
+      # What journey 2 goes through on the API side (the walkthrough upload, the mock DigiLocker).
+      - apps/api/src/modules/verification/**
+      - apps/api/src/modules/listings/**
+      - packages/client/**
       - packages/i18n/src/messages/en.json
       - .github/workflows/mobile-e2e.yml
 
@@ -106,7 +110,28 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Journey 1 (Maestro on an Android emulator)
+      # Journey 2 uploads photos and the walkthrough to the signed Storage URLs the API hands out,
+      # which name the runner's 127.0.0.1:54321: `adb reverse` (in the emulator script) makes that
+      # address reach the runner from inside the emulator.
+      # Journey 2 picks three photos from the gallery: fresh random-block PNGs each run, so the
+      # duplicate-photo check (T3.8) has nothing to match.
+      - name: Gallery photos for journey 2
+        run: |
+          mkdir -p "$RUNNER_TEMP/photos"
+          python3 - "$RUNNER_TEMP/photos" <<'PY'
+          import random, struct, sys, zlib
+          def png(path, w=800, h=600, block=50):
+              colours = [[tuple(random.randrange(256) for _ in range(3)) for _ in range(w // block)] for _ in range(h // block)]
+              raw = b''.join(b'\x00' + b''.join(bytes(colours[y // block][x // block]) for x in range(w)) for y in range(h))
+              chunk = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+              with open(path, 'wb') as f:
+                  f.write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 6)) + chunk(b'IEND', b''))
+          for i in range(3):
+              png(f'{sys.argv[1]}/room-{i + 1}.png')
+          PY
+          ls -la "$RUNNER_TEMP/photos"
+
+      - name: Journeys 1 and 2 (Maestro on an Android emulator)
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -114,13 +139,19 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          # The emulated back camera records journey 2's walkthrough.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back emulated
           working-directory: apps/mobile
           script: |
             mkdir -p "$RUNNER_TEMP/maestro"
             adb shell settings put global hide_error_dialogs 1
             adb install -r "$RUNNER_TEMP/app.apk"
-            maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report.xml" --debug-output "$RUNNER_TEMP/maestro/debug"
+            maestro test e2e/maestro/journey-1.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report-1.xml" --debug-output "$RUNNER_TEMP/maestro/debug-1"
+            for f in "$RUNNER_TEMP"/photos/*.png; do adb push "$f" /sdcard/Pictures/; adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$(basename "$f")" > /dev/null; sleep 1; done
+            adb shell content call --uri content://media --method scan_volume --arg external_primary > /dev/null || true
+            echo "Gallery photos indexed: $(adb shell content query --uri content://media/external/images/media --projection _display_name | grep -c room-)"
+            adb reverse tcp:54321 tcp:54321
+            maestro test e2e/maestro/journey-2.yaml -e API_URL=http://localhost:8080 --format junit --output "$RUNNER_TEMP/maestro/report-2.xml" --debug-output "$RUNNER_TEMP/maestro/debug-2"
 
       - name: API log
         if: failure()
@@ -129,20 +160,25 @@ jobs:
       - name: Failure evidence (screen at the failing step, app logs)
         if: failure()
         run: |
-          dir=$(find "$RUNNER_TEMP/maestro" -type d -name 'journey-1' | head -1)
-          [ -n "$dir" ] || exit 0
+          for dir in $(find "$RUNNER_TEMP/maestro" -type d -name 'journey-*'); do
+          echo "=== $dir"
           echo '--- Steps that did not complete'
           node -e "for (const c of require(process.argv[1])) if (c.metadata?.status !== 'COMPLETED') console.log(JSON.stringify(c).slice(0, 2000))" "$dir/commands.json" || true
           echo '--- On screen at the failure (text / accessibility text / id)'
           for f in "$dir"/screen-hierarchy/*.json; do
+            [ -f "$f" ] || continue
             node -e "
               const walk = (n) => { const a = n.attributes || {};
                 const t = [a.text, a['accessibilityText'], a['resource-id']].filter(Boolean).join(' | ');
                 if (t) console.log(t); (n.children || []).forEach(walk); };
               walk(require(process.argv[1]));" "$f" | head -80
           done
+          echo '--- Crash (first lines of the exception)'
+          grep -E -A12 'FATAL EXCEPTION|JavascriptException|Unhandled JS Exception' "$dir/logs/device-logcat.txt" | head -n 40 || true
+          grep -E 'ReactNativeJS.*(Error|Exception|Invariant)' "$dir/logs/device-logcat.txt" | head -n 20 || true
           echo '--- App log (React Native, crashes)'
           grep -E 'ReactNativeJS|AndroidRuntime|FATAL|ReactNative|Hermes' "$dir/logs/device-logcat.txt" | tail -n 80 || true
+          done
       - name: Stop Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

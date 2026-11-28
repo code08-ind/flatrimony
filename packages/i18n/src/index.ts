@@ -4,6 +4,7 @@ import hi from './messages/hi.json' with { type: 'json' };
 import type { Locale } from './format.js';
 
 export * from './format.js';
+export { ensurePluralRules } from './plural-rules.js';
 
 export type Messages = typeof en;
 export const messages: Record<Locale, Messages> = { en, hi };

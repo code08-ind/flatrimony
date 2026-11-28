@@ -1,0 +1,303 @@
+# Critical journey 2 on Android (docs/03 §8.2; PRD §6.2 room owner): create a listing with photos
+# and an in-app video → listing active. Same journey as e2e/web/journey-2.spec.ts, but here the
+# walkthrough is recorded with the app's own camera screen (the emulator's virtual back camera)
+# and uploaded with a mock Play Integrity token (a local build).
+#
+# Needs, besides journey 1's setup: three photos in the emulator's gallery (the workflow pushes
+# them) and the API's local dev routes. The DigiLocker step is approved from the host
+# (digilocker-approve.js): the emulator's browser cannot reach the API on the host.
+#
+#   maestro test e2e/maestro/journey-2.yaml -e API_URL=http://localhost:8080
+# Each run signs up a new +91 98… number. CI's database is thrown away afterwards; against a local
+# database, delete those users yourself.
+appId: in.flatrimony.app.local
+env:
+  API_URL: http://localhost:8080
+  NAME: Meera
+---
+# launchApp grants the app's permissions (the camera included) by default, so no dialog appears
+# later to block the record button.
+- launchApp:
+    clearState: true
+- runScript: new-phone.js
+- runFlow:
+    when:
+      visible: ".*isn't responding"
+    commands:
+      - tapOn: Wait
+
+# Sign up (as journey 1)
+- extendedWaitUntil:
+    visible: { id: continue-en }
+    timeout: 90000
+- tapOn:
+    id: continue-en
+- tapOn: { id: 'key-${output.p0}' }
+- tapOn: { id: 'key-${output.p1}' }
+- tapOn: { id: 'key-${output.p2}' }
+- tapOn: { id: 'key-${output.p3}' }
+- tapOn: { id: 'key-${output.p4}' }
+- tapOn: { id: 'key-${output.p5}' }
+- tapOn: { id: 'key-${output.p6}' }
+- tapOn: { id: 'key-${output.p7}' }
+- tapOn: { id: 'key-${output.p8}' }
+- tapOn: { id: 'key-${output.p9}' }
+- tapOn:
+    id: send-code
+- extendedWaitUntil:
+    visible: { id: verify }
+    timeout: 15000
+- runScript:
+    file: latest-otp.js
+    env:
+      API_URL: ${API_URL}
+- tapOn: { id: 'key-${output.o0}' }
+- tapOn: { id: 'key-${output.o1}' }
+- tapOn: { id: 'key-${output.o2}' }
+- tapOn: { id: 'key-${output.o3}' }
+- tapOn: { id: 'key-${output.o4}' }
+- tapOn: { id: 'key-${output.o5}' }
+
+# Onboarding as a member with a room
+- extendedWaitUntil:
+    visible: { id: about-name }
+    timeout: 20000
+- tapOn: { id: about-name }
+- inputText: ${NAME}
+- tapOn: { id: about-day }
+- inputText: '15'
+- tapOn: { id: about-month }
+- inputText: '08'
+- tapOn: { id: about-year }
+- inputText: '1998'
+- hideKeyboard
+- tapOn: { id: continue }
+- tapOn: I have a room to fill
+- tapOn: { id: continue }
+- tapOn: Working professional
+- tapOn: { id: continue }
+- extendedWaitUntil:
+    visible: What's your budget per month\?
+    timeout: 10000
+- tapOn: { id: continue }
+- extendedWaitUntil:
+    visible: { id: anchor-search }
+    timeout: 15000
+- tapOn: { id: anchor-search }
+- inputText: Cyber
+- extendedWaitUntil:
+    visible: 'Cyber City'
+    timeout: 15000
+- tapOn: 'Cyber City'
+- extendedWaitUntil:
+    visible: '.*roughly within your commute.*'
+    timeout: 20000
+- tapOn: { id: continue }
+- tapOn: Next month
+- tapOn: { id: continue }
+- scrollUntilVisible:
+    element: 'By 11 PM'
+    direction: DOWN
+- tapOn: 'By 11 PM'
+- scrollUntilVisible:
+    element: 'By 7 AM'
+    direction: DOWN
+- tapOn: 'By 7 AM'
+- scrollUntilVisible:
+    element: 'Daily'
+    direction: DOWN
+- tapOn: 'Daily'
+- scrollUntilVisible:
+    element: 'No'
+    direction: DOWN
+- tapOn: 'No'
+- scrollUntilVisible:
+    element: 'Love them'
+    direction: DOWN
+- tapOn: 'Love them'
+- scrollUntilVisible:
+    element: 'Veg'
+    direction: DOWN
+- tapOn: 'Veg'
+- tapOn: { id: finish }
+- extendedWaitUntil:
+    visible: Discover
+    timeout: 20000
+
+# My Flat → the editor
+- tapOn: My Flat
+- extendedWaitUntil:
+    visible: { id: my-flat-start }
+    timeout: 15000
+- tapOn: { id: my-flat-start }
+
+# Basics: title, area, the pin from the place search, available from the 15th of next month
+- extendedWaitUntil:
+    visible: { id: listing-title }
+    timeout: 15000
+- tapOn: { id: listing-title }
+- inputText: Bright room near Cyber Hub
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Cyber City'
+    direction: DOWN
+- tapOn: 'Cyber City'
+- scrollUntilVisible:
+    element: { id: listing-location-search }
+    direction: DOWN
+- tapOn: { id: listing-location-search }
+- inputText: Cyber
+# The suggestions open under the keyboard: close it, then scroll to them.
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Cyber City, .*'
+    direction: DOWN
+    timeout: 20000
+- tapOn: 'Cyber City, .*'
+- scrollUntilVisible:
+    element: Following month
+    direction: DOWN
+- tapOn: Following month
+- scrollUntilVisible:
+    element: '15 [A-Z][a-z]+ \d{4}'
+    direction: DOWN
+- tapOn: '15 [A-Z][a-z]+ \d{4}'
+- tapOn: { id: listing-next }
+
+# Money
+# The step opens where Basics was scrolled to: back up to the rent.
+- extendedWaitUntil:
+    visible: Monthly costs per person
+    timeout: 15000
+- scrollUntilVisible:
+    element: { id: listing-rent }
+    direction: UP
+- tapOn: { id: listing-rent }
+- inputText: '18000'
+- hideKeyboard
+- scrollUntilVisible:
+    element: { id: listing-deposit }
+    direction: DOWN
+- tapOn: { id: listing-deposit }
+- inputText: '36000'
+- hideKeyboard
+- tapOn: { id: listing-next }
+
+# Rules (defaults)
+- extendedWaitUntil:
+    visible: House rules
+    timeout: 15000
+- tapOn: { id: listing-next }
+
+# Photos: three from the gallery (Android's photo picker), newest first
+- extendedWaitUntil:
+    visible: { id: listing-add-photo }
+    timeout: 15000
+- tapOn: { id: listing-add-photo }
+- tapOn:
+    text: 'Photo taken on.*'
+    index: 0
+- extendedWaitUntil:
+    visible: '1/12'
+    timeout: 60000
+- tapOn: { id: listing-add-photo }
+- tapOn:
+    text: 'Photo taken on.*'
+    index: 1
+- extendedWaitUntil:
+    visible: '2/12'
+    timeout: 60000
+- tapOn: { id: listing-add-photo }
+- tapOn:
+    text: 'Photo taken on.*'
+    index: 2
+- extendedWaitUntil:
+    visible: '3/12'
+    timeout: 60000
+- tapOn: { id: listing-next }
+
+# Video: record a walkthrough in the app (at least 31 s: Stop turns on then), use it, upload
+- extendedWaitUntil:
+    visible: { id: listing-record-video }
+    timeout: 15000
+- tapOn: { id: listing-record-video }
+- extendedWaitUntil:
+    visible: { id: walkthrough-open-camera }
+    timeout: 15000
+- tapOn: { id: walkthrough-open-camera }
+- runFlow:
+    when:
+      visible: While using the app
+    commands:
+      - tapOn: While using the app
+# Record turns on when the camera is ready (slow on an emulator without a GPU).
+- extendedWaitUntil:
+    visible: { id: walkthrough-record, enabled: true }
+    timeout: 60000
+- tapOn: { id: walkthrough-record }
+# Stop turns on at 31 s.
+- extendedWaitUntil:
+    visible: { id: walkthrough-stop, enabled: true }
+    timeout: 60000
+- tapOn: { id: walkthrough-stop }
+- extendedWaitUntil:
+    visible: { id: walkthrough-use }
+    timeout: 60000
+- tapOn: { id: walkthrough-use }
+- extendedWaitUntil:
+    visible: { id: walkthrough-done }
+    timeout: 180000
+- tapOn: { id: walkthrough-done }
+
+# Review: verify with DigiLocker (approved from the host), then submit
+- extendedWaitUntil:
+    visible: { id: listing-record-video }
+    timeout: 15000
+- tapOn: { id: listing-next }
+- extendedWaitUntil:
+    visible: Review your listing
+    timeout: 15000
+- scrollUntilVisible:
+    element: Verify now
+    direction: DOWN
+- tapOn: Verify now
+- extendedWaitUntil:
+    visible: { id: verify-start }
+    timeout: 15000
+- tapOn: { id: verify-start }
+- extendedWaitUntil:
+    notVisible: { id: verify-start }
+    timeout: 15000
+# Waits (retrying) for the session the app just started, then approves it.
+- runScript:
+    file: digilocker-approve.js
+    env:
+      API_URL: ${API_URL}
+      NAME: MEERA SHARMA
+# The browser tab cannot load the consent page (it is on the host): close it, if it is in front.
+- runFlow:
+    when:
+      notVisible: { id: verify-done }
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: { id: verify-done }
+    timeout: 60000
+- tapOn: { id: verify-done }
+- extendedWaitUntil:
+    visible: Review your listing
+    timeout: 15000
+- scrollUntilVisible:
+    element: { id: listing-submit }
+    direction: DOWN
+- tapOn: { id: listing-submit }
+- extendedWaitUntil:
+    visible: Your listing is live
+    timeout: 30000
+
+# My Flat: active for 7 days
+- tapOn: { id: listing-to-my-flat }
+- extendedWaitUntil:
+    visible: 'Active · expires in 7 days'
+    timeout: 15000
+- assertVisible: Bright room near Cyber Hub

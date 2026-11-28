@@ -617,7 +617,8 @@
         "tooMany": "Too many links asked for. Try again in an hour.",
         "sendFailed": "We couldn’t send the email. Try again in a moment."
       }
-    }
+    },
+    "backToListing": "Back to your listing"
   },
   "listing": {
     "video": {

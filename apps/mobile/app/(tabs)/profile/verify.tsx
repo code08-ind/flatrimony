@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import {
   hasLatinLetter,
@@ -68,6 +68,9 @@ export default function VerifyScreen() {
   const { t, locale } = useT();
   const { me, etag, refresh, set } = useMe();
   const [phase, setPhase] = useState<Phase>({ step: 'resuming' });
+  const params = useLocalSearchParams<{ listing?: string }>();
+  const fromListing =
+    params.listing && /^[0-9a-f-]{36}$/.test(params.listing) ? params.listing : null;
   const [error, setError] = useState<MessageKey | null>(null);
   const [name, setName] = useState(me?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);
@@ -241,7 +244,16 @@ export default function VerifyScreen() {
     await start();
   };
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  // Opened from a listing's review (T3.9): go back to that review, not to whatever tab is below.
+  const close = () =>
+    fromListing
+      ? router.dismissTo({
+          pathname: '/listings/edit',
+          params: { id: fromListing, step: 'review' },
+        })
+      : router.canGoBack()
+        ? router.back()
+        : router.replace('/profile');
   const consentLine = (
     <Text style={[textStyle('caption', locale), styles.muted, styles.center]}>
       {t('verification.gate.consent')}
@@ -272,7 +284,15 @@ export default function VerifyScreen() {
               />
             ) : null}
             {startsAgain ? consentLine : null}
-            {copy.action === 'done' ? (
+            {copy.action === 'done' && fromListing ? (
+              <PrimaryButton
+                testID="verify-done"
+                locale={locale}
+                label={t('verification.backToListing')}
+                trailingArrow={false}
+                onPress={close}
+              />
+            ) : copy.action === 'done' ? (
               <>
                 <PrimaryButton
                   testID="verify-start-chatting"

@@ -43,8 +43,9 @@ const config: ExpoConfig = {
     'expo-localization',
     'expo-secure-store',
     // Photos come from the system photo picker (no storage permission on Android 13+); the picker
-    // never opens the camera (T2.11).
-    ['expo-image-picker', { cameraPermission: false, microphonePermission: false }],
+    // never opens the camera (T2.11). Its `cameraPermission` stays unset: `false` would block
+    // android.permission.CAMERA for the whole app, and the walkthrough recorder needs it (T3.11).
+    ['expo-image-picker', { microphonePermission: false }],
     // The listing walkthrough is recorded in the app (T3.7; FR-LST-05), without sound: camera
     // permission only, no microphone.
     [

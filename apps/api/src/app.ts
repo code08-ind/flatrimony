@@ -328,6 +328,7 @@ export async function buildApp({
       await app.register(devDigiLockerRoutes, {
         mock: dlProvider,
         key: dlKeys[0]!,
+        local: env.APP_ENV === 'local' && env.NODE_ENV !== 'production',
         ...(now ? { now } : {}),
       });
   }
