@@ -56,11 +56,11 @@
   },
   "devDependencies": {
     "@flatrimony/config": "workspace:*",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "pg": "^8.23.1",
     "typescript": "~6.0.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
