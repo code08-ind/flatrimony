@@ -1,3 +1,5 @@
+// First: Intl gaps on Android (Hermes has no Intl.PluralRules), before anything formats text.
+import '../src/intl';
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
