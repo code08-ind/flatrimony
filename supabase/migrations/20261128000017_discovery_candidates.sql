@@ -5,7 +5,9 @@
 -- runs the women-only response filter again (docs/03 §13: "tested both ways").
 --
 --   private.discovery_rooms(viewer, max_rows)   live rooms for a member looking for one
---   private.discovery_people(viewer, max_rows)  members to team up with (need_room / pair_up)
+--   private.discovery_people(viewer, max_rows)  members to team up with (need_room / pair_up); an
+--                                               owner (have_room) may browse them too, for a flatmate
+-- A suspended viewer gets no candidates (a paused one still browses: pausing hides only themselves).
 --
 -- Hard filters (FR-DISC-02), as docs/04 §10 sketches them:
 --   * nobody deleted, paused or suspended; never the viewer; nobody blocked either way;
@@ -19,7 +21,9 @@
 --     verified genders only. An unverified viewer still sees a female_only or male_only room, locked
 --     (FR-DISC-12: "Verify to like this room");
 --   * women-only (FR-SAFE-04, founder rule): a women_only member's profile and rooms only ever reach a
---     viewer whose gender DigiLocker verified as female. Never relaxed for unverified viewers.
+--     viewer whose gender DigiLocker verified as female, and only once DigiLocker verified that
+--     member as female too (anyone may pick the category before verifying; until then they stay
+--     invisible). Never relaxed for unverified viewers.
 -- Deal-breakers are checked by packages/matching on these candidates (self-ratings, the same rule
 -- everywhere). The "bachelors allowed: no" room rule is not applied yet (founder decision, docs/07
 -- T4.3): nearly every member is a bachelor, so it would hide the room from almost everyone.
@@ -40,6 +44,7 @@ as $$
       join public.lifestyle l on l.user_id = p.id
       left join public.commute_zones cz on cz.user_id = p.id
      where p.id = viewer and p.deleted_at is null
+       and (p.suspended_until is null or p.suspended_until <= now())
   )
   select lst.id, lst.owner_id,
          (not v.is_identity_verified and r.gender_rule <> 'any') as is_locked
@@ -78,7 +83,8 @@ as $$
           or (v.flatmate_gender_pref = 'female_only' and o.is_identity_verified and o.verified_gender = 'female')
           or (v.flatmate_gender_pref = 'male_only' and o.is_identity_verified and o.verified_gender = 'male'))
      -- women-only (FR-SAFE-04): only DigiLocker-verified women, never anyone else
-     and (o.category <> 'women_only' or v.gender = 'female')
+     and (o.category <> 'women_only'
+          or (o.is_identity_verified and o.verified_gender = 'female' and v.gender = 'female'))
      -- this room not swiped (a pass returns after 30 days)
      and not exists (
        select 1 from public.swipes s
@@ -109,6 +115,7 @@ as $$
       join public.lifestyle l on l.user_id = p.id
       left join public.commute_zones cz on cz.user_id = p.id
      where p.id = viewer and p.deleted_at is null
+       and (p.suspended_until is null or p.suspended_until <= now())
   )
   select o.id
     from v
@@ -141,7 +148,8 @@ as $$
           or (opr.flatmate_gender_pref = 'female_only' and v.gender = 'female')
           or (opr.flatmate_gender_pref = 'male_only' and v.gender = 'male'))
      -- women-only (FR-SAFE-04): only DigiLocker-verified women, never anyone else
-     and (o.category <> 'women_only' or v.gender = 'female')
+     and (o.category <> 'women_only'
+          or (o.is_identity_verified and o.verified_gender = 'female' and v.gender = 'female'))
      -- this person not swiped (a pass returns after 30 days)
      and not exists (
        select 1 from public.swipes s
@@ -158,9 +166,3 @@ $$;
 
 revoke execute on function private.discovery_rooms(uuid, integer) from public, anon, authenticated;
 revoke execute on function private.discovery_people(uuid, integer) from public, anon, authenticated;
-
--- docs/04 §9: the filters' supporting indexes.
-create index if not exists preferences_budget_idx on public.preferences (budget_min_inr, budget_max_inr);
-create index if not exists preferences_move_in_idx on public.preferences (move_in_from, move_in_to);
-create index if not exists profiles_discoverable_idx on public.profiles (category, intent, last_active_at desc)
-  where deleted_at is null and is_paused = false;

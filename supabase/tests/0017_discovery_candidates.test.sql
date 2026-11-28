@@ -3,7 +3,7 @@
 -- mode (docs/04 §10 test requirement; FR-SAFE-04).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(32);
 
 -- A member with preferences and habits, all in one area by default.
 create function pg_temp.member(
@@ -178,8 +178,11 @@ select is(pg_temp.people('00000000-0000-4000-8000-0000000017a1'),
 select ok(not ('00000000-0000-4000-8000-0000000017b2' = any(pg_temp.people('00000000-0000-4000-8000-0000000017c1')))
       and not ('00000000-0000-4000-8000-0000000017b3' = any(pg_temp.people('00000000-0000-4000-8000-0000000017c1'))),
   '24. unverified: never the women-only member, nor someone who wants verified women');
-select throws_ok($$update public.profiles set is_identity_verified = false where id = '00000000-0000-4000-8000-0000000017f1'$$,
-  '23514', null, '25. a gender without DigiLocker verification cannot exist (profiles_verified_gender_chk)');
+-- Anyone may pick women-only before verifying: until DigiLocker says female, nobody sees them.
+select pg_temp.member('00000000-0000-4000-8000-0000000017b6', 'Kiran', 'need_room', 'women_only');
+select ok(not ('00000000-0000-4000-8000-0000000017b6' = any(pg_temp.people('00000000-0000-4000-8000-0000000017f1')))
+      and not ('00000000-0000-4000-8000-0000000017b6' = any(pg_temp.people('00000000-0000-4000-8000-0000000017a1'))),
+  '25. an unverified women-only member reaches nobody, not even verified women');
 
 insert into public.swipes (swiper_id, target_id, action)
   values ('00000000-0000-4000-8000-0000000017f1', '00000000-0000-4000-8000-0000000017b1', 'like');
@@ -196,6 +199,14 @@ update public.profiles set deleted_at = now() where id = '00000000-0000-4000-800
 select ok(not ('00000000-0000-4000-8000-0000000017c1' = any(pg_temp.people('00000000-0000-4000-8000-0000000017f1')))
       and pg_temp.people('00000000-0000-4000-8000-0000000017c1') = '{}'::uuid[],
   '29. deleted members neither appear nor get candidates');
+
+update public.profiles set suspended_until = now() + interval '1 day' where id = '00000000-0000-4000-8000-0000000017a1';
+select ok(pg_temp.rooms('00000000-0000-4000-8000-0000000017a1') = '{}'::uuid[]
+      and pg_temp.people('00000000-0000-4000-8000-0000000017a1') = '{}'::uuid[],
+  '31. a suspended viewer gets no candidates');
+update public.profiles set suspended_until = null, is_paused = true where id = '00000000-0000-4000-8000-0000000017a1';
+select ok(pg_temp.rooms('00000000-0000-4000-8000-0000000017a1') <> '{}'::uuid[],
+  '32. a paused viewer still browses (pausing hides only themselves)');
 
 select ok(not has_function_privilege('authenticated', 'private.discovery_rooms(uuid, integer)', 'execute')
       and not has_function_privilege('anon', 'private.discovery_people(uuid, integer)', 'execute'),

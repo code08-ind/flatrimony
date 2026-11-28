@@ -1486,11 +1486,12 @@ The worker's 5-minute tick (`apps/worker/src/tasks/listing-expiry.ts`) reminds o
 
 §10's query as two functions the API calls (`private.discovery_rooms(viewer, max_rows)` returns `listing_id, target_id, is_locked`; `private.discovery_people(viewer, max_rows)` returns `target_id`), at most 300 rows, most recently active first; scoring, deal-breakers and ranking follow in `packages/matching`, and the API runs the women-only filter again. Clients cannot call them. Differences from the sketch:
 
-- Genders count only when DigiLocker verified them (`profiles_verified_gender_chk` already forbids a gender without verification). The women-only rule is the same in both modes and is never relaxed for unverified viewers; FR-DISC-12's locked cards apply only to rooms' `female_only` / `male_only` rules.
+- Genders count only when DigiLocker verified them (`profiles_verified_gender_chk` already forbids a gender without verification). The women-only rule is the same in both modes: a `women_only` member is shown only once DigiLocker verified them as female (anyone may pick the category first), and only to viewers DigiLocker verified as female; it is never relaxed for unverified viewers. FR-DISC-12's locked cards apply only to rooms' `female_only` / `male_only` rules.
+- A suspended viewer gets no candidates; a paused one still browses (pausing hides only themselves). Owners (`have_room`) may browse people mode for a flatmate.
 - Rooms also check the viewer's flatmate preference against the owner's verified gender, and a "no guests" room against viewers who have guests sometimes or often. People mode checks both members' preferences, overlapping budgets (`int4range`), move-in windows within 30 days (`daterange`), meeting commute zones (or, without both zones, a shared preferred area), and offers only `need_room` and `pair_up` members.
 - Swipes: a room swipe hides that room only; a person swipe hides that person card only; a pass returns after 30 days (FR-DISC-09).
 - Deal-breakers are left to `packages/matching` (self-ratings, one rule everywhere). The "bachelors allowed: no" room rule is not applied (founder decision, docs/07 T4.3).
-- §9's supporting indexes on `preferences` and `profiles` are created here.
+- §9's supporting indexes on `preferences` and `profiles` already exist (0004). People mode sorts all eligible profiles by activity before taking 300: fine at launch size, to be checked at 50k profiles (T4.7).
 
 ## 16. Testing the database
 
